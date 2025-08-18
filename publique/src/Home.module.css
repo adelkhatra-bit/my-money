@@ -1,0 +1,7 @@
+.hero {
+  max-width: 880px;
+  margin: 32px auto;
+  padding: 24px;
+}
+.hero h1 { margin: 0 0 12px; font-size: 32px; }
+.points { margin-top: 16px; line-height: 1.6; }

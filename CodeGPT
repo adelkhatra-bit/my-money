@@ -1,0 +1,25 @@
+Voici mon fichier App.js :
+
+import Navbar from "./components/Navbar";
+import Home from "./publique/home/Home";
+import Login from "./publique/login/Login";
+import Signup from "./publique/signup/Signup";
+
+export default function App() {
+  return (
+    <div>
+      <Navbar />
+      <main style={{ padding: 24 }}>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+        </Routes>
+      </main>
+    </div>
+  );
+}
+
+Problème : parfois j’ai des erreurs avec les imports ou le fichier package.json (il dit que le contenu est plus récent).
+➡️ Corrige les erreurs possibles dans ce code.
+➡️ Explique-moi quoi faire avec package.json pour résoudre le problème.

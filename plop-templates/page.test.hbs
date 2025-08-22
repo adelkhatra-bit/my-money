@@ -1,0 +1,8 @@
+import React from 'react';
+import { render, screen } from '@testing-library/react';
+import {{name}} from './{{name}}';
+
+test('render {{name}} title', () => {
+  render(<{{name}} />);
+  expect(screen.getByText('{{name}}')).toBeInTheDocument();
+});

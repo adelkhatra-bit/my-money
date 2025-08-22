@@ -1,0 +1,13 @@
+.page {
+  padding: 16px;
+}
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.table th,
+.table td {
+  border-bottom: 1px solid #ddd;
+  text-align: left;
+  padding: 8px;
+}

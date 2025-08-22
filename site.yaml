@@ -1,0 +1,19 @@
+pages:
+  - name: Accueil
+    route: /
+  - name: Connexion
+    route: /connexion
+  - name: Inscription
+    route: /inscription
+  - name: TableauBord
+    route: /dashboard
+  - name: Factures
+    route: /factures
+  - name: Profil
+    route: /profil
+  - name: TestAI
+    route: /test
+
+components:
+  - name: Card
+  - name: ButtonPrimary

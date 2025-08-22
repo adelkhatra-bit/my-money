@@ -1,31 +1,32 @@
-// src/App.js
-import React from "react";
-import { Routes, Route, Link } from "react-router-dom";
-import Navbar from "./publique/src/firebase/components/Navbar";
-import Home from "./publique/home/lib/pages/home/Home";
-import Login from "./publique/home/lib/pages/login/Login";
-import Signup from "./publique/home/lib/pages/signup/Signup";
-import TestAI from "./home/lib/login/TestAI";
+// src/App.jsx
+import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';
 
-export default function App() {
+// Si tes chemins sont différents, adapte-les ici :
+import Navbar from './components/Navbar';
+import Dashboard from './pages/Dashboard/Dashboard';
+import Factures from './pages/Factures/Factures';
+import Home from './pages/Home/Home';
+import Login from './pages/Login/Login';
+import Signup from './pages/Signup/Signup';
+import TestAI from './TestAI';
+
+function App() {
   return (
-    <div>
+    <Router>
       <Navbar />
-      <nav style={{ padding: 8 }}>
-        <Link to="/">Accueil</Link>{" | "}
-        <Link to="/login">Connexion</Link>{" | "}
-        <Link to="/signup">Inscription</Link>{" | "}
-        <Link to="/test">Test AI</Link>
-      </nav>
-
       <main style={{ padding: 24 }}>
         <Routes>
           <Route path="/" element={<Home />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Signup />} />
+          <Route path="/connexion" element={<Login />} />
+          <Route path="/inscription" element={<Signup />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/factures" element={<Factures />} />
           <Route path="/test" element={<TestAI />} />
+          <Route path="*" element={<div>Page introuvable.</div>} />
         </Routes>
       </main>
-    </div>
+    </Router>
   );
 }
+
+export default App;

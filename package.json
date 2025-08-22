@@ -1,0 +1,65 @@
+{
+  "name": "my-money",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test --env=jsdom",
+    "eject": "react-scripts eject",
+    "lia:server": "node server.js",
+    "lia:fix": "node -e \"require('child_process').spawn('npx',['eslint','.','--ext','.js,.jsx','--fix'],{stdio:'inherit',shell:true})\" && npx prettier --write .",
+    "lia:test": "npx jest --passWithNoTests",
+    "lia:guard": "node tools/lia-runner.js",
+    "lia:dev": "node -e \"require('child_process').spawn('npx',['kill-port','3000'],{shell:true}).on('close',()=>require('child_process').spawn('npm',['start'],{stdio:'inherit',shell:true}))\"",
+    "lia:open": "node -e \"require('child_process').exec('code src/App.jsx')\"",
+    "lia:gen:page": "plop page",
+    "lia:gen:component": "plop component",
+    "lia:watch:server": "nodemon --signal SIGTERM --delay 200ms --watch server.js --exec \"npx kill-port 5000 || true && node server.js\"",
+    "lia:watch:code": "nodemon --watch src --ext js,jsx,css --exec \"npm run lia:guard\"",
+    "lia:watch": "concurrently -n SERVER,CHECK -c auto \"npm run lia:watch:server\" \"npm run lia:watch:code\"",
+    "lia:site": "node tools/lia-site.js"
+  },
+  "dependencies": {
+    "concurrently": "^8.2.2",
+    "express": "^4.18.3",
+    "kill-port": "^2.0.1",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.23.0",
+    "react-scripts": "5.0.1"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^6.4.2",
+    "@testing-library/react": "^14.1.2",
+    "eslint": "^8.57.0",
+    "eslint-config-react-app": "^7.0.1",
+    "fs-extra": "^11.3.1",
+    "jest": "^29.7.0",
+    "js-yaml": "^4.1.0",
+    "nodemon": "^3.1.0",
+    "plop": "^3.1.2",
+    "prettier": "^3.2.5",
+    "simple-git": "^3.28.0"
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app"
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

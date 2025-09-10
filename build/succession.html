@@ -1,0 +1,44 @@
+<html lang="fr"><head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Succession  NovaLuce</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/novaluce.css">
+</head><body>
+<div class="topbar"><div class="inner">
+  <a class="btn ghost" href="/">NovaLuce</a>
+  <a class="btn ghost" href="/profile.html" data-i18n="dashboard">Tableau de bord</a>
+  <div class="lang"><button class="btn ghost" onclick="NL.setLang('fr')">FR</button><button class="btn ghost" onclick="NL.setLang('en')">EN</button><button class="btn ghost" onclick="NL.setLang('ar')">AR</button></div>
+</div></div>
+<div class="container"><h1>Créer ma succession</h1>
+<div class="row cols-2">
+  <div class="card">
+    <h3>Identité & héritiers</h3>
+    <div class="row cols-2">
+      <div><label>Nom</label><input id="s_nom" type="text" placeholder="Nom"/></div>
+      <div><label>Prénom</label><input id="s_prenom" type="text" placeholder="Prénom"/></div>
+      <div><label>Date de naissance</label><input id="s_dob" type="date"/></div>
+      <div><label>Adresse</label><input id="s_addr" type="text" placeholder="Adresse complète"/></div>
+    </div>
+    <div style="margin-top:10px">
+      <div class="toolbar" style="justify-content:space-between"><strong>Héritiers</strong><button class="btn ghost" id="s_addHeir">+ Ajouter</button></div>
+      <div id="s_heirs" class="row"></div>
+    </div>
+  </div>
+  <div class="card">
+    <h3>Pièces jointes & assurances</h3>
+    <label>Acte de propriété (PDF/JPG)</label><input id="s_acte" type="file" accept=".pdf,.jpg,.jpeg,.png"/>
+    <label>Estimations immobilières (conseillé: 3 agents)</label><input id="s_estims" multiple type="file" accept=".pdf,.jpg,.jpeg,.png"/>
+    <label>Assurances-vie (facultatif)</label><input id="s_av" multiple type="file" accept=".pdf,.jpg,.jpeg,.png"/>
+    <div class="mt"><button id="s_submit" class="btn primary">Enregistrer & envoyer au notaire</button></div>
+    <p class="muted">Conseil: multipliez les estimations pour plus de précision. Les valeurs affichées resteront **approximatives**.</p>
+  </div>
+</div></div>
+<div id="toast" class="toast"></div>
+<div id="modal" class="modal" onclick="if(event.target.id==='modal')NL.closeModal()"><div class="panel">
+  <h3 style="margin:0 0 6px">Informations</h3><div class="body"></div>
+  <div style="text-align:right;margin-top:10px"><button class="btn" onclick="NL.closeModal()">OK</button></div>
+</div></div>
+<script src="/assets/app.js"></script>
+<script src="/assets/succession.js"></script>
+</body></html>

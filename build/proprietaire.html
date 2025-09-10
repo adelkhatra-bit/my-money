@@ -1,0 +1,66 @@
+<html lang="fr"><head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Propriétaire  NovaLuce</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/novaluce.css">
+</head><body>
+<div class="topbar"><div class="inner">
+  <a class="btn ghost" href="/">NovaLuce</a>
+  <a class="btn ghost" href="/profile.html" data-i18n="dashboard">Tableau de bord</a>
+  <div class="lang"><button class="btn ghost" onclick="NL.setLang('fr')">FR</button><button class="btn ghost" onclick="NL.setLang('en')">EN</button><button class="btn ghost" onclick="NL.setLang('ar')">AR</button></div>
+</div></div>
+<div class="container"><h1>Espace Propriétaire</h1>
+<p class="muted">Louez en toute sécurité (anti-squat) : contrat signé, vérification faciale & accès serrure connectée.</p>
+<div class="toolbar" style="margin-bottom:12px">
+  <button id="addPropBtn" class="btn primary" type="button">+ Ajouter un bien</button>
+  <button id="saveAllBtn" class="btn ghost" type="button">Enregistrer</button>
+  <span id="saveStatus" class="muted"></span>
+</div>
+<div id="propsList" class="row"></div>
+<template id="propTemplate">
+  <div class="card" data-prop>
+    <div class="toolbar" style="justify-content:space-between;margin-bottom:8px">
+      <h3 style="margin:0">Bien</h3>
+      <div><button class="btn warn" data-action="duplicate">Dupliquer</button>
+           <button class="btn danger" data-action="remove">Supprimer</button></div>
+    </div>
+    <div class="row cols-2">
+      <div><label>Nom</label><input data-field="name" type="text" placeholder="Ex. T2  12 rue des Lilas"/></div>
+      <div><label>Adresse</label><input data-field="address" type="text" placeholder="Adresse complète"/></div>
+    </div>
+    <div style="margin-top:10px">
+      <label>Type de location</label>
+      <div class="row cols-3">
+        <label><input data-type="long_vide" type="checkbox"/> Longue durée  Vide</label>
+        <label><input data-type="long_meuble" type="checkbox"/> Longue durée  Meublé</label>
+        <label><input data-type="airbnb" type="checkbox"/> Courte durée  Airbnb</label>
+      </div>
+    </div>
+    <hr style="border:none;border-top:1px solid rgba(255,255,255,.08);margin:14px 0"/>
+    <div>
+      <div class="toolbar" style="justify-content:space-between">
+        <h4 style="margin:0">Serrures connectées</h4>
+        <button class="btn ghost" data-action="add-lock">+ Ajouter</button>
+      </div>
+      <div class="row" data-locks></div>
+      <template data-lock-template>
+        <div class="row" style="grid-template-columns:1fr 2fr auto" data-lock>
+          <select data-field="vendor">
+            <option value="">Type</option><option value="nuki">Nuki</option><option value="yale">Yale</option><option value="igloohome">Igloohome</option>
+          </select>
+          <input data-field="apiKey" type="text" placeholder="Clé/API / identifiant"/>
+          <button class="btn danger" data-action="remove-lock">Supprimer</button>
+        </div>
+      </template>
+    </div>
+  </div>
+</template></div>
+<div id="toast" class="toast"></div>
+<div id="modal" class="modal" onclick="if(event.target.id==='modal')NL.closeModal()"><div class="panel">
+  <h3 style="margin:0 0 6px">Informations</h3><div class="body"></div>
+  <div style="text-align:right;margin-top:10px"><button class="btn" onclick="NL.closeModal()">OK</button></div>
+</div></div>
+<script src="/assets/app.js"></script>
+<script src="/assets/proprietaire.js"></script>
+</body></html>

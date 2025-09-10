@@ -1,0 +1,117 @@
+<html lang="fr">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+  <title>Novaluce  Super Admin</title>
+  <link rel="stylesheet" href="/assets/app.css?v=1">
+  <link rel='preconnect' href='https://fonts.googleapis.com'>
+  <link rel='preconnect' href='https://fonts.gstatic.com' crossorigin>
+  <link href='https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap' rel='stylesheet'>
+  <link rel='stylesheet' href='/novaluce.css'>
+</head>
+<body>
+  <header class="container header">
+    <a class="brand" href="/"><div class="logo" aria-hidden="true"></div><h1>Novaluce  Super Admin</h1></a>
+    <nav><a class="btn" href="/">Accueil</a></nav>
+  </header>
+
+  <main class="container">
+    <div class="grid">
+      <section class="card">
+        <h3>Modules</h3>
+        <p>Activez/dÃ©sactivez chaque intÃ©gration. En mode OFF, le backend renvoie  dÃ©sactivÃ©  au lieu dune erreur.</p>
+        <form id="modForm" class="grid" style="margin-top:10px">
+          <div class="form-row">
+            <label><input type="checkbox" id="m_sms" checked> SMS (Twilio)</label>
+          </div>
+          <div class="form-row">
+            <label><input type="checkbox" id="m_stripe" checked> Paiement (Stripe)</label>
+          </div>
+          <div class="form-row">
+            <label><input type="checkbox" id="m_ai" checked> IA (OpenAI)</label>
+          </div>
+          <div class="form-row" style="grid-column:1/-1">
+            <button class="btn primary" type="submit">Enregistrer</button>
+            <span id="modStatus" class="badge" style="margin-left:10px">En attenteâ€¦</span>
+          </div>
+        </form>
+      </section>
+
+      <section class="card">
+        <h3>ClÃ©s dAPI (tests)</h3>
+        <p>Placez vos clÃ©s provisoires  elles sont stockÃ©es dans <code>api/secrets.json</code> via lAPI.</p>
+        <form id="keyForm" class="grid" style="margin-top:10px">
+          <div class="form-row"><label>STRIPE_SECRET</label><input class="input" id="k_stripe" placeholder="sk_test_***"></div>
+          <div class="form-row"><label>TWILIO_SID</label><input class="input" id="k_tw_sid" placeholder="ACxxxx"></div>
+          <div class="form-row"><label>TWILIO_AUTH_TOKEN</label><input class="input" id="k_tw_tok" placeholder="***"></div>
+          <div class="form-row"><label>TWILIO_FROM</label><input class="input" id="k_tw_from" placeholder="+33123456789"></div>
+          <div class="form-row"><label>OPENAI_API_KEY</label><input class="input" id="k_openai" placeholder="sk-proj-***"></div>
+          <div class="form-row" style="grid-column:1/-1">
+            <button class="btn primary" type="submit">Sauver les clÃ©s</button>
+            <span id="keyStatus" class="badge" style="margin-left:10px">En attente</span>
+          </div>
+        </form>
+      </section>
+
+      <section class="card" style="grid-column:1/-1">
+        <h3>Diagnostic rapide</h3>
+        <table class="table" id="diag">
+          <thead><tr><th>Test</th><th>RÃ©sultat</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    async function load(){
+      // modules
+      try{
+        const m = await fetch('/api/modules').then(r=>r.json());
+        (m.enabled||{}).sms && (m_sms.checked = true);
+        (m.enabled||{}).stripe && (m_stripe.checked = true);
+        (m.enabled||{}).ai && (m_ai.checked = true);
+      }catch(e){}
+
+      // diag
+      const tests = [
+        ['API /health', '/health'],
+        ['Static /', '/'],
+        ['Connexion', '/connexion.html'],
+        ['Register', '/register.html']
+      ];
+      const tb = document.querySelector('#diag tbody');
+      for (const [name,url] of tests){
+        let res='KO';
+        try{ const r = await fetch(url); res = r.status + ' ' + (r.ok?'OK':'KO'); }catch(e){ res='ERR'; }
+        const tr = document.createElement('tr');
+        const td1 = document.createElement('td'); td1.textContent = name;
+        const td2 = document.createElement('td'); td2.textContent = res; td2.setAttribute('data-label','RÃ©sultat');
+        tr.append(td1,td2); tb.append(tr);
+      }
+    }
+
+    document.getElementById('modForm').addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      const body = { enabled: { sms:m_sms.checked, stripe:m_stripe.checked, ai:m_ai.checked } };
+      const r = await fetch('/api/modules',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+      document.getElementById('modStatus').textContent = r.ok ? 'Modules enregistrÃ©s' : 'Erreur';
+    });
+
+    document.getElementById('keyForm').addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      const keys = {
+        STRIPE_SECRET: k_stripe.value || 'sk_test_xxx',
+        TWILIO_SID: k_tw_sid.value || 'ACxxxxx',
+        TWILIO_AUTH_TOKEN: k_tw_tok.value || 'xxx',
+        TWILIO_FROM: k_tw_from.value || '+33123456789',
+        OPENAI_API_KEY: k_openai.value || 'sk-proj-xxx'
+      };
+      const r = await fetch('/api/secrets',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(keys)});
+      document.getElementById('keyStatus').textContent = r.ok ? 'ClÃ©s sauvegardÃ©es' : 'Erreur';
+    });
+
+    load();
+  </script>
+</body>
+</html>

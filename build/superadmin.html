@@ -1,0 +1,44 @@
+<html lang="fr"><head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Super Admin  NovaLuce</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/novaluce.css">
+</head><body>
+<div class="topbar"><div class="inner">
+  <a class="btn ghost" href="/">NovaLuce</a>
+  <a class="btn ghost" href="/profile.html" data-i18n="dashboard">Tableau de bord</a>
+  <div class="lang"><button class="btn ghost" onclick="NL.setLang('fr')">FR</button><button class="btn ghost" onclick="NL.setLang('en')">EN</button><button class="btn ghost" onclick="NL.setLang('ar')">AR</button></div>
+</div></div>
+<div class="container"><h1>Super Admin</h1>
+<div class="row cols-2">
+  <div class="card">
+    <h3>Notaires partenaires</h3>
+    <div class="row" style="grid-template-columns:1fr 1fr 1fr auto">
+      <input id="n_name" placeholder="Nom">
+      <input id="n_email" placeholder="Email">
+      <input id="n_phone" placeholder="Téléphone">
+      <button id="n_add" class="btn primary">Ajouter</button>
+    </div>
+    <table class="table mt" id="notairesTbl"><thead><tr><th>Nom</th><th>Email</th><th>Téléphone</th><th></th></tr></thead><tbody></tbody></table>
+  </div>
+  <div class="card">
+    <h3>Commissions & modules</h3>
+    <label>Commission Succession (%)</label><input id="c_succ" type="number" min="0" max="100">
+    <label>Commission Loyers (%)</label><input id="c_loyers" type="number" min="0" max="100">
+    <div class="row">
+      <label><input id="m_chat" type="checkbox" checked/> Chat activé</label>
+      <label><input id="m_locks" type="checkbox" checked/> Serrures connectées</label>
+      <label><input id="m_esign" type="checkbox" checked/> Signature électronique</label>
+    </div>
+    <button id="c_save" class="btn primary mt">Enregistrer</button>
+  </div>
+</div></div>
+<div id="toast" class="toast"></div>
+<div id="modal" class="modal" onclick="if(event.target.id==='modal')NL.closeModal()"><div class="panel">
+  <h3 style="margin:0 0 6px">Informations</h3><div class="body"></div>
+  <div style="text-align:right;margin-top:10px"><button class="btn" onclick="NL.closeModal()">OK</button></div>
+</div></div>
+<script src="/assets/app.js"></script>
+<script src="/assets/superadmin.js"></script>
+</body></html>

@@ -1,0 +1,25 @@
+<html lang="fr">
+<head><meta charset="utf-8"/>  <link rel='preconnect' href='https://fonts.googleapis.com'>
+  <link rel='preconnect' href='https://fonts.gstatic.com' crossorigin>
+  <link href='https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap' rel='stylesheet'>
+  <link rel='stylesheet' href='/novaluce.css'>
+</head>
+<body style="font-family:sans-serif;background:#fff">
+<h3>🤖 Lia - Expert Successions</h3>
+<div id="chat" style="height:300px;overflow-y:auto;border:1px solid #ccc;padding:10px"></div>
+<input id="msg" placeholder="Posez votre question..."/>
+<button onclick="send()">Envoyer</button>
+<script>
+function send(){
+  const val=document.getElementById("msg").value;
+  const chat=document.getElementById("chat");
+  chat.innerHTML+=<div><b>Vous:</b> ${val}</div>;
+  fetch("/api/lia",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({q:val})})
+    .then(r=>r.json()).then(d=>{
+      chat.innerHTML+=<div><b>Lia:</b> ${d.a}</div>;
+      chat.scrollTop=chat.scrollHeight;
+    });
+}
+</script>
+</body>
+</html>

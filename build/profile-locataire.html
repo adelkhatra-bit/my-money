@@ -1,0 +1,127 @@
+<html lang='fr'>
+<head>
+  <meta charset='utf-8'/>
+  <meta name='viewport' content='width=device-width,initial-scale=1'/>
+  <title>Profil Locataire Â· Novaluce</title>
+  <link rel='stylesheet' href='/assets/app.css'/>
+  <script defer src='/assets/app.js'></script>
+  <script>
+    window.\ = {
+      fr:{title:'Tableau de bord  Locataire', pay:'Payer mon loyer', rpay:'Rappels de paiement', receipt:'Quittances', sec:'SÃ©curitÃ© (2FA)'},
+      en:{title:'Tenant dashboard', pay:'Pay my rent', rpay:'Payment reminders', receipt:'Receipts', sec:'Security (2FA)'},
+      ar:{title:'Ù„ÙˆØ­Ø© Ø§Ù„ØªØ­ÙƒÙ…  Ù…Ø³ØªØ£Ø¬Ø±', pay:'Ø¯ÙØ¹ Ø§Ù„Ø¥ÙŠØ¬Ø§Ø±', rpay:'ØªØ°ÙƒÙŠØ± Ø¨Ø§Ù„Ø¯ÙØ¹', receipt:'Ø¥ÙŠØµØ§Ù„Ø§Øª', sec:'Ø§Ù„Ø£Ù…Ø§Ù† (2FA)'}
+    };
+  </script>
+  <link rel='preconnect' href='https://fonts.googleapis.com'>
+  <link rel='preconnect' href='https://fonts.gstatic.com' crossorigin>
+  <link href='https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap' rel='stylesheet'>
+  <link rel='stylesheet' href='/novaluce.css'>
+</head>
+<body>
+  <header class="header">
+  <div class="container nav">
+    <a class="brand" href="/index.html">Novaluce</a>
+    <div class="row" style="justify-content:flex-end;gap:8px;flex:0 0 auto">
+      <a class="btn" href="/connexion.html">Se connecter</a>
+      <a class="btn primary" href="/register.html">CrÃ©er un compte</a>
+      <a class="btn" href="/profile-proprietaire.html">Tableau de bord</a>
+      <select id="lang" class="btn"></select>
+    </div>
+  </div>
+</header>
+  <main class="container">
+    <h1 data-i18n="title">Tableau de bord  Locataire</h1>
+
+    <div class="grid cols-2">
+      <section class="card">
+        <div class="section-title"><h2 data-i18n="pay">Payer mon loyer</h2><span class="badge">DÃ©mo</span></div>
+        <div class="row">
+          <div><label>Mois</label><input id="month" placeholder="2025-09"/></div>
+          <div><label>Montant</label><input id="amount" type="number" placeholder="750"/></div>
+        </div>
+        <div class="row"><button class="btn primary" id="btnPay">Payer</button></div>
+        <p class="notice">Paiement de dÃ©monstration (mock). Aucune carte n'est dÃ©bitÃ©e.</p>
+      </section>
+
+      <section class="card">
+        <div class="section-title"><h2 data-i18n="rpay">Rappels de paiement</h2></div>
+        <div class="row">
+          <div><label>Activer les rappels mensuels</label><select id="remind"><option value="on">Oui</option><option value="off">Non</option></select></div>
+          <div><label>Notification</label><select id="channel"><option>Email</option><option>SMS</option></select></div>
+        </div>
+        <div class="row"><button class="btn" id="btnSim">Simuler un rappel maintenant</button></div>
+      </section>
+
+      <section class="card">
+        <div class="section-title"><h2 data-i18n="receipt">Quittances</h2></div>
+        <table id="tblRec"><thead><tr><th>#</th><th>Mois</th><th>Montant</th><th>Action</th></tr></thead><tbody></tbody></table>
+      </section>
+
+      <section class="card">
+        <div class="section-title"><h2 data-i18n="sec">SÃ©curitÃ© (2FA)</h2></div>
+        <p class="notice">DÃ©mo Google Authenticator : active/dÃ©sactive une 2FA locale.</p>
+        <div class="row">
+          <button class="btn" id="btn2fa">Activer 2FA</button>
+          <span id="tag2fa" class="badge">Off</span>
+        </div>
+      </section>
+    </div>
+  </main>
+  <footer class="footer"> Novaluce</footer>
+
+  <script>
+  const API = location.origin;
+  const rec = [];
+
+  function renderRec(){
+    const tb = document.querySelector('#tblRec tbody');
+    tb.innerHTML = rec.map(r=>\<tr><td>\</td><td>\</td><td>\</td>
+      <td><a href="#" data-id="\" class="dl">TÃ©lÃ©charger</a>  <a href="#" data-id="\" class="mail">Email</a></td></tr>\).join('');
+  }
+
+  document.addEventListener('click', async (e)=>{
+    if(e.target.classList.contains('dl')){
+      e.preventDefault(); window.print(); // dÃ©mo PDF
+    }
+    if(e.target.classList.contains('mail')){
+      e.preventDefault();
+      const id = e.target.getAttribute('data-id');
+      await fetch(\\/api/notify/receipt\,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})});
+      .toast('Quittance envoyÃ©e (dÃ©mo).');
+    }
+  });
+
+  document.getElementById('btnPay').onclick = async ()=>{
+    const month = document.getElementById('month').value.trim();
+    const amount = +document.getElementById('amount').value;
+    if(!month || !amount){ return .toast('Renseigne mois et montant.'); }
+    const r = await fetch(\\/api/payments/mock\, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({month,amount,role:'tenant'})});
+    const data = await r.json();
+    if(data.ok){ rec.push({id:data.receiptId,month,amount}); renderRec(); .toast('Paiement ok (dÃ©mo).'); }
+  };
+
+  // Rappels
+  const remindSel = document.getElementById('remind');
+  const channelSel = document.getElementById('channel');
+  remindSel.value = localStorage.getItem('remind') || 'on';
+  channelSel.value = localStorage.getItem('channel') || 'Email';
+  remindSel.onchange = ()=>localStorage.setItem('remind', remindSel.value);
+  channelSel.onchange = ()=>localStorage.setItem('channel', channelSel.value);
+  document.getElementById('btnSim').onclick = async ()=>{
+    await fetch(\\/api/rent/remind\,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({channel:channelSel.value})});
+    .toast('Rappel simulÃ© envoyÃ© (dÃ©mo).');
+  };
+
+  // 2FA dÃ©mo
+  const tag = document.getElementById('tag2fa');
+  const btn = document.getElementById('btn2fa');
+  function sync2fa(){
+    const on = localStorage.getItem('2fa')==='on';
+    tag.textContent = on? 'On':'Off';
+    tag.style.background = on? '#dcfce7':'#e2e8f0';
+    btn.textContent = on? 'DÃ©sactiver 2FA':'Activer 2FA';
+  }
+  btn.onclick = ()=>{ localStorage.setItem('2fa', localStorage.getItem('2fa')==='on'?'off':'on'); sync2fa(); }
+  sync2fa();
+  </script>
+</body></html>

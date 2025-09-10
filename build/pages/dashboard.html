@@ -1,0 +1,30 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>LIA Dashboard</title>
+    <link rel="stylesheet" href="/css/app.css" />
+    <link rel='preconnect' href='https://fonts.googleapis.com'>
+  <link rel='preconnect' href='https://fonts.gstatic.com' crossorigin>
+  <link href='https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap' rel='stylesheet'>
+  <link rel='stylesheet' href='/novaluce.css'>
+</head>
+  <body>
+    <h1>Tableau de bord LIA</h1>
+    <div id="status">Chargement...</div>
+    <script>
+      async function refresh() {
+        try {
+          const health = await fetch("/api/ui/health").then(r=>r.json());
+          const uptime = await fetch("/api/ui/uptime").then(r=>r.json());
+          document.getElementById("status").innerHTML =
+            "<p><b>Health:</b> "+JSON.stringify(health)+
+            "</p><p><b>Uptime:</b> "+JSON.stringify(uptime)+"</p>";
+        } catch (e) {
+          document.getElementById("status").innerHTML = "❌ Erreur API";
+        }
+      }
+      refresh();
+      setInterval(refresh, 5000);
+    </script>
+  </body>
+</html>

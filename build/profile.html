@@ -1,0 +1,35 @@
+<html lang="fr"><head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Profil • NovaLuce</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/novaluce.css">
+</head><body>
+<div class="topbar"><div class="inner">
+  <a class="btn ghost" href="/">NovaLuce</a>
+  <div class="lang">
+    <button class="btn ghost" onclick="NL.setLang('fr')">FR</button>
+    <button class="btn ghost" onclick="NL.setLang('en')">EN</button>
+    <button class="btn ghost" onclick="NL.setLang('ar')">AR</button>
+  </div>
+</div></div>
+
+<div class="container">
+  <h1 data-i18n="dashboard">Tableau de bord</h1>
+  <div class="row cols-3">
+    <a class="card" href="/succession.html"><h3 data-i18n="succession">Créer ma succession</h3><p>Documents, héritiers, assurances-vie, envoi notaire partenaire.</p></a>
+    <a class="card" href="/viager.html"><h3 data-i18n="viager">Proposer un viager</h3><p>Libre ou occupé, estimations agents & pièces jointes.</p></a>
+    <a class="card" href="/proprietaire.html"><h3 data-i18n="proprietaire">Propriétaire</h3><p>Location sécurisée, serrures connectées, loyer via plateforme.</p></a>
+    <a class="card" href="/locataire.html"><h3 data-i18n="locataire">Locataire</h3><p>Contrat électronique, dépôt identité, paiements.</p></a>
+    <a class="card" href="/chat.html"><h3 data-i18n="chat">Assistance</h3><p>Chat NovaLuce (questions pertinentes uniquement).</p></a>
+    <a class="card" href="/superadmin.html"><h3 data-i18n="superadmin">Super Admin</h3><p>Notaires, commissions, réglages, modules ON/OFF.</p></a>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+<div id="modal" class="modal" onclick="if(event.target.id==='modal')NL.closeModal()"><div class="panel">
+  <h3 style="margin:0 0 6px">Informations</h3><div class="body"></div>
+  <div style="text-align:right;margin-top:10px"><button class="btn" onclick="NL.closeModal()">OK</button></div>
+</div></div>
+<script src="/assets/app.js"></script>
+</body></html>

@@ -1,0 +1,46 @@
+<html lang="fr">
+<head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Ménage</title>
+<link rel="stylesheet" href="/assets/css/styles.css"/>
+  <link rel='preconnect' href='https://fonts.googleapis.com'>
+  <link rel='preconnect' href='https://fonts.gstatic.com' crossorigin>
+  <link href='https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap' rel='stylesheet'>
+  <link rel='stylesheet' href='/novaluce.css'>
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">NOVALUCE</div>
+  <nav class="nav">
+    <a href="/">Accueil</a>
+    <a href="/chat.html">Chat</a>
+    <a class="active" href="/viager.html">Viager</a>
+    <a href="/admin.html">Super Admin</a>
+  </nav>
+</header>
+<main class="container">
+  <div class="grid">
+    <div class="card">
+      <h3>Proposer un viager</h3>
+      <form>
+        <label>Type
+          <select>
+            <option>Viager occupé</option>
+            <option>Viager libre</option>
+          </select>
+        </label>
+        <label>Valeur estimée <input placeholder="€"/></label>
+        <label>Âge du vendeur <input placeholder="Âge"/></label>
+        <label>Adresse du bien <input placeholder="Adresse complète"/></label>
+        <label>Description <textarea placeholder="Détails..."></textarea></label>
+        <button class="btn primary" type="button">Enregistrer</button>
+      </form>
+    </div>
+    <div class="card">
+      <h3>Simulation</h3>
+      <p>Calculez bouquet/rente selon espérance de vie et valeur locative.</p>
+    </div>
+  </div>
+</main>
+</body>
+</html>

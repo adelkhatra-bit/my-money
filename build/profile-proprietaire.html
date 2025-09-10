@@ -1,0 +1,107 @@
+<html lang='fr'>
+<head>
+  <meta charset='utf-8'/><meta name='viewport' content='width=device-width,initial-scale=1'/>
+  <title>Profil PropriÃ©taire  Novaluce</title>
+  <link rel='stylesheet' href='/assets/app.css'/><script defer src='/assets/app.js'></script>
+  <link rel='preconnect' href='https://fonts.googleapis.com'>
+  <link rel='preconnect' href='https://fonts.gstatic.com' crossorigin>
+  <link href='https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap' rel='stylesheet'>
+  <link rel='stylesheet' href='/novaluce.css'>
+</head>
+<body>
+  <header class="header">
+  <div class="container nav">
+    <a class="brand" href="/index.html">Novaluce</a>
+    <div class="row" style="justify-content:flex-end;gap:8px;flex:0 0 auto">
+      <a class="btn" href="/connexion.html">Se connecter</a>
+      <a class="btn primary" href="/register.html">CrÃ©er un compte</a>
+      <a class="btn" href="/profile-proprietaire.html">Tableau de bord</a>
+      <select id="lang" class="btn"></select>
+    </div>
+  </div>
+</header>
+  <main class="container">
+    <h1>Tableau de bord  PropriÃ©taire</h1>
+
+    <div class="grid cols-2">
+      <section class="card">
+        <div class="section-title"><h2>Mes biens</h2><span class="badge">DÃ©mo</span></div>
+        <div class="row">
+          <div><label>Adresse</label><input id="p_addr" placeholder="12 rue ..."/></div>
+          <div><label>Loyer (â‚¬)</label><input id="p_rent" type="number" placeholder="900"/></div>
+        </div>
+        <div class="row"><button class="btn primary" id="btnAdd">Ajouter le bien</button></div>
+        <table id="tblP"><thead><tr><th>#</th><th>Adresse</th><th>Loyer</th></tr></thead><tbody></tbody></table>
+      </section>
+
+      <section class="card">
+        <div class="section-title"><h2>Serrure connectÃ©e</h2></div>
+        <div class="row">
+          <div><label>Fournisseur</label>
+            <select id="lock_vendor"><option>Nuki</option><option>TTLock</option><option>SwitchBot</option></select>
+          </div>
+          <div><label>Device / ID</label><input id="lock_id" placeholder="ex: dev123"/></div>
+        </div>
+        <div class="row"><button class="btn" id="btnPair">Coupler</button></div>
+        <div id="pairRes" class="notice"></div>
+      </section>
+
+      <section class="card">
+        <div class="section-title"><h2>Inviter un locataire</h2></div>
+        <div class="row">
+          <div><label>Email locataire</label><input id="mail" placeholder="locataire@email.com"/></div>
+          <div><label>ID du bien (facultatif)</label><input id="pid" placeholder="1"/></div>
+        </div>
+        <div class="row"><button class="btn" id="btnInvite">Envoyer l'invitation</button></div>
+        <p id="invInfo" class="notice"></p>
+      </section>
+
+      <section class="card">
+        <div class="section-title"><h2>Paiements reÃ§us</h2></div>
+        <table id="tblPay"><thead><tr><th>#</th><th>Mois</th><th>Montant</th><th>Locataire</th></tr></thead><tbody></tbody></table>
+      </section>
+    </div>
+  </main>
+  <footer class="footer"> Novaluce</footer>
+
+  <script>
+  const API = location.origin;
+  const biens = []; const pay = [];
+
+  function rBiens(){
+    const tb = document.querySelector('#tblP tbody');
+    tb.innerHTML = biens.map((b,i)=>\<tr><td>\</td><td>\</td><td>\</td></tr>\).join('');
+  }
+  function rPay(){
+    const tb = document.querySelector('#tblPay tbody');
+    tb.innerHTML = pay.map(p=>\<tr><td>\</td><td>\</td><td>\</td><td>\</td></tr>\).join('');
+  }
+  document.getElementById('btnAdd').onclick = ()=>{
+    const addr = document.getElementById('p_addr').value.trim();
+    const rent = +document.getElementById('p_rent').value;
+    if(!addr||!rent){return .toast('Adresse & loyer obligatoires');}
+    biens.push({addr,rent}); rBiens(); .toast('Bien ajoutÃ© (dÃ©mo).');
+  };
+  document.getElementById('btnPair').onclick = async ()=>{
+    const provider = document.getElementById('lock_vendor').value;
+    const deviceId = document.getElementById('lock_id').value.trim();
+    const r = await fetch(\\/api/locks/pair\,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({provider,deviceId})});
+    const d = await r.json();
+    document.getElementById('pairRes').textContent = d.paired? \CouplÃ© (#\)\ : 'Ã‰chec couplage (dÃ©mo)';
+  };
+  document.getElementById('btnInvite').onclick = async ()=>{
+    const email = document.getElementById('mail').value.trim();
+    const propertyId = document.getElementById('pid').value.trim();
+    if(!email) return .toast('Email requis');
+    const r = await fetch(\\/api/email/invite\,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,propertyId})});
+    const d = await r.json();
+    document.getElementById('invInfo').textContent = \Lien envoyÃ© (dÃ©mo) : \\\;
+  };
+
+  // Ã©coutes paiements mock (rafraÃ®chit la table si le locataire paie)
+  setInterval(async ()=>{
+    const r = await fetch(\\/api/payments/list\); const d = await r.json();
+    pay.splice(0,pay.length, ...d); rPay();
+  }, 2000);
+  </script>
+</body></html>

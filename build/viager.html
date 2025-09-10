@@ -1,0 +1,36 @@
+<html lang="fr"><head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Viager  NovaLuce</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/novaluce.css">
+</head><body>
+<div class="topbar"><div class="inner">
+  <a class="btn ghost" href="/">NovaLuce</a>
+  <a class="btn ghost" href="/profile.html" data-i18n="dashboard">Tableau de bord</a>
+  <div class="lang"><button class="btn ghost" onclick="NL.setLang('fr')">FR</button><button class="btn ghost" onclick="NL.setLang('en')">EN</button><button class="btn ghost" onclick="NL.setLang('ar')">AR</button></div>
+</div></div>
+<div class="container"><h1>Proposer un viager</h1>
+<div class="row cols-2">
+  <div class="card">
+    <h3>Informations</h3>
+    <label>Type</label><select id="v_type"><option>Occupé</option><option>Libre</option></select>
+    <label>Adresse</label><input id="v_addr" type="text" placeholder="Adresse du bien"/>
+    <label>Rente souhaitée ( / mois)</label><input id="v_rente" type="number" min="0"/>
+    <label>Photos (optionnel)</label><input id="v_photos" multiple type="file" accept=".jpg,.jpeg,.png"/>
+    <div class="mt"><button id="v_save" class="btn primary">Enregistrer</button></div>
+  </div>
+  <div class="card">
+    <h3>Pièces jointes</h3>
+    <label>Acte de propriété</label><input id="v_acte" type="file" accept=".pdf,.jpg,.jpeg,.png"/>
+    <label>Estimations (conseillé: 3 agents)</label><input id="v_estims" multiple type="file" accept=".pdf,.jpg,.jpeg,.png"/>
+  </div>
+</div></div>
+<div id="toast" class="toast"></div>
+<div id="modal" class="modal" onclick="if(event.target.id==='modal')NL.closeModal()"><div class="panel">
+  <h3 style="margin:0 0 6px">Informations</h3><div class="body"></div>
+  <div style="text-align:right;margin-top:10px"><button class="btn" onclick="NL.closeModal()">OK</button></div>
+</div></div>
+<script src="/assets/app.js"></script>
+<script src="/assets/viager.js"></script>
+</body></html>

@@ -1,18 +1,7 @@
-node_modules/
-dist/
-build/
-.cache/
-.temp/
-coverage/
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-.DS_Store
+﻿# --- secrets et fichiers locaux ---
 .env
 .env.*
-.husky/_/
-.idea/
-.vscode/
-*.local
+! .env.example
+novaluce-bot.log
+C:\novaluce-bot.log
+*.tmp

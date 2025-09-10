@@ -1,16 +1,21 @@
-﻿name: Deploy to GitHub Pages
+﻿name: Deploy to Pages
 on:
   push:
     branches: [ main ]
 permissions:
-  contents: write
+  contents: read
+  pages: write
+  id-token: write
 jobs:
   deploy:
+    environment:
+      name: github-pages
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Publish to Pages
-        uses: peaceiris/actions-gh-pages@v3
+      - name: Upload static site (dossier public)
+        uses: actions/upload-pages-artifact@v3
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./public
+          path: ./public
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v4

@@ -1,4 +1,8 @@
-# Workflow GitHub Actions : "Assistant agent" - analyse PRs et commente avec OpenAI
+# Assistant agent workflow - analyse les PRs avec OpenAI et poste un commentaire
+permissions:
+  contents: read
+  issues: write
+
 on:
   pull_request:
     types: [opened, reopened, synchronize]
@@ -13,48 +17,95 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up jq
+      - name: Install dependencies (jq)
         run: sudo apt-get update && sudo apt-get install -y jq
 
-      - name: Prepare environment variables
+      - name: Prepare environment variables (with fallbacks)
         env:
-          PR_NUMBER: ${{ github.event.pull_request.number || github.event.inputs.pr_number }}
-          BASE_REF: ${{ github.event.pull_request.base.ref || github.ref_name }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          PR_NUMBER_IN: ${{ github.event.pull_request.number || '' }}
+          BASE_REF_IN: ${{ github.event.pull_request.base.ref || '' }}
+          HEAD_SHA_IN: ${{ github.event.pull_request.head.sha || '' }}
+          GITHUB_REF_NAME: ${{ github.ref_name || '' }}
+          GITHUB_SHA: ${{ github.sha || '' }}
           REPO: ${{ github.repository }}
         run: |
-          echo "PR_NUMBER=${PR_NUMBER}" >> $GITHUB_ENV || true
-          echo "BASE_REF=${BASE_REF}" >> $GITHUB_ENV || true
-          echo "HEAD_SHA=${HEAD_SHA}" >> $GITHUB_ENV || true
-          echo "REPO=${REPO}" >> $GITHUB_ENV || true
+          set -euo pipefail
+          PR_NUMBER="${PR_NUMBER_IN}"
+          BASE_REF="${BASE_REF_IN}"
+          HEAD_SHA="${HEAD_SHA_IN}"
+          REPO="${REPO}"
 
-      - name: Fetch base branch and compute diff
+          # Fallbacks when run is a push or workflow_dispatch (no pull_request)
+          if [ -z "$BASE_REF" ]; then
+            BASE_REF="${GITHUB_REF_NAME}"
+          fi
+          if [ -z "$BASE_REF" ]; then
+            BASE_REF=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "main")
+          fi
+
+          if [ -z "$HEAD_SHA" ]; then
+            HEAD_SHA="${GITHUB_SHA}"
+          fi
+          if [ -z "$HEAD_SHA" ]; then
+            HEAD_SHA=$(git rev-parse HEAD 2>/dev/null || echo "")
+          fi
+
+          echo "PR_NUMBER=${PR_NUMBER}" >> $GITHUB_ENV
+          echo "BASE_REF=${BASE_REF}" >> $GITHUB_ENV
+          echo "HEAD_SHA=${HEAD_SHA}" >> $GITHUB_ENV
+          echo "REPO=${REPO}" >> $GITHUB_ENV
+          echo "Prepared env: PR_NUMBER=${PR_NUMBER} BASE_REF=${BASE_REF} HEAD_SHA=${HEAD_SHA}"
+
+      - name: Fetch base branch and compute diff (robust)
         run: |
-          # Ensure base branch exists locally
-          git fetch origin "${BASE_REF}:${BASE_REF}" || true
-          git fetch origin "${HEAD_SHA}" || true
+          set -euo pipefail
+          BASE_REF="${BASE_REF}"
+          HEAD_SHA="${HEAD_SHA}"
+
+          # Fetch base ref safely (try shallow fallbacks)
+          git fetch origin "${BASE_REF}" || git fetch origin --depth=1 "${BASE_REF}" || true
+          if [ -n "${HEAD_SHA}" ]; then
+            git fetch origin "${HEAD_SHA}" || true
+          fi
+
+          # Compute diff between base and head (three-dot). Use || true to avoid failing when refs missing.
           DIFF=$(git --no-pager diff origin/"${BASE_REF}"..."${HEAD_SHA}" || true)
           if [ -z "$DIFF" ]; then
-            DIFF="(no diff produced — maybe this is not a PR or no changes)"
+            echo "(no diff produced — maybe this is not a PR or no changes)" > pr.diff
+          else
+            echo "$DIFF" > pr.diff
           fi
-          echo "$DIFF" > pr.diff
-          # Limit diff size to avoid huge payloads
-          head -c 200000 pr.diff > pr_trimmed.diff
-          echo "PR_DIFF_SIZE=$(wc -c < pr_trimmed.diff)" >> $GITHUB_ENV
 
-      - name: Call OpenAI to analyze diff and propose suggestions
+          # Trim to 200KB to avoid huge payloads
+          head -c 200000 pr.diff > pr_trimmed.diff || true
+          echo "PR_DIFF_SIZE=$(wc -c < pr_trimmed.diff || echo 0)" >> $GITHUB_ENV
+          echo "Saved pr_trimmed.diff (max 200kB)"
+
+      - name: Optional: check changed files for keywords (mois/month) and save list
+        run: |
+          CHANGED_FILES=$(git --no-pager diff --name-only origin/"${BASE_REF}"..."${HEAD_SHA}" || true)
+          echo "$CHANGED_FILES" > changed_files.txt
+          echo "CHANGED_FILES_SAVED=$(wc -l < changed_files.txt || true)" >> $GITHUB_ENV
+
+      - name: Call OpenAI to analyze diff and propose suggestions (safe)
         env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          GITHUB_ACTOR: ${{ github.actor }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY || '' }}
           REPO: ${{ github.repository }}
           PR_NUMBER: ${{ env.PR_NUMBER }}
         run: |
-          if [ -z "$OPENAI_API_KEY" ]; then
-            echo "OpenAI key not set. Please add OPENAI_API_KEY secret in repository settings."
-            exit 1
+          set -euo pipefail
+          # Skip if no diff
+          if grep -q "(no diff produced" pr_trimmed.diff; then
+            echo "No diff to analyze — skipping OpenAI call."
+            exit 0
           fi
 
-          PROMPT="You are an assistant for the repository ${REPO}.\nAnalyze the following pull request diff and provide:\n1) A concise summary of what changed.\n2) Any bugs, logic errors, or likely regressions you see.\n3) Concrete suggestions or code snippets to fix or improve the changes.\n4) If possible, provide a short patch or the exact lines to change.\n\nDiff:\n"
+          if [ -z "${OPENAI_API_KEY}" ]; then
+            echo "OPENAI_API_KEY not set in repository secrets. Skipping OpenAI analysis (no failure)."
+            exit 0
+          fi
+
+          PROMPT="You are an assistant for the repository ${REPO}.\nAnalyze the following pull request diff and provide:\n1) A concise summary of what changed.\n2) Any bugs, logic errors, or likely regressions.\n3) Concrete suggestions or code snippets to fix or improve the changes.\n4) If possible, provide a short patch or the exact lines to change.\n\nDiff:\n"
           PROMPT="$PROMPT$(sed -n '1,20000p' pr_trimmed.diff)"
 
           # Call OpenAI Chat Completions (adjust model name if needed)
@@ -65,7 +116,7 @@ jobs:
 {
   "model": "gpt-4o-mini",
   "messages": [
-    {"role":"system","content":"You are a helpful code reviewer that gives actionable suggestions."},
+    {"role":"system","content":"You are a helpful, concise code reviewer that gives actionable suggestions."},
     {"role":"user","content":"${PROMPT//\"/\\\"}"}
   ],
   "max_tokens": 1500,
@@ -79,23 +130,23 @@ EOF
             COMMENT="OpenAI returned an empty response or it could not be parsed."
           fi
 
-          # Post comment to the PR (if PR_NUMBER exists), otherwise create an issue comment on repository
+          # Post comment to the PR (if PR_NUMBER exists), otherwise create an issue as fallback
           if [ -n "${PR_NUMBER}" ] && [ "${PR_NUMBER}" != "null" ]; then
             echo "Posting comment to PR #${PR_NUMBER}"
             PAYLOAD=$(jq -n --arg body "$COMMENT" '{body: $body}')
             curl -s -X POST -H "Authorization: token $GITHUB_TOKEN" -H "Content-Type: application/json" \
-              -d "$PAYLOAD" "https://api.github.com/repos/${REPO}/issues/${PR_NUMBER}/comments"
+              -d "$PAYLOAD" "https://api.github.com/repos/${REPO}/issues/${PR_NUMBER}/comments" || true
           else
             echo "No PR number found, creating an issue in the repository as fallback."
             TITLE="Assistant analysis run on $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
             PAYLOAD=$(jq -n --arg title "$TITLE" --arg body "$COMMENT" '{title: $title, body: $body}')
             curl -s -X POST -H "Authorization: token $GITHUB_TOKEN" -H "Content-Type: application/json" \
-              -d "$PAYLOAD" "https://api.github.com/repos/${REPO}/issues"
+              -d "$PAYLOAD" "https://api.github.com/repos/${REPO}/issues" || true
           fi
 
-      - name: Save artifact (optional) - OpenAI raw response
+      - name: Upload diff artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: openai-response
+          name: pr-diff
           path: pr_trimmed.diff

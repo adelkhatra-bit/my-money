@@ -1,0 +1,111 @@
+# Workflow GitHub Actions : "Assistant agent" - analyse PRs et commente avec OpenAI
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+  workflow_dispatch: {}
+
+jobs:
+  openai-review:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Prepare environment variables
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number || github.event.inputs.pr_number }}
+          BASE_REF: ${{ github.event.pull_request.base.ref || github.ref_name }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          REPO: ${{ github.repository }}
+        run: |
+          echo "PR_NUMBER=${PR_NUMBER}" >> $GITHUB_ENV || true
+          echo "BASE_REF=${BASE_REF}" >> $GITHUB_ENV || true
+          echo "HEAD_SHA=${HEAD_SHA}" >> $GITHUB_ENV || true
+          echo "REPO=${REPO}" >> $GITHUB_ENV || true
+
+      - name: Fetch base branch and compute diff
+        run: |
+          # Ensure base branch exists locally
+          git fetch origin "${BASE_REF}:${BASE_REF}" || true
+          git fetch origin "${HEAD_SHA}" || true
+          DIFF=$(git --no-pager diff origin/"${BASE_REF}"..."${HEAD_SHA}" || true)
+          if [ -z "$DIFF" ]; then
+            DIFF="(no diff produced — maybe this is not a PR or no changes)"
+          fi
+          echo "$DIFF" > pr.diff
+          # Limit diff size to avoid huge payloads
+          head -c 200000 pr.diff > pr_trimmed.diff
+          echo "PR_DIFF_SIZE=$(wc -c < pr_trimmed.diff)" >> $GITHUB_ENV
+
+      - name: Optional: check changed files for keywords (mois/month) and skip if none
+        run: |
+          CHANGED_FILES=$(git --no-pager diff --name-only origin/"${BASE_REF}"..."${HEAD_SHA}" || true)
+          echo "$CHANGED_FILES" > changed_files.txt
+          # If you want to restrict analysis only when files mention 'mois' or 'month', uncomment next lines:
+          # if ! echo "$CHANGED_FILES" | grep -E "mois|month" -i >/dev/null; then
+          #   echo "No 'mois'/'month' in changed files — skipping OpenAI call."
+          #   exit 0
+          # fi
+
+      - name: Call OpenAI to analyze diff and propose suggestions
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GITHUB_ACTOR: ${{ github.actor }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ env.PR_NUMBER }}
+        run: |
+          if [ -z "$OPENAI_API_KEY" ]; then
+            echo "OpenAI key not set. Please add OPENAI_API_KEY secret in repository settings."
+            exit 1
+          fi
+
+          PROMPT="You are an assistant for the repository ${REPO}.\nAnalyze the following pull request diff and provide:\n1) A concise summary of what changed.\n2) Any bugs, logic errors, or likely regressions you see.\n3) Concrete suggestions or code snippets to fix or improve the changes.\n4) If possible, provide a short patch or the exact lines to change.\n\nDiff:\n"
+          PROMPT="$PROMPT$(sed -n '1,20000p' pr_trimmed.diff)"
+
+          # Call OpenAI Chat Completions (adjust model name if needed)
+          RESPONSE=$(curl -s https://api.openai.com/v1/chat/completions \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer $OPENAI_API_KEY" \
+            -d @- <<EOF
+{
+  "model": "gpt-4o-mini",
+  "messages": [
+    {"role":"system","content":"You are a helpful code reviewer that gives actionable suggestions."},
+    {"role":"user","content":"${PROMPT//\"/\\\"}"}
+  ],
+  "max_tokens": 1500,
+  "temperature": 0.2
+}
+EOF
+)
+
+          COMMENT=$(echo "$RESPONSE" | jq -r '.choices[0].message.content' || echo "Erreur: impossible de parser la réponse OpenAI")
+          if [ -z "$COMMENT" ]; then
+            COMMENT="OpenAI returned an empty response or it could not be parsed."
+          fi
+
+          # Post comment to the PR (if PR_NUMBER exists), otherwise create an issue comment on repository
+          if [ -n "${PR_NUMBER}" ] && [ "${PR_NUMBER}" != "null" ]; then
+            echo "Posting comment to PR #${PR_NUMBER}"
+            PAYLOAD=$(jq -n --arg body "$COMMENT" '{body: $body}')
+            curl -s -X POST -H "Authorization: token $GITHUB_TOKEN" -H "Content-Type: application/json" \
+              -d "$PAYLOAD" "https://api.github.com/repos/${REPO}/issues/${PR_NUMBER}/comments"
+          else
+            echo "No PR number found, creating an issue in the repository as fallback."
+            TITLE="Assistant analysis run on $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+            PAYLOAD=$(jq -n --arg title "$TITLE" --arg body "$COMMENT" '{title: $title, body: $body}')
+            curl -s -X POST -H "Authorization: token $GITHUB_TOKEN" -H "Content-Type: application/json" \
+              -d "$PAYLOAD" "https://api.github.com/repos/${REPO}/issues"
+          fi
+
+      - name: Save artifact (optional) - PR trimmed diff
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr-diff
+          path: pr_trimmed.diff

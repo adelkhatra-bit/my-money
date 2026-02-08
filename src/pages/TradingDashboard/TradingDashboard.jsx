@@ -7,6 +7,8 @@ import { generateSignal } from '../../services/signalEngine';
 import { calculatePositionSize } from '../../services/riskCalculator';
 import { audioAlerts } from '../../services/audioAlerts';
 import { isMarketOpen, getMarketStatus } from '../../services/marketHours';
+import { logAction } from '../../services/actionHistory';
+import { botService } from '../../services/botService';
 import { supabase } from '../../lib/supabaseClient';
 import styles from './TradingDashboard.module.css';
 
@@ -44,6 +46,7 @@ const TradingDashboard = () => {
   const [resistances, setResistances] = useState([]);
   const [orderBlocks, setOrderBlocks] = useState({ bullish: [], bearish: [] });
   const [dismissedSignals, setDismissedSignals] = useState(new Set());
+  const [userId, setUserId] = useState(null);
 
   useEffect(() => {
     if (market === 'NASDAQ' || market === 'GOLD') {
@@ -117,6 +120,8 @@ const TradingDashboard = () => {
         .maybeSingle();
 
       if (profile) {
+        setUserId(profile.id);
+
         const { data: accounts } = await supabase
           .from('trading_accounts')
           .select('*')
@@ -258,8 +263,22 @@ const TradingDashboard = () => {
 
             if (newStatus === 'TP1_HIT' || newStatus === 'TP2_HIT') {
               audioAlerts.takeProfitAlert();
+              await logAction(userId, newStatus === 'TP1_HIT' ? 'TP1_HIT' : 'TP2_HIT', position.market, position.platform, {
+                direction: position.direction,
+                entry_price: position.entry_price,
+                exit_price: hitPrice,
+                pnl: unrealizedPnl,
+                position_id: position.id
+              });
             } else if (newStatus === 'SL_HIT') {
               audioAlerts.stopLossAlert();
+              await logAction(userId, 'SL_HIT', position.market, position.platform, {
+                direction: position.direction,
+                entry_price: position.entry_price,
+                exit_price: hitPrice,
+                pnl: unrealizedPnl,
+                position_id: position.id
+              });
             }
           } else {
             await supabase
@@ -372,6 +391,18 @@ const TradingDashboard = () => {
           return;
         }
 
+        if (userId) {
+          await logAction(userId, 'SIGNAL_GENERATED', market, platform, {
+            direction: result.signal.direction,
+            entry_min: result.signal.entry_min,
+            entry_max: result.signal.entry_max,
+            stop_loss: result.signal.stop_loss,
+            take_profit_1: result.signal.take_profit_1,
+            take_profit_2: result.signal.take_profit_2,
+            confidence: result.signal.confidence
+          });
+        }
+
         setShowAnalysis(true);
         setSignalState({
           isScanning: false,
@@ -379,7 +410,6 @@ const TradingDashboard = () => {
           signal: null
         });
         setBotState('pre_alert');
-        audioAlerts.signalAlert();
         setScanStatus(`⚠️ PRÉPARE-TOI : Une position ${result.signal.direction === 'LONG' ? 'ACHAT' : 'VENTE'} est en préparation sur ${market}`);
 
         setTimeout(() => {
@@ -440,22 +470,24 @@ const TradingDashboard = () => {
   };
 
   useEffect(() => {
-    let scanInterval;
+    const scanCallback = () => {
+      if (!scanning && marketStatus.open) {
+        performScan();
+      }
+    };
 
-    if (autoMode && marketStatus.open && !scanning) {
-      performScan();
-
-      scanInterval = setInterval(() => {
-        if (!scanning) {
-          performScan();
-        }
-      }, 30000);
+    if (autoMode && marketStatus.open) {
+      botService.addCallback(scanCallback);
+      botService.start(scanCallback, 30000);
+    } else {
+      botService.removeCallback(scanCallback);
+      if (!autoMode) {
+        botService.stop();
+      }
     }
 
     return () => {
-      if (scanInterval) {
-        clearInterval(scanInterval);
-      }
+      botService.removeCallback(scanCallback);
     };
   }, [autoMode, marketStatus.open]);
 
@@ -564,6 +596,15 @@ const TradingDashboard = () => {
         }));
       }
 
+      await logAction(profile.id, 'POSITION_OPENED', signal.market, signal.platform, {
+        direction: signal.direction,
+        entry_price: entryPrice,
+        stop_loss: signal.stop_loss,
+        take_profit_1: signal.take_profit_1,
+        take_profit_2: signal.take_profit_2,
+        position_size: positionSize
+      });
+
       const newPosition = {
         direction: signal.direction,
         entry_price: entryPrice,
@@ -578,7 +619,7 @@ const TradingDashboard = () => {
       setSignalState({ isScanning: false, preAlert: null, signal: null });
       setCurrentSignal(null);
       setBotState('position_locked');
-      audioAlerts.takeProfitAlert();
+      audioAlerts.signalAlert();
       await loadUserData();
       await loadStats(profile.id, activeAccount);
     } catch (error) {
@@ -622,9 +663,17 @@ const TradingDashboard = () => {
     setShowPreAlert(false);
   };
 
-  const handleDismissSignal = () => {
+  const handleDismissSignal = async () => {
     if (signalState.signal && signalState.signal.id) {
       setDismissedSignals(prev => new Set(prev).add(signalState.signal.id));
+
+      if (userId && signalState.signal) {
+        await logAction(userId, 'SIGNAL_DISMISSED', signalState.signal.market, signalState.signal.platform, {
+          direction: signalState.signal.direction,
+          entry_min: signalState.signal.entry_min,
+          entry_max: signalState.signal.entry_max
+        });
+      }
     }
     setSignalState({ isScanning: false, preAlert: null, signal: null });
     setCurrentSignal(null);

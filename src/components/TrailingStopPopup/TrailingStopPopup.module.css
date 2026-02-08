@@ -169,6 +169,15 @@
   line-height: 1.5;
 }
 
+.reason {
+  font-style: italic;
+  color: #00d4ff !important;
+  font-weight: 500;
+  padding-top: 5px;
+  border-top: 1px solid rgba(0, 212, 255, 0.3);
+  margin-top: 10px !important;
+}
+
 .closeBtn {
   width: 100%;
   padding: 15px;

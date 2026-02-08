@@ -284,11 +284,17 @@ const TradingDashboard = () => {
 
           if (!currentPrice) continue;
 
-          if (position.market === market && shouldUpdateTrailingStop(position, lastTrailingStopUpdate)) {
-            const trailingResult = calculateTrailingStop(position, currentPrice, supports, resistances);
+          if (shouldUpdateTrailingStop(position, lastTrailingStopUpdate)) {
+            const positionSupports = position.market === market ? supports : [];
+            const positionResistances = position.market === market ? resistances : [];
+            const trailingResult = calculateTrailingStop(position, currentPrice, positionSupports, positionResistances);
 
             if (trailingResult) {
-              console.log('🛡️ TRAILING STOP ACTIVÉ:', trailingResult);
+              console.log('🛡️ TRAILING STOP ACTIVÉ:', {
+                market: position.market,
+                platform: position.platform,
+                ...trailingResult
+              });
 
               const oldSL = position.stop_loss;
               const newSL = trailingResult.newStopLoss;
@@ -329,7 +335,14 @@ const TradingDashboard = () => {
               position.stop_loss = newSL;
               hasUpdates = true;
 
-              if (currentPosition && currentPosition.id === position.id) {
+              if (currentPosition &&
+                  currentPosition.market === position.market &&
+                  currentPosition.platform === position.platform &&
+                  currentPosition.status === 'OPEN') {
+                console.log('📈 MISE À JOUR DU SL AFFICHÉ SUR LE GRAPHIQUE:', {
+                  ancien: currentPosition.stop_loss,
+                  nouveau: newSL
+                });
                 setCurrentPosition({
                   ...currentPosition,
                   stop_loss: newSL
@@ -424,7 +437,10 @@ const TradingDashboard = () => {
               .update({ pnl: unrealizedPnl })
               .eq('id', position.id);
 
-            if (currentPosition && currentPosition.id === position.id) {
+            if (currentPosition &&
+                currentPosition.market === position.market &&
+                currentPosition.platform === position.platform &&
+                currentPosition.status === 'OPEN') {
               setCurrentPosition({
                 ...currentPosition,
                 pnl: unrealizedPnl
@@ -776,6 +792,12 @@ const TradingDashboard = () => {
 
       console.log('[Position] Position créée avec succès:', positionData);
 
+      if (!positionData || positionData.length === 0) {
+        throw new Error('Position créée mais aucune donnée retournée');
+      }
+
+      const createdPosition = positionData[0];
+
       await supabase
         .from('signal_history')
         .insert({
@@ -821,17 +843,7 @@ const TradingDashboard = () => {
         position_size: positionSize
       });
 
-      const newPosition = {
-        direction: signal.direction,
-        entry_price: entryPrice,
-        stop_loss: signal.stop_loss,
-        take_profit_1: signal.take_profit_1,
-        take_profit_2: signal.take_profit_2,
-        position_size: positionSize,
-        status: 'OPEN'
-      };
-
-      setCurrentPosition(newPosition);
+      setCurrentPosition(createdPosition);
       setSignalState({ isScanning: false, preAlert: null, signal: null });
       setCurrentSignal(null);
       setBotState('position_locked');
@@ -1110,6 +1122,8 @@ const TradingDashboard = () => {
         oldSL={trailingStopData?.oldSL}
         newSL={trailingStopData?.newSL}
         currentPrice={trailingStopData?.currentPrice}
+        reason={trailingStopData?.reason}
+        gainProtected={trailingStopData?.gainProtected}
         onClose={() => setShowTrailingStopPopup(false)}
       />
 

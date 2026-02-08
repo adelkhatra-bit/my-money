@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../../lib/supabaseClient';
+import { VERSION, BUILD_HASH } from '../../version';
 import styles from './Navbar.module.css';
 
 const Navbar = ({ isSuperAdmin }) => {
@@ -22,6 +23,7 @@ const Navbar = ({ isSuperAdmin }) => {
             <path d="M3 3h18v18H3V3zm16 16V5H5v14h14zM11 7h2v10h-2V7zm4 3h2v7h-2v-7zm-8 2h2v5H7v-5z"/>
           </svg>
           <span>AI Trading Platform</span>
+          <span className={styles.version}>v{VERSION}+{BUILD_HASH}</span>
         </Link>
       </div>
 

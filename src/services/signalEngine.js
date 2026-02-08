@@ -78,33 +78,7 @@ export const generateSignal = async (market, platform, candles) => {
     };
   }
 
-  const reasons = [];
-  let confidence = 0;
-  let entryMin = currentPrice;
-  let entryMax = currentPrice;
-  let stopLoss = 0;
-  let takeProfit1 = 0;
-  let takeProfit2 = null;
-
-  const nearSupport = supports.length > 0 &&
-    Math.abs(currentPrice - supports[supports.length - 1]) / currentPrice < 0.03;
-
-  const nearResistance = resistances.length > 0 &&
-    Math.abs(currentPrice - resistances[resistances.length - 1]) / currentPrice < 0.03;
-
-  let suggestedDirection = null;
-
-  if (rsi < 30) {
-    suggestedDirection = 'LONG';
-    reasons.push(`RSI survendu (${rsi.toFixed(1)})`);
-    confidence += 60;
-  } else if (rsi > 70) {
-    suggestedDirection = 'SHORT';
-    reasons.push(`RSI suracheté (${rsi.toFixed(1)})`);
-    confidence += 60;
-  }
-
-  if (!suggestedDirection) {
+  if (rsi >= 30 && rsi <= 70) {
     return {
       signal: null,
       reason: `RSI neutre (${rsi.toFixed(1)}) - Pas d'opportunité claire`,
@@ -112,18 +86,27 @@ export const generateSignal = async (market, platform, candles) => {
     };
   }
 
-  if (macd.crossover === (suggestedDirection === 'LONG' ? 'bullish' : 'bearish')) {
-    reasons.push(`Croisement MACD ${suggestedDirection === 'LONG' ? 'haussier' : 'baissier'}`);
-    confidence += 15;
-  } else if (macd.trend === (suggestedDirection === 'LONG' ? 'bullish' : 'bearish')) {
-    reasons.push(`MACD ${suggestedDirection === 'LONG' ? 'haussier' : 'baissier'}`);
-    confidence += 10;
-  } else {
-    reasons.push('Configuration MACD neutre');
-    confidence += 5;
-  }
+  const reasons = [];
+  let confidence = 0;
+  const entryMin = currentPrice * 0.999;
+  const entryMax = currentPrice * 1.002;
+  const entryMid = (entryMin + entryMax) / 2;
 
-  if (suggestedDirection === 'LONG') {
+  let takeProfit1 = 0;
+  let takeProfit2 = null;
+  let stopLoss = 0;
+  let direction = null;
+
+  const nearSupport = supports.length > 0 &&
+    Math.abs(currentPrice - supports[0]) / currentPrice < 0.03;
+
+  const nearResistance = resistances.length > 0 &&
+    Math.abs(currentPrice - resistances[0]) / currentPrice < 0.03;
+
+  if (rsi < 30) {
+    reasons.push(`RSI survendu (${rsi.toFixed(1)})`);
+    confidence += 60;
+
     if (nearSupport) {
       reasons.push('Prix proche du support');
       confidence += 10;
@@ -148,10 +131,6 @@ export const generateSignal = async (market, platform, candles) => {
       confidence += 5;
     }
 
-    entryMin = currentPrice * 0.999;
-    entryMax = currentPrice * 1.002;
-    stopLoss = currentPrice * 0.985;
-
     if (resistances.length > 0 && resistances[0] > currentPrice * 1.015) {
       takeProfit1 = resistances[0] * 0.995;
       if (resistances.length > 1 && resistances[1] > currentPrice * 1.03) {
@@ -163,7 +142,11 @@ export const generateSignal = async (market, platform, candles) => {
       takeProfit1 = currentPrice * 1.025;
       takeProfit2 = currentPrice * 1.04;
     }
+
   } else {
+    reasons.push(`RSI suracheté (${rsi.toFixed(1)})`);
+    confidence += 60;
+
     if (nearResistance) {
       reasons.push('Prix proche de la résistance');
       confidence += 10;
@@ -188,10 +171,6 @@ export const generateSignal = async (market, platform, candles) => {
       confidence += 5;
     }
 
-    entryMin = currentPrice * 0.999;
-    entryMax = currentPrice * 1.001;
-    stopLoss = currentPrice * 1.015;
-
     if (supports.length > 0 && supports[0] < currentPrice) {
       takeProfit1 = supports[0];
       if (supports.length > 1 && supports[1] < supports[0]) {
@@ -205,53 +184,62 @@ export const generateSignal = async (market, platform, candles) => {
     }
   }
 
-  const entryMid = (entryMin + entryMax) / 2;
-
-  let direction = null;
-
-  if (takeProfit1 < entryMid && takeProfit2 && takeProfit2 < entryMid) {
+  if (takeProfit1 < entryMid && (!takeProfit2 || takeProfit2 < entryMid)) {
     direction = 'SHORT';
+    stopLoss = entryMid * 1.015;
   } else if (takeProfit1 > entryMid) {
     direction = 'LONG';
+    stopLoss = entryMid * 0.985;
   } else {
-    console.error('🚨 INCOHÉRENCE DÉTECTÉE - Signal rejeté', {
-      suggestedDirection,
+    console.error('🚨 INCOHÉRENCE - Signal rejeté', {
       entry: entryMid.toFixed(5),
-      stopLoss: stopLoss.toFixed(5),
       tp1: takeProfit1.toFixed(5),
       tp2: takeProfit2 ? takeProfit2.toFixed(5) : 'N/A',
-      problem: 'Les niveaux TP ne permettent pas de déterminer la direction'
+      problem: 'Position des TP ambiguë'
     });
     return {
       signal: null,
-      reason: 'Incohérence dans les niveaux TP - Signal rejeté',
+      reason: 'Incohérence dans les niveaux TP',
       analysis
     };
   }
 
-  if (direction === 'SHORT' && stopLoss <= entryMid) {
-    console.warn('⚠️ CORRECTION SL SHORT: SL était en dessous, repositionnement au-dessus');
-    stopLoss = entryMid * 1.015;
-  } else if (direction === 'LONG' && stopLoss >= entryMid) {
-    console.warn('⚠️ CORRECTION SL LONG: SL était au-dessus, repositionnement en dessous');
-    stopLoss = entryMid * 0.985;
+  if (direction === 'LONG' && takeProfit2 && takeProfit2 <= entryMid) {
+    console.warn('TP2 LONG incohérent - désactivé');
+    takeProfit2 = null;
+  } else if (direction === 'SHORT' && takeProfit2 && takeProfit2 >= entryMid) {
+    console.warn('TP2 SHORT incohérent - désactivé');
+    takeProfit2 = null;
   }
 
-  if (suggestedDirection !== direction) {
-    console.warn(`⚠️ DIRECTION CORRIGÉE: RSI suggérait ${suggestedDirection} mais TPs indiquent ${direction}`);
-    console.warn('→ Utilisation de la direction basée sur les TP (source de vérité)');
+  if (macd.crossover === (direction === 'LONG' ? 'bullish' : 'bearish')) {
+    reasons.push(`Croisement MACD ${direction === 'LONG' ? 'haussier' : 'baissier'}`);
+    confidence += 15;
+  } else if (macd.trend === (direction === 'LONG' ? 'bullish' : 'bearish')) {
+    reasons.push(`MACD ${direction === 'LONG' ? 'haussier' : 'baissier'}`);
+    confidence += 10;
+  } else {
+    reasons.push('Configuration MACD neutre');
+    confidence += 5;
   }
 
-  if (direction === 'LONG') {
-    if (takeProfit2 && takeProfit2 <= entryMid) {
-      console.warn('TP2 LONG incohérent - désactivé');
-      takeProfit2 = null;
-    }
-  } else if (direction === 'SHORT') {
-    if (takeProfit2 && takeProfit2 >= entryMid) {
-      console.warn('TP2 SHORT incohérent - désactivé');
-      takeProfit2 = null;
-    }
+  const isValid = direction === 'LONG'
+    ? (takeProfit1 > entryMid && stopLoss < entryMid)
+    : (takeProfit1 < entryMid && stopLoss > entryMid);
+
+  if (!isValid) {
+    console.error('🚨 VALIDATION FINALE ÉCHOUÉE', {
+      direction,
+      entry: entryMid.toFixed(5),
+      stopLoss: stopLoss.toFixed(5),
+      tp1: takeProfit1.toFixed(5),
+      tp2: takeProfit2 ? takeProfit2.toFixed(5) : 'N/A'
+    });
+    return {
+      signal: null,
+      reason: 'Validation finale échouée',
+      analysis
+    };
   }
 
   const riskReward = Math.abs((takeProfit1 - entryMin) / (entryMin - stopLoss));
@@ -262,16 +250,15 @@ export const generateSignal = async (market, platform, candles) => {
   const validUntil = new Date(now + validityMinutes * 60 * 1000);
   const signalId = `${marketKey}_${now}_${direction}`;
 
-  console.log('🔵 SIGNAL GENERATED:', {
+  console.log('✅ SIGNAL VALIDÉ:', {
     direction,
     currentPrice: currentPrice.toFixed(5),
     entry: entryMid.toFixed(5),
     stopLoss: stopLoss.toFixed(5),
     tp1: takeProfit1.toFixed(5),
     tp2: takeProfit2 ? takeProfit2.toFixed(5) : 'N/A',
-    isValid: direction === 'LONG'
-      ? (takeProfit1 > entryMid && stopLoss < entryMid)
-      : (takeProfit1 < entryMid && stopLoss > entryMid)
+    slPosition: direction === 'SHORT' ? 'AU-DESSUS' : 'EN DESSOUS',
+    tpPosition: direction === 'SHORT' ? 'EN DESSOUS' : 'AU-DESSUS'
   });
 
   return {

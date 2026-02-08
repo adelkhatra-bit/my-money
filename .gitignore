@@ -1,4 +1,4 @@
-﻿# --- secrets et fichiers locaux ---
+# --- secrets et fichiers locaux ---
 .env
 .env.*
 ! .env.example

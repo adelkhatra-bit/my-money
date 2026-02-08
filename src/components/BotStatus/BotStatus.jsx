@@ -30,8 +30,8 @@ export default function BotStatus({ isActive, currentState, nextScanIn, lastScan
         };
       case 'position_locked':
         return {
-          label: 'Position verrouillée',
-          icon: '🔒',
+          label: 'Position active - Bot en pause',
+          icon: '⏸️',
           className: styles.locked
         };
       default:
@@ -83,6 +83,17 @@ export default function BotStatus({ isActive, currentState, nextScanIn, lastScan
       {currentState === 'scanning' && (
         <div className={styles.compactProgress}>
           <div className={styles.progressBar}></div>
+        </div>
+      )}
+
+      {currentState === 'position_locked' && (
+        <div className={styles.positionInfo}>
+          <p className={styles.infoText}>
+            ⚠️ Le bot ne cherchera pas de nouvelles positions tant que la position actuelle est ouverte.
+          </p>
+          <p className={styles.infoSubtext}>
+            Le suivi temps réel continue pour gérer le Stop Loss et les Take Profits.
+          </p>
         </div>
       )}
     </div>

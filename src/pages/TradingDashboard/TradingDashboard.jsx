@@ -550,9 +550,62 @@ const TradingDashboard = () => {
     }
 
     if (credits.remaining <= 0) {
-      setScanStatus('Crédits épuisés - Rechargez votre compte');
+      setScanStatus('❌ Crédits épuisés - Rechargez votre compte');
       setBotState('idle');
       return;
+    }
+
+    if (currentPosition && currentPosition.status === 'OPEN') {
+      const dir = currentPosition.direction === 'LONG' ? '🟢 LONG' : '🔴 SHORT';
+      setScanStatus(`⏸️ Position active: ${dir} sur ${currentPosition.market} - Bot en pause`);
+      setBotState('position_locked');
+      return;
+    }
+
+    if (!activeAccount) {
+      setScanStatus('⚠️ Aucun compte actif - Configurez un compte');
+      setBotState('idle');
+      return;
+    }
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setScanStatus('⚠️ Non connecté');
+        setBotState('idle');
+        return;
+      }
+
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (!profile) {
+        setScanStatus('❌ Profil introuvable');
+        setBotState('idle');
+        return;
+      }
+
+      const { data: openPositions } = await supabase
+        .from('positions')
+        .select('*')
+        .eq('user_id', profile.id)
+        .eq('trading_account_id', activeAccount.id)
+        .eq('market', market)
+        .eq('status', 'OPEN');
+
+      if (openPositions && openPositions.length > 0) {
+        const position = openPositions[0];
+        const dir = position.direction === 'LONG' ? '🟢 LONG' : '🔴 SHORT';
+        setScanStatus(`⏸️ Position active: ${dir} - Bot en pause jusqu'à fermeture`);
+        setBotState('position_locked');
+        setCurrentPosition(position);
+        return;
+      }
+    } catch (error) {
+      console.error('Error checking positions:', error);
     }
 
     const now = new Date();
@@ -721,19 +774,19 @@ const TradingDashboard = () => {
 
   const handleAcceptSignal = async (signal) => {
     if (!activeAccount) {
-      alert('Veuillez configurer un compte de trading');
+      alert('⚠️ Veuillez configurer un compte de trading avant d\'ouvrir une position');
       return;
     }
 
     if (credits.remaining <= 0) {
-      alert('Vous n\'avez plus de crédits disponibles');
+      alert('❌ Vous n\'avez plus de crédits disponibles sur ce marché. Fermez une position ou rechargez vos crédits.');
       return;
     }
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        alert('Veuillez vous connecter');
+        alert('⚠️ Veuillez vous connecter pour ouvrir une position');
         return;
       }
 
@@ -744,22 +797,32 @@ const TradingDashboard = () => {
         .maybeSingle();
 
       if (!profile) {
-        alert('Profil introuvable');
+        alert('❌ Profil introuvable');
         return;
       }
 
       const { data: existingOpenPosition } = await supabase
         .from('positions')
-        .select('id')
+        .select('id, market, platform, direction, entry_price')
         .eq('user_id', profile.id)
+        .eq('trading_account_id', activeAccount.id)
         .eq('market', signal.market)
-        .eq('platform', signal.platform)
-        .eq('status', 'OPEN');
+        .eq('status', 'OPEN')
+        .maybeSingle();
 
-      if (existingOpenPosition && existingOpenPosition.length > 0) {
-        alert('Une position est déjà ouverte sur ce marché');
+      if (existingOpenPosition) {
+        const dir = existingOpenPosition.direction === 'LONG' ? '🟢 LONG' : '🔴 SHORT';
+        alert(`⚠️ UNE POSITION EST DÉJÀ OUVERTE\n\n${dir} sur ${existingOpenPosition.market}\nPrix d'entrée: ${existingOpenPosition.entry_price.toFixed(2)}\n\nVous devez fermer cette position avant d'en ouvrir une nouvelle.\n\nLe bot ne prendra pas de nouvelles positions tant que celle-ci est active.`);
         setSignalState({ isScanning: false, preAlert: null, signal: null });
         return;
+      }
+
+      if (credits.remaining < 2) {
+        const confirmed = window.confirm(`⚠️ ATTENTION: Il vous reste seulement ${credits.remaining} crédit(s)\n\nSi vous ouvrez cette position, vous ne pourrez plus en ouvrir d'autres jusqu'à ce que celle-ci se ferme.\n\nVoulez-vous continuer?`);
+        if (!confirmed) {
+          setSignalState({ isScanning: false, preAlert: null, signal: null });
+          return;
+        }
       }
 
       const entryPrice = (signal.entry_min + signal.entry_max) / 2;

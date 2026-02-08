@@ -9,7 +9,7 @@ import { getCurrentPrice } from './marketData';
 import { isMarketOpen } from './marketHours';
 
 const lastSignalTime = {};
-const COOLDOWN_MS = 10 * 60 * 1000;
+const COOLDOWN_MS = 2 * 60 * 1000;
 
 export const generateSignal = async (market, platform, candles) => {
   if (!isMarketOpen(market)) {
@@ -167,18 +167,18 @@ export const generateSignal = async (market, platform, candles) => {
 
   const riskReward = Math.abs((takeProfit1 - entryMin) / (entryMin - stopLoss));
 
-  if (confidence < 70) {
+  if (confidence < 50) {
     return {
       signal: null,
-      reason: `Confiance insuffisante (${confidence}% < 70%)`,
+      reason: `Confiance insuffisante (${confidence}% < 50%)`,
       analysis
     };
   }
 
-  if (riskReward < 1.5) {
+  if (riskReward < 1.2) {
     return {
       signal: null,
-      reason: `Risk/Reward insuffisant (${riskReward.toFixed(2)} < 1.5)`,
+      reason: `Risk/Reward insuffisant (${riskReward.toFixed(2)} < 1.2)`,
       analysis
     };
   }

@@ -315,8 +315,8 @@ const TradingDashboard = () => {
         return;
       }
 
-      const entryPrice = (signal.entryMin + signal.entryMax) / 2;
-      const positionSize = signal.lots || 1;
+      const entryPrice = (signal.entry_min + signal.entry_max) / 2;
+      const positionSize = riskCalc?.positionSize || 1;
 
       const { data: positionData, error: positionError } = await supabase
         .from('positions')
@@ -327,9 +327,9 @@ const TradingDashboard = () => {
           platform: signal.platform,
           direction: signal.direction,
           entry_price: entryPrice,
-          stop_loss: signal.sl,
-          take_profit_1: signal.tp1,
-          take_profit_2: signal.tp2,
+          stop_loss: signal.stop_loss,
+          take_profit_1: signal.take_profit_1,
+          take_profit_2: signal.take_profit_2,
           position_size: positionSize,
           status: 'OPEN'
         })
@@ -343,12 +343,12 @@ const TradingDashboard = () => {
           user_id: profile.id,
           market: signal.market,
           platform: signal.platform,
-          timeframe: timeframe,
+          timeframe: signal.timeframe || timeframe,
           direction: signal.direction,
           entry_price: entryPrice,
-          stop_loss: signal.sl,
-          take_profit_1: signal.tp1,
-          take_profit_2: signal.tp2,
+          stop_loss: signal.stop_loss,
+          take_profit_1: signal.take_profit_1,
+          take_profit_2: signal.take_profit_2,
           lots: positionSize,
           status: 'pris',
           result: 'en_cours'
@@ -376,9 +376,9 @@ const TradingDashboard = () => {
       const newPosition = {
         direction: signal.direction,
         entry_price: entryPrice,
-        stop_loss: signal.sl,
-        take_profit_1: signal.tp1,
-        take_profit_2: signal.tp2,
+        stop_loss: signal.stop_loss,
+        take_profit_1: signal.take_profit_1,
+        take_profit_2: signal.take_profit_2,
         position_size: positionSize,
         status: 'OPEN'
       };

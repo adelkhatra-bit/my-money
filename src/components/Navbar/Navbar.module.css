@@ -1,5 +1,5 @@
 .navbar {
-  background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+  background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
   padding: 1rem 2rem;
   display: flex;
   justify-content: space-between;
@@ -8,6 +8,7 @@
   position: sticky;
   top: 0;
   z-index: 1000;
+  backdrop-filter: blur(10px);
 }
 
 .brand {
@@ -60,9 +61,9 @@
 }
 
 .navButton.active {
-  background: rgba(255, 255, 255, 0.25);
-  border-color: rgba(255, 255, 255, 0.4);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  border-color: rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 16px rgba(59, 130, 246, 0.4);
 }
 
 .adminButton {

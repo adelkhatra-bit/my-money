@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { supabase } from './lib/supabaseClient';
+import Dashboard from './pages/Dashboard/Dashboard';
 import TradingDashboard from './pages/TradingDashboard/TradingDashboard';
 import Login from './pages/Auth/Login';
 import Signup from './pages/Auth/Signup';
 import AccountManagement from './pages/AccountManagement/AccountManagement';
 import Referral from './pages/Referral/Referral';
 import SuperAdmin from './pages/SuperAdmin/SuperAdmin';
+import Profil from './pages/Profil/Profil';
 import LegalDisclaimer from './components/LegalDisclaimer/LegalDisclaimer';
 import Navbar from './components/Navbar/Navbar';
 import './App.css';
@@ -104,6 +106,10 @@ function App() {
         />
         <Route
           path="/"
+          element={user ? <Dashboard /> : <Navigate to="/login" />}
+        />
+        <Route
+          path="/trading"
           element={user ? <TradingDashboard /> : <Navigate to="/login" />}
         />
         <Route
@@ -113,6 +119,10 @@ function App() {
         <Route
           path="/referral"
           element={user ? <Referral /> : <Navigate to="/login" />}
+        />
+        <Route
+          path="/profil"
+          element={user ? <Profil /> : <Navigate to="/login" />}
         />
         <Route
           path="/admin"

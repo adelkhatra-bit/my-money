@@ -25,33 +25,60 @@ const Referral = () => {
 
       if (!profile) return;
 
-      const { data: refData } = await supabase
+      let { data: refData } = await supabase
         .from('referral_system')
         .select('*')
         .eq('user_id', profile.id)
         .maybeSingle();
 
-      if (refData) {
-        setReferralData(refData);
+      if (!refData) {
+        const referralCode = generateReferralCode();
+        const { data: newRefData, error } = await supabase
+          .from('referral_system')
+          .insert({
+            user_id: profile.id,
+            referral_code: referralCode,
+            referrals_count: 0,
+            bonus_credits_earned: 0
+          })
+          .select()
+          .single();
 
-        const { data: refLinks } = await supabase
-          .from('referral_links')
-          .select(`
-            *,
-            referred_user:referred_user_id (
-              email
-            )
-          `)
-          .eq('referrer_id', profile.id)
-          .order('created_at', { ascending: false });
-
-        setReferrals(refLinks || []);
+        if (error) {
+          console.error('Error creating referral system:', error);
+          return;
+        }
+        refData = newRefData;
       }
+
+      setReferralData(refData);
+
+      const { data: refLinks } = await supabase
+        .from('referral_links')
+        .select(`
+          *,
+          referred_user:referred_user_id (
+            email
+          )
+        `)
+        .eq('referrer_id', profile.id)
+        .order('created_at', { ascending: false });
+
+      setReferrals(refLinks || []);
     } catch (error) {
       console.error('Error loading referral data:', error);
     } finally {
       setLoading(false);
     }
+  };
+
+  const generateReferralCode = () => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let result = '';
+    for (let i = 0; i < 8; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
   };
 
   const copyReferralLink = () => {

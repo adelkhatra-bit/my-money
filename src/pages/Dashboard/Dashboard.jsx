@@ -223,7 +223,7 @@ export default function Dashboard() {
       <div className={styles.quickActions}>
         <h2>Actions Rapides</h2>
         <div className={styles.actionsGrid}>
-          <a href="/" className={styles.actionCard}>
+          <a href="/trading" className={styles.actionCard}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M3 3h18v18H3V3zm16 16V5H5v14h14zM11 7h2v10h-2V7zm4 3h2v7h-2v-7zm-8 2h2v5H7v-5z"/>
             </svg>
@@ -250,6 +250,17 @@ export default function Dashboard() {
             <h3>Parrainer des amis</h3>
             <p>Gagnez des crédits bonus</p>
           </a>
+
+          {needsCredits && (
+            <div className={styles.actionCard} style={{cursor: 'default', opacity: 0.8}}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M12 6v6l4 2"/>
+              </svg>
+              <h3>Recharger des crédits</h3>
+              <p>Packs de trading disponibles prochainement</p>
+            </div>
+          )}
         </div>
       </div>
     </div>

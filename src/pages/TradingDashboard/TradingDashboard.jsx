@@ -1105,7 +1105,7 @@ const TradingDashboard = () => {
           <>
             <TradingChart
               candles={candles}
-              signal={null}
+              signal={signalState.signal || currentSignal}
               position={currentPosition}
               supports={credits.remaining > 0 ? supports : []}
               resistances={credits.remaining > 0 ? resistances : []}

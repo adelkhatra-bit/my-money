@@ -13,8 +13,48 @@ const AccountManagement = () => {
     capital: '',
     risk_per_trade_percent: '0.5',
     max_daily_loss: '',
-    max_total_loss: ''
+    max_total_loss: '',
+    currency: 'USD'
   });
+
+  const calculateRiskLimits = (capital) => {
+    const cap = parseFloat(capital);
+    if (!cap || cap < 200) return { daily: '', total: '' };
+
+    let dailyPercent, totalPercent;
+
+    if (cap < 500) {
+      dailyPercent = 3;
+      totalPercent = 15;
+    } else if (cap < 1000) {
+      dailyPercent = 3;
+      totalPercent = 15;
+    } else if (cap < 5000) {
+      dailyPercent = 4;
+      totalPercent = 20;
+    } else if (cap < 10000) {
+      dailyPercent = 4;
+      totalPercent = 20;
+    } else {
+      dailyPercent = 5;
+      totalPercent = 25;
+    }
+
+    return {
+      daily: (cap * dailyPercent / 100).toFixed(2),
+      total: (cap * totalPercent / 100).toFixed(2)
+    };
+  };
+
+  const handleCapitalChange = (value) => {
+    const limits = calculateRiskLimits(value);
+    setNewAccount({
+      ...newAccount,
+      capital: value,
+      max_daily_loss: limits.daily,
+      max_total_loss: limits.total
+    });
+  };
 
   useEffect(() => {
     loadAccounts();
@@ -69,8 +109,11 @@ const AccountManagement = () => {
         .from('trading_accounts')
         .insert({
           user_id: profile.id,
-          ...newAccount,
+          name: newAccount.name,
+          platform: newAccount.platform,
+          market: newAccount.market,
           capital: parseFloat(newAccount.capital),
+          currency: newAccount.currency,
           risk_per_trade_percent: parseFloat(newAccount.risk_per_trade_percent),
           max_daily_loss: newAccount.max_daily_loss ? parseFloat(newAccount.max_daily_loss) : null,
           max_total_loss: newAccount.max_total_loss ? parseFloat(newAccount.max_total_loss) : null
@@ -87,7 +130,8 @@ const AccountManagement = () => {
         capital: '',
         risk_per_trade_percent: '0.5',
         max_daily_loss: '',
-        max_total_loss: ''
+        max_total_loss: '',
+        currency: 'USD'
       });
       loadAccounts();
     } catch (error) {
@@ -174,15 +218,35 @@ const AccountManagement = () => {
 
           <div className={styles.formRow}>
             <div className={styles.formGroup}>
-              <label>Capital ($) *</label>
+              <label>Devise *</label>
+              <select
+                value={newAccount.currency}
+                onChange={(e) => {
+                  setNewAccount({ ...newAccount, currency: e.target.value });
+                  if (newAccount.capital) {
+                    handleCapitalChange(newAccount.capital);
+                  }
+                }}
+                required
+              >
+                <option value="USD">USD ($)</option>
+                <option value="EUR">EUR (€)</option>
+                <option value="GBP">GBP (£)</option>
+              </select>
+            </div>
+
+            <div className={styles.formGroup}>
+              <label>Capital *</label>
               <input
                 type="number"
                 step="0.01"
+                min="200"
                 value={newAccount.capital}
-                onChange={(e) => setNewAccount({ ...newAccount, capital: e.target.value })}
-                placeholder="Ex: 10000"
+                onChange={(e) => handleCapitalChange(e.target.value)}
+                placeholder="Minimum 200"
                 required
               />
+              <small className={styles.helperText}>Minimum recommandé : 200 {newAccount.currency}</small>
             </div>
 
             <div className={styles.formGroup}>
@@ -200,25 +264,35 @@ const AccountManagement = () => {
 
           <div className={styles.formRow}>
             <div className={styles.formGroup}>
-              <label>Perte max journalière ($)</label>
+              <label>Perte max journalière ({newAccount.currency})</label>
               <input
                 type="number"
                 step="0.01"
                 value={newAccount.max_daily_loss}
                 onChange={(e) => setNewAccount({ ...newAccount, max_daily_loss: e.target.value })}
-                placeholder="Optionnel"
+                placeholder="Auto-calculé"
               />
+              <small className={styles.helperText}>
+                {newAccount.capital && parseFloat(newAccount.capital) >= 200 && newAccount.max_daily_loss
+                  ? `${((parseFloat(newAccount.max_daily_loss) / parseFloat(newAccount.capital)) * 100).toFixed(1)}% du capital`
+                  : 'Calculé automatiquement selon votre capital'}
+              </small>
             </div>
 
             <div className={styles.formGroup}>
-              <label>Perte max totale ($)</label>
+              <label>Perte max totale ({newAccount.currency})</label>
               <input
                 type="number"
                 step="0.01"
                 value={newAccount.max_total_loss}
                 onChange={(e) => setNewAccount({ ...newAccount, max_total_loss: e.target.value })}
-                placeholder="Optionnel"
+                placeholder="Auto-calculé"
               />
+              <small className={styles.helperText}>
+                {newAccount.capital && parseFloat(newAccount.capital) >= 200 && newAccount.max_total_loss
+                  ? `${((parseFloat(newAccount.max_total_loss) / parseFloat(newAccount.capital)) * 100).toFixed(1)}% du capital`
+                  : 'Calculé automatiquement selon votre capital'}
+              </small>
             </div>
           </div>
 
@@ -257,12 +331,30 @@ const AccountManagement = () => {
                 </div>
                 <div className={styles.detail}>
                   <span className={styles.detailLabel}>Capital:</span>
-                  <span className={styles.detailValue}>${account.capital.toFixed(2)}</span>
+                  <span className={styles.detailValue}>
+                    {account.capital.toFixed(2)} {account.currency || 'USD'}
+                  </span>
                 </div>
                 <div className={styles.detail}>
                   <span className={styles.detailLabel}>Risque/trade:</span>
                   <span className={styles.detailValue}>{account.risk_per_trade_percent}%</span>
                 </div>
+                {account.max_daily_loss && (
+                  <div className={styles.detail}>
+                    <span className={styles.detailLabel}>Perte max/jour:</span>
+                    <span className={styles.detailValue}>
+                      {account.max_daily_loss.toFixed(2)} {account.currency || 'USD'}
+                    </span>
+                  </div>
+                )}
+                {account.max_total_loss && (
+                  <div className={styles.detail}>
+                    <span className={styles.detailLabel}>Perte max totale:</span>
+                    <span className={styles.detailValue}>
+                      {account.max_total_loss.toFixed(2)} {account.currency || 'USD'}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
           ))

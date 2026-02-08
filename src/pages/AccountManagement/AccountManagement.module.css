@@ -88,6 +88,13 @@
   border-color: #00e676;
 }
 
+.helperText {
+  color: #00e676;
+  font-size: 12px;
+  margin-top: 4px;
+  font-style: italic;
+}
+
 .submitBtn {
   background: linear-gradient(135deg, #00e676, #00c853);
   border: none;

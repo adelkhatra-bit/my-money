@@ -1,0 +1,249 @@
+.container {
+  min-height: 100vh;
+  background: #0a0a0a;
+  padding: 40px 20px;
+  color: #fff;
+}
+
+.loading {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #999;
+}
+
+.header {
+  max-width: 1400px;
+  margin: 0 auto 40px;
+}
+
+.header h1 {
+  font-size: 32px;
+  color: #00e676;
+  margin-bottom: 24px;
+}
+
+.stats {
+  display: flex;
+  gap: 20px;
+}
+
+.statCard {
+  background: #1a1a1a;
+  padding: 20px;
+  border-radius: 8px;
+  min-width: 150px;
+}
+
+.statLabel {
+  color: #999;
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+
+.statValue {
+  color: #fff;
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.usersTable {
+  max-width: 1400px;
+  margin: 0 auto;
+  background: #1a1a1a;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+thead {
+  background: #2a2a2a;
+}
+
+th {
+  padding: 16px;
+  text-align: left;
+  color: #999;
+  font-size: 14px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+td {
+  padding: 16px;
+  border-top: 1px solid #2a2a2a;
+  color: #ccc;
+}
+
+.adminBadge,
+.userBadge {
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.adminBadge {
+  background: rgba(255, 193, 7, 0.2);
+  color: #ffc107;
+}
+
+.userBadge {
+  background: rgba(255, 255, 255, 0.1);
+  color: #999;
+}
+
+.positive {
+  color: #00e676;
+}
+
+.negative {
+  color: #e91e63;
+}
+
+.creditsList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.creditBadge {
+  background: rgba(0, 230, 118, 0.1);
+  color: #00e676;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.noCredits {
+  color: #666;
+  font-style: italic;
+}
+
+.actionBtn {
+  background: linear-gradient(135deg, #00e676, #00c853);
+  border: none;
+  color: #000;
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.actionBtn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 230, 118, 0.4);
+}
+
+.creditModal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modalContent {
+  background: #1a1a1a;
+  border-radius: 12px;
+  padding: 32px;
+  max-width: 500px;
+  width: 90%;
+}
+
+.modalContent h3 {
+  color: #00e676;
+  font-size: 20px;
+  margin-bottom: 24px;
+}
+
+.creditForm {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.formGroup label {
+  color: #999;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.formGroup input,
+.formGroup select {
+  background: #2a2a2a;
+  border: 2px solid #3a3a3a;
+  color: #fff;
+  padding: 12px;
+  border-radius: 6px;
+  font-size: 16px;
+}
+
+.formGroup input:focus,
+.formGroup select:focus {
+  outline: none;
+  border-color: #00e676;
+}
+
+.modalActions {
+  display: flex;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.cancelBtn,
+.submitBtn {
+  flex: 1;
+  padding: 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.cancelBtn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
+.submitBtn {
+  background: linear-gradient(135deg, #00e676, #00c853);
+  border: none;
+  color: #000;
+}
+
+.submitBtn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 230, 118, 0.4);
+}
+
+@media (max-width: 1024px) {
+  .usersTable {
+    overflow-x: auto;
+  }
+
+  table {
+    min-width: 900px;
+  }
+}

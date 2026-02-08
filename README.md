@@ -1,70 +1,98 @@
-# Getting Started with Create React App
+# AI Trading Platform
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+Plateforme professionnelle de trading assisté par IA qui génère des signaux intelligents pour BTC, ETH, NASDAQ et GOLD.
 
-## Available Scripts
+## Fonctionnalités
 
-In the project directory, you can run:
+- **Analyse technique IA** : RSI, MACD, Order Blocks, Support/Résistance
+- **Signaux intelligents** : Confirmations multiples, confiance 70%+, RR 1.5:1+
+- **Validation horaires de marché** : NASDAQ/GOLD fermés le week-end
+- **Gestion multi-comptes** : Support Binance, Bybit, FTMO, TopStep
+- **Calcul automatique du risque** : Position sizing selon capital et règles prop firm
+- **Système de crédits** : Paiement par nombre de positions
+- **Chart professionnel** : TradingView-like avec drag/zoom
+- **Popup avec timer** : Zone d'entrée, SL, TP, countdown
+- **Alertes audio** : Bip pour signaux, TP et SL
+- **Stats complètes** : PnL, Winrate, Historique
+- **Super Admin** : Gestion utilisateurs et crédits
+- **Conformité UE** : Disclaimers légaux complets
 
-### `npm start`
+## Installation
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+```bash
+npm install
+```
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+## Commandes
 
-### `npm test`
+```bash
+npm start           # Serveur de développement
+npm run build       # Build de production
+npm test            # Tests
+```
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+## Configuration
 
-### `npm run build`
+Variables d'environnement requises dans `.env`:
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+```
+REACT_APP_SUPABASE_URL=https://votre-projet.supabase.co
+REACT_APP_SUPABASE_ANON_KEY=votre-cle-anonyme
+```
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+## Architecture
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+- **Frontend** : React, React Router
+- **Chart** : lightweight-charts (TradingView-like)
+- **Backend** : Supabase (Database, Auth, RLS)
+- **Market Data** : WebSocket Binance (temps réel)
+- **Indicateurs** : technicalindicators library
 
-### `npm run eject`
+## Documentation Complète
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+Voir `PLATFORM_DOCUMENTATION.md` pour la documentation détaillée.
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+## Avertissement
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+Cette plateforme est un outil d'aide à la décision uniquement. Le trading comporte des risques importants. Vous êtes seul responsable de vos décisions de trading.
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+## Structure du Projet
 
-## Learn More
+```
+src/
+├── components/          # Composants réutilisables
+│   ├── TradingChart/   # Chart professionnel
+│   ├── SignalPopup/    # Popup de signal
+│   └── LegalDisclaimer/
+├── pages/              # Pages principales
+│   ├── TradingDashboard/
+│   ├── AccountManagement/
+│   ├── SuperAdmin/
+│   └── Auth/
+├── services/           # Logique métier
+│   ├── marketData.js
+│   ├── signalEngine.js
+│   ├── indicators.js
+│   ├── riskCalculator.js
+│   └── audioAlerts.js
+└── lib/
+    └── supabaseClient.js
+```
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+## Premiers Pas
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+1. Créer un compte via `/signup`
+2. Accepter le disclaimer légal
+3. Créer un compte de trading dans "Gestion des Comptes"
+4. Contacter le Super Admin pour obtenir des crédits
+5. Sélectionner marché + plateforme + timeframe
+6. Activer le mode AUTO ou cliquer "Scanner"
+7. Attendre un signal et ACCEPTER/REFUSER
 
-### Code Splitting
+## Support
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+Pour questions ou problèmes, vérifier:
+- Marché ouvert
+- Crédits disponibles
+- Compte configuré et actif
+- Plateforme correspond au marché

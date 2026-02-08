@@ -1,0 +1,219 @@
+import React, { useEffect, useRef, useState } from 'react';
+import { createChart } from 'lightweight-charts';
+import styles from './TradingChart.module.css';
+
+const TradingChart = ({ candles, signal, position, supports, resistances, orderBlocks }) => {
+  const chartContainerRef = useRef(null);
+  const chartRef = useRef(null);
+  const candleSeriesRef = useRef(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  useEffect(() => {
+    if (!chartContainerRef.current || candles.length === 0) return;
+
+    const chart = createChart(chartContainerRef.current, {
+      layout: {
+        background: { color: '#1a1a1a' },
+        textColor: '#d1d4dc',
+      },
+      grid: {
+        vertLines: { color: '#2b2b2b' },
+        horzLines: { color: '#2b2b2b' },
+      },
+      width: chartContainerRef.current.clientWidth,
+      height: isFullscreen ? window.innerHeight - 100 : 600,
+      rightPriceScale: {
+        borderColor: '#3a3a3a',
+      },
+      timeScale: {
+        borderColor: '#3a3a3a',
+        rightOffset: 50,
+        timeVisible: true,
+        secondsVisible: false,
+      },
+      crosshair: {
+        mode: 1,
+        vertLine: {
+          width: 1,
+          color: '#758696',
+          style: 3,
+        },
+        horzLine: {
+          width: 1,
+          color: '#758696',
+          style: 3,
+        },
+      },
+    });
+
+    const candleSeries = chart.addCandlestickSeries({
+      upColor: '#26a69a',
+      downColor: '#ef5350',
+      borderVisible: false,
+      wickUpColor: '#26a69a',
+      wickDownColor: '#ef5350',
+    });
+
+    candleSeries.setData(candles);
+
+    if (supports && supports.length > 0) {
+      supports.forEach(support => {
+        candleSeries.createPriceLine({
+          price: support,
+          color: '#4caf50',
+          lineWidth: 2,
+          lineStyle: 2,
+          axisLabelVisible: true,
+          title: 'Support',
+        });
+      });
+    }
+
+    if (resistances && resistances.length > 0) {
+      resistances.forEach(resistance => {
+        candleSeries.createPriceLine({
+          price: resistance,
+          color: '#f44336',
+          lineWidth: 2,
+          lineStyle: 2,
+          axisLabelVisible: true,
+          title: 'Resistance',
+        });
+      });
+    }
+
+    if (signal && signal.status === 'ACTIVE') {
+      candleSeries.createPriceLine({
+        price: signal.entry_min,
+        color: '#ffc107',
+        lineWidth: 2,
+        axisLabelVisible: true,
+        title: `Entry Min ${signal.direction}`,
+      });
+
+      candleSeries.createPriceLine({
+        price: signal.entry_max,
+        color: '#ffc107',
+        lineWidth: 2,
+        axisLabelVisible: true,
+        title: 'Entry Max',
+      });
+
+      candleSeries.createPriceLine({
+        price: signal.stop_loss,
+        color: '#e91e63',
+        lineWidth: 3,
+        axisLabelVisible: true,
+        title: 'Stop Loss',
+      });
+
+      candleSeries.createPriceLine({
+        price: signal.take_profit_1,
+        color: '#00e676',
+        lineWidth: 3,
+        axisLabelVisible: true,
+        title: 'TP1',
+      });
+
+      if (signal.take_profit_2) {
+        candleSeries.createPriceLine({
+          price: signal.take_profit_2,
+          color: '#00e676',
+          lineWidth: 3,
+          axisLabelVisible: true,
+          title: 'TP2',
+        });
+      }
+    }
+
+    if (position && position.status === 'OPEN') {
+      candleSeries.createPriceLine({
+        price: position.entry_price,
+        color: '#2196f3',
+        lineWidth: 3,
+        axisLabelVisible: true,
+        title: `Entry ${position.direction}`,
+      });
+
+      candleSeries.createPriceLine({
+        price: position.stop_loss,
+        color: '#e91e63',
+        lineWidth: 3,
+        axisLabelVisible: true,
+        title: 'SL',
+      });
+
+      candleSeries.createPriceLine({
+        price: position.take_profit_1,
+        color: '#00e676',
+        lineWidth: 3,
+        axisLabelVisible: true,
+        title: 'TP1',
+      });
+
+      if (position.take_profit_2) {
+        candleSeries.createPriceLine({
+          price: position.take_profit_2,
+          color: '#00e676',
+          lineWidth: 3,
+          axisLabelVisible: true,
+          title: 'TP2',
+        });
+      }
+    }
+
+    chartRef.current = chart;
+    candleSeriesRef.current = candleSeries;
+
+    const handleResize = () => {
+      if (chart && chartContainerRef.current) {
+        chart.applyOptions({
+          width: chartContainerRef.current.clientWidth,
+          height: isFullscreen ? window.innerHeight - 100 : 600,
+        });
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      if (chart) {
+        chart.remove();
+      }
+    };
+  }, [candles, signal, position, supports, resistances, orderBlocks, isFullscreen]);
+
+  useEffect(() => {
+    if (candleSeriesRef.current && candles.length > 0) {
+      const latestCandle = candles[candles.length - 1];
+      candleSeriesRef.current.update(latestCandle);
+    }
+  }, [candles]);
+
+  const toggleFullscreen = () => {
+    setIsFullscreen(!isFullscreen);
+  };
+
+  const recenter = () => {
+    if (chartRef.current) {
+      chartRef.current.timeScale().fitContent();
+    }
+  };
+
+  return (
+    <div className={`${styles.chartWrapper} ${isFullscreen ? styles.fullscreen : ''}`}>
+      <div className={styles.chartControls}>
+        <button onClick={recenter} className={styles.controlBtn}>
+          Recentrer
+        </button>
+        <button onClick={toggleFullscreen} className={styles.controlBtn}>
+          {isFullscreen ? 'Quitter plein écran' : 'Plein écran'}
+        </button>
+      </div>
+      <div ref={chartContainerRef} className={styles.chartContainer} />
+    </div>
+  );
+};
+
+export default TradingChart;

@@ -186,8 +186,18 @@ export const generateSignal = async (market, platform, candles, userAccount = nu
 
   if (takeProfit1 < entryMid) {
     direction = 'SHORT';
+    console.log('📉 DIRECTION DÉTECTÉE: SHORT (TP1 < Entry)', {
+      entry: entryMid.toFixed(5),
+      tp1: takeProfit1.toFixed(5),
+      difference: (entryMid - takeProfit1).toFixed(5)
+    });
   } else if (takeProfit1 > entryMid) {
     direction = 'LONG';
+    console.log('📈 DIRECTION DÉTECTÉE: LONG (TP1 > Entry)', {
+      entry: entryMid.toFixed(5),
+      tp1: takeProfit1.toFixed(5),
+      difference: (takeProfit1 - entryMid).toFixed(5)
+    });
   } else {
     console.error('🚨 INCOHÉRENCE - Signal rejeté', {
       entry: entryMid.toFixed(5),

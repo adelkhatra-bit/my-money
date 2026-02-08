@@ -10,9 +10,12 @@ const SuperAdmin = () => {
     market: 'BTC',
     credits: ''
   });
+  const [trialRequests, setTrialRequests] = useState([]);
+  const [activeTab, setActiveTab] = useState('users');
 
   useEffect(() => {
     loadUsers();
+    loadTrialRequests();
   }, []);
 
   const loadUsers = async () => {
@@ -62,6 +65,65 @@ const SuperAdmin = () => {
     }
   };
 
+  const loadTrialRequests = async () => {
+    try {
+      const { data: requests } = await supabase
+        .from('free_trial_requests')
+        .select(`
+          *,
+          user_profiles!inner(email)
+        `)
+        .eq('status', 'PENDING')
+        .order('created_at', { ascending: false });
+
+      setTrialRequests(requests || []);
+    } catch (error) {
+      console.error('Error loading trial requests:', error);
+    }
+  };
+
+  const handleApproveTrial = async (requestId) => {
+    try {
+      const { data, error } = await supabase.rpc('approve_free_trial', {
+        request_id: requestId,
+        credits_to_grant: 5
+      });
+
+      if (error) throw error;
+
+      if (data && data.success) {
+        alert('✅ Test gratuit approuvé');
+        loadTrialRequests();
+        loadUsers();
+      } else {
+        alert('❌ ' + (data?.error || 'Erreur'));
+      }
+    } catch (error) {
+      console.error('Error approving trial:', error);
+      alert('❌ Erreur: ' + error.message);
+    }
+  };
+
+  const handleRejectTrial = async (requestId) => {
+    try {
+      const { data, error } = await supabase.rpc('reject_free_trial', {
+        request_id: requestId
+      });
+
+      if (error) throw error;
+
+      if (data && data.success) {
+        alert('✅ Demande refusée');
+        loadTrialRequests();
+      } else {
+        alert('❌ ' + (data?.error || 'Erreur'));
+      }
+    } catch (error) {
+      console.error('Error rejecting trial:', error);
+      alert('❌ Erreur: ' + error.message);
+    }
+  };
+
   const handleAddCredits = async (e) => {
     e.preventDefault();
 
@@ -81,7 +143,7 @@ const SuperAdmin = () => {
         await supabase
           .from('position_credits')
           .update({
-            total_credits: existingCredits.total_credits + creditsAmount
+            bonus_credits: (existingCredits.bonus_credits || 0) + creditsAmount
           })
           .eq('id', existingCredits.id);
       } else {
@@ -90,7 +152,8 @@ const SuperAdmin = () => {
           .insert({
             user_id: selectedUser.id,
             market: creditForm.market,
-            total_credits: creditsAmount,
+            bonus_credits: creditsAmount,
+            purchased_credits: 0,
             used_credits: 0
           });
       }
@@ -124,7 +187,26 @@ const SuperAdmin = () => {
               {users.reduce((sum, u) => sum + u.stats.totalTrades, 0)}
             </div>
           </div>
+          <div className={styles.statCard}>
+            <div className={styles.statLabel}>Demandes en attente</div>
+            <div className={styles.statValue}>{trialRequests.length}</div>
+          </div>
         </div>
+      </div>
+
+      <div className={styles.tabs}>
+        <button
+          className={`${styles.tab} ${activeTab === 'users' ? styles.activeTab : ''}`}
+          onClick={() => setActiveTab('users')}
+        >
+          Utilisateurs
+        </button>
+        <button
+          className={`${styles.tab} ${activeTab === 'requests' ? styles.activeTab : ''}`}
+          onClick={() => setActiveTab('requests')}
+        >
+          Demandes de Test ({trialRequests.length})
+        </button>
       </div>
 
       {selectedUser && (
@@ -170,63 +252,111 @@ const SuperAdmin = () => {
         </div>
       )}
 
-      <div className={styles.usersTable}>
-        <table>
-          <thead>
-            <tr>
-              <th>Email</th>
-              <th>Admin</th>
-              <th>Trades</th>
-              <th>Wins</th>
-              <th>Losses</th>
-              <th>Winrate</th>
-              <th>PnL Total</th>
-              <th>Crédits</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {users.map((user) => (
-              <tr key={user.id}>
-                <td>{user.email}</td>
-                <td>
-                  <span className={user.is_super_admin ? styles.adminBadge : styles.userBadge}>
-                    {user.is_super_admin ? 'Admin' : 'User'}
-                  </span>
-                </td>
-                <td>{user.stats.totalTrades}</td>
-                <td className={styles.positive}>{user.stats.wins}</td>
-                <td className={styles.negative}>{user.stats.losses}</td>
-                <td>{user.stats.winrate}%</td>
-                <td className={parseFloat(user.stats.totalPnL) >= 0 ? styles.positive : styles.negative}>
-                  ${user.stats.totalPnL}
-                </td>
-                <td>
-                  {user.credits.length > 0 ? (
-                    <div className={styles.creditsList}>
-                      {user.credits.map((credit) => (
-                        <div key={credit.id} className={styles.creditBadge}>
-                          {credit.market}: {credit.remaining_credits}/{credit.total_credits}
+      {activeTab === 'requests' && (
+        <div className={styles.requestsSection}>
+          {trialRequests.length === 0 ? (
+            <div className={styles.emptyState}>
+              <p>Aucune demande en attente</p>
+            </div>
+          ) : (
+            <div className={styles.requestsTable}>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Email</th>
+                    <th>Date de demande</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {trialRequests.map((request) => (
+                    <tr key={request.id}>
+                      <td>{request.user_profiles.email}</td>
+                      <td>{new Date(request.created_at).toLocaleString('fr-FR')}</td>
+                      <td>
+                        <div className={styles.actionButtons}>
+                          <button
+                            className={styles.approveBtn}
+                            onClick={() => handleApproveTrial(request.id)}
+                          >
+                            ✓ Approuver
+                          </button>
+                          <button
+                            className={styles.rejectBtn}
+                            onClick={() => handleRejectTrial(request.id)}
+                          >
+                            ✗ Refuser
+                          </button>
                         </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <span className={styles.noCredits}>Aucun</span>
-                  )}
-                </td>
-                <td>
-                  <button
-                    className={styles.actionBtn}
-                    onClick={() => setSelectedUser(user)}
-                  >
-                    + Crédits
-                  </button>
-                </td>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {activeTab === 'users' && (
+        <div className={styles.usersTable}>
+          <table>
+            <thead>
+              <tr>
+                <th>Email</th>
+                <th>Admin</th>
+                <th>Trades</th>
+                <th>Wins</th>
+                <th>Losses</th>
+                <th>Winrate</th>
+                <th>PnL Total</th>
+                <th>Crédits</th>
+                <th>Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {users.map((user) => (
+                <tr key={user.id}>
+                  <td>{user.email}</td>
+                  <td>
+                    <span className={user.is_super_admin ? styles.adminBadge : styles.userBadge}>
+                      {user.is_super_admin ? 'Admin' : 'User'}
+                    </span>
+                  </td>
+                  <td>{user.stats.totalTrades}</td>
+                  <td className={styles.positive}>{user.stats.wins}</td>
+                  <td className={styles.negative}>{user.stats.losses}</td>
+                  <td>{user.stats.winrate}%</td>
+                  <td className={parseFloat(user.stats.totalPnL) >= 0 ? styles.positive : styles.negative}>
+                    ${user.stats.totalPnL}
+                  </td>
+                  <td>
+                    {user.credits.length > 0 ? (
+                      <div className={styles.creditsList}>
+                        {user.credits.map((credit) => (
+                          <div key={credit.id} className={styles.creditBadge}>
+                            {credit.market}: {credit.remaining_credits}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className={styles.noCredits}>Aucun</span>
+                    )}
+                  </td>
+                  <td>
+                    <button
+                      className={styles.actionBtn}
+                      onClick={() => setSelectedUser(user)}
+                    >
+                      + Crédits
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 };

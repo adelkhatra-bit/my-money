@@ -247,3 +247,88 @@ td {
     min-width: 900px;
   }
 }
+
+.tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 30px;
+  border-bottom: 2px solid #2a2a2a;
+}
+
+.tab {
+  background: transparent;
+  border: none;
+  color: #999;
+  padding: 15px 30px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+}
+
+.tab:hover {
+  color: #fff;
+}
+
+.activeTab {
+  color: #00e676;
+  border-bottom-color: #00e676;
+}
+
+.requestsSection {
+  margin-top: 30px;
+}
+
+.requestsTable {
+  background: #1a1a1a;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.emptyState {
+  background: #1a1a1a;
+  border-radius: 12px;
+  padding: 60px 20px;
+  text-align: center;
+  color: #999;
+  font-size: 18px;
+}
+
+.actionButtons {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.approveBtn, .rejectBtn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.approveBtn {
+  background: linear-gradient(135deg, #00e676, #00c853);
+  color: #000;
+}
+
+.approveBtn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(0, 230, 118, 0.3);
+}
+
+.rejectBtn {
+  background: #2a2a2a;
+  color: #f44336;
+  border: 1px solid #f44336;
+}
+
+.rejectBtn:hover {
+  background: rgba(244, 67, 54, 0.1);
+  transform: translateY(-2px);
+}

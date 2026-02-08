@@ -75,7 +75,7 @@ const TradingDashboard = () => {
     if (autoMode && marketStatus.open) {
       const scanInterval = setInterval(() => {
         performScan();
-      }, 30000);
+      }, 20000);
 
       return () => clearInterval(scanInterval);
     }

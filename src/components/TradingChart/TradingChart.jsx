@@ -12,6 +12,12 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
     if (!chartContainerRef.current) return;
     if (candles.length === 0) return;
 
+    if (chartRef.current) {
+      chartRef.current.remove();
+      chartRef.current = null;
+      candleSeriesRef.current = null;
+    }
+
     const chart = createChart(chartContainerRef.current, {
       layout: {
         background: { color: '#1a1a1a' },

@@ -215,46 +215,36 @@ export const generateSignal = async (market, platform, candles) => {
 
   const entryMid = (entryMin + entryMax) / 2;
 
+  const actualDirection = (takeProfit1 > entryMid && stopLoss < entryMid) ? 'LONG' :
+                           (takeProfit1 < entryMid && stopLoss > entryMid) ? 'SHORT' : null;
+
+  if (!actualDirection) {
+    console.error('INCOHÉRENCE DÉTECTÉE - Impossible de déterminer la direction', {
+      entryMid: entryMid.toFixed(5),
+      tp1: takeProfit1.toFixed(5),
+      sl: stopLoss.toFixed(5),
+      suggestedDirection: direction
+    });
+    return {
+      signal: null,
+      reason: 'Incohérence dans les niveaux TP/SL - Signal rejeté',
+      analysis
+    };
+  }
+
+  if (direction !== actualDirection) {
+    console.warn(`⚠️ DIRECTION CORRIGÉE: ${direction} → ${actualDirection} basé sur TP/SL/Entrée`);
+    direction = actualDirection;
+  }
+
   if (direction === 'LONG') {
-    if (takeProfit1 <= entryMid) {
-      console.error('VALIDATION ERROR: LONG TP1 must be ABOVE entry', { entryMid, takeProfit1 });
-      return {
-        signal: null,
-        reason: 'Erreur de cohérence: TP LONG doit être au-dessus de l\'entrée',
-        analysis
-      };
-    }
-    if (stopLoss >= entryMid) {
-      console.error('VALIDATION ERROR: LONG SL must be BELOW entry', { entryMid, stopLoss });
-      return {
-        signal: null,
-        reason: 'Erreur de cohérence: SL LONG doit être en-dessous de l\'entrée',
-        analysis
-      };
-    }
     if (takeProfit2 && takeProfit2 <= entryMid) {
-      console.error('VALIDATION ERROR: LONG TP2 must be ABOVE entry', { entryMid, takeProfit2 });
+      console.warn('TP2 LONG incohérent - désactivé');
       takeProfit2 = null;
     }
   } else if (direction === 'SHORT') {
-    if (takeProfit1 >= entryMid) {
-      console.error('VALIDATION ERROR: SHORT TP1 must be BELOW entry', { entryMid, takeProfit1 });
-      return {
-        signal: null,
-        reason: 'Erreur de cohérence: TP SHORT doit être en-dessous de l\'entrée',
-        analysis
-      };
-    }
-    if (stopLoss <= entryMid) {
-      console.error('VALIDATION ERROR: SHORT SL must be ABOVE entry', { entryMid, stopLoss });
-      return {
-        signal: null,
-        reason: 'Erreur de cohérence: SL SHORT doit être au-dessus de l\'entrée',
-        analysis
-      };
-    }
     if (takeProfit2 && takeProfit2 >= entryMid) {
-      console.error('VALIDATION ERROR: SHORT TP2 must be BELOW entry', { entryMid, takeProfit2 });
+      console.warn('TP2 SHORT incohérent - désactivé');
       takeProfit2 = null;
     }
   }

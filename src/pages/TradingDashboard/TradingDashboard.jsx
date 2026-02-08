@@ -907,13 +907,13 @@ const TradingDashboard = () => {
         ) : (
           <TradingChart
             candles={candles}
-            signal={currentSignal}
+            signal={null}
             position={currentPosition}
             supports={credits.remaining > 0 ? supports : []}
             resistances={credits.remaining > 0 ? resistances : []}
             orderBlocks={credits.remaining > 0 ? orderBlocks : { bullish: [], bearish: [] }}
             hasCredits={credits.remaining > 0}
-            showAnalysis={credits.remaining > 0 && (showAnalysis || signalState.preAlert || signalState.signal)}
+            showAnalysis={credits.remaining > 0 && showAnalysis}
           />
         )}
       </div>

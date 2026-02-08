@@ -35,16 +35,25 @@ const SignalPopup = ({ signal, riskCalc, onAccept, onReject, onDismiss }) => {
 
   const directionColor = signal.direction === 'LONG' ? '#00e676' : '#ef4444';
   const progressPercent = (timeRemaining / (10 * 60)) * 100;
+  const isLong = signal.direction === 'LONG';
+  const entryMid = (signal.entry_min + signal.entry_max) / 2;
 
   return (
     <div className={styles.overlay}>
       <div className={styles.popup}>
         <div className={styles.header} style={{ borderColor: directionColor }}>
           <h2 style={{ color: directionColor }}>
-            {signal.direction} CONFIRMÉ
+            {isLong ? '🟢 LONG ↑' : '🔴 SHORT ↓'} CONFIRMÉ
           </h2>
           <div className={styles.market}>
             {signal.market} • {signal.platform} • {signal.timeframe}
+          </div>
+          <div className={styles.directionExplanation}>
+            {isLong ? (
+              <span>📈 Achat - Profit si le prix MONTE</span>
+            ) : (
+              <span>📉 Vente - Profit si le prix DESCEND</span>
+            )}
           </div>
         </div>
 
@@ -71,6 +80,42 @@ const SignalPopup = ({ signal, riskCalc, onAccept, onReject, onDismiss }) => {
         )}
 
         <div className={styles.priceInfo}>
+          <div className={styles.visualStructure}>
+            {isLong ? (
+              <div className={styles.structureBox}>
+                <div className={styles.structureLine} style={{ background: '#00e676' }}>
+                  🎯 TP2: {signal.take_profit_2 ? signal.take_profit_2.toFixed(2) : 'N/A'}
+                </div>
+                <div className={styles.structureLine} style={{ background: '#00e676' }}>
+                  🎯 TP1: {signal.take_profit_1.toFixed(2)}
+                </div>
+                <div className={styles.structureLine} style={{ background: '#00BFFF', fontWeight: 'bold' }}>
+                  ➡️ ENTRÉE: {entryMid.toFixed(2)}
+                </div>
+                <div className={styles.structureLine} style={{ background: '#ef4444' }}>
+                  🛑 STOP LOSS: {signal.stop_loss.toFixed(2)}
+                </div>
+                <div className={styles.structureLabel}>↑ LONG: TP au-dessus, SL en dessous</div>
+              </div>
+            ) : (
+              <div className={styles.structureBox}>
+                <div className={styles.structureLine} style={{ background: '#ef4444' }}>
+                  🛑 STOP LOSS: {signal.stop_loss.toFixed(2)}
+                </div>
+                <div className={styles.structureLine} style={{ background: '#FF4444', fontWeight: 'bold' }}>
+                  ➡️ ENTRÉE: {entryMid.toFixed(2)}
+                </div>
+                <div className={styles.structureLine} style={{ background: '#00e676' }}>
+                  🎯 TP1: {signal.take_profit_1.toFixed(2)}
+                </div>
+                <div className={styles.structureLine} style={{ background: '#00e676' }}>
+                  🎯 TP2: {signal.take_profit_2 ? signal.take_profit_2.toFixed(2) : 'N/A'}
+                </div>
+                <div className={styles.structureLabel}>↓ SHORT: SL au-dessus, TP en dessous</div>
+              </div>
+            )}
+          </div>
+
           <div className={styles.priceRow}>
             <span className={styles.label}>Zone d'entrée:</span>
             <span className={styles.value}>
@@ -78,20 +123,20 @@ const SignalPopup = ({ signal, riskCalc, onAccept, onReject, onDismiss }) => {
             </span>
           </div>
           <div className={styles.priceRow}>
-            <span className={styles.label}>Stop Loss:</span>
+            <span className={styles.label}>Stop Loss {isLong ? '(en dessous ↓)' : '(au-dessus ↑)'}:</span>
             <span className={styles.value} style={{ color: '#ef4444' }}>
               {signal.stop_loss.toFixed(2)}
             </span>
           </div>
           <div className={styles.priceRow}>
-            <span className={styles.label}>Take Profit 1:</span>
+            <span className={styles.label}>Take Profit 1 {isLong ? '(au-dessus ↑)' : '(en dessous ↓)'}:</span>
             <span className={styles.value} style={{ color: '#00e676' }}>
               {signal.take_profit_1.toFixed(2)}
             </span>
           </div>
           {signal.take_profit_2 && (
             <div className={styles.priceRow}>
-              <span className={styles.label}>Take Profit 2:</span>
+              <span className={styles.label}>Take Profit 2 {isLong ? '(au-dessus ↑)' : '(en dessous ↓)'}:</span>
               <span className={styles.value} style={{ color: '#00e676' }}>
                 {signal.take_profit_2.toFixed(2)}
               </span>

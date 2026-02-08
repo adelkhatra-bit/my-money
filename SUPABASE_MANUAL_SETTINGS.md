@@ -36,38 +36,42 @@ This document outlines the manual configuration settings that need to be applied
 
 ## Performance and Security Improvements Applied via Migration
 
-The following improvements have been automatically applied via database migration:
+The following improvements have been automatically applied via database migrations:
 
-### Indexes Created
+### Indexes Created (Migration: 20260208054726)
 - ✅ `idx_position_credits_user_id` on `position_credits(user_id)`
 - ✅ `idx_positions_account_id` on `positions(account_id)`
 - ✅ `idx_positions_signal_id` on `positions(signal_id)`
 - ✅ `idx_positions_user_id` on `positions(user_id)`
 - ✅ `idx_trading_accounts_user_id` on `trading_accounts(user_id)`
 
-### RLS Policies Optimized
-All Row Level Security policies have been optimized to use `(select auth.*())` pattern instead of direct `auth.*()` calls. This prevents re-evaluation for each row and dramatically improves query performance at scale.
+**Note on "Unused Index" Warnings:** It's normal for new indexes to show as "unused" initially. These indexes will be automatically utilized by PostgreSQL's query planner when relevant queries are executed. The indexes are correctly configured and will improve performance as your application runs queries.
 
-**Tables optimized:**
-- ✅ `user_profiles` - 3 policies
-- ✅ `trading_accounts` - 2 policies
-- ✅ `position_credits` - 2 policies
-- ✅ `signals` - 2 policies
-- ✅ `positions` - 2 policies
+### RLS Policies Optimized (Migration: 20260208054726)
+All Row Level Security policies use the optimized `(SELECT auth.uid())` pattern instead of direct `auth.uid()` calls. This prevents re-evaluation for each row and dramatically improves query performance at scale.
 
----
+### RLS Policies Consolidated (Migration: consolidate_rls_policies)
+Policies have been consolidated to eliminate multiple permissive policies per action while maintaining the same security posture:
 
-## Notes on Multiple Permissive Policies
+**user_profiles:**
+- ✅ SELECT: Single policy for users + super admins
+- ✅ UPDATE: Single policy for users only
 
-The following tables have multiple permissive policies for the same action. This is by design and provides proper separation between user and admin access:
+**trading_accounts:**
+- ✅ SELECT: Single policy for users + super admins
+- ✅ INSERT, UPDATE, DELETE: Separate policies for user-owned data
 
-- `position_credits` - Users can view their own credits, Super admins can view all
-- `positions` - Users can manage their own positions, Super admins can view all
-- `signals` - Users can view active signals, Super admins can manage all
-- `trading_accounts` - Users can manage their own accounts, Super admins can view all
-- `user_profiles` - Users can read their own profile, Super admins can read all
+**position_credits:**
+- ✅ SELECT: Single policy for users + super admins
+- ✅ INSERT, UPDATE, DELETE: Separate policies for super admins only
 
-This design is secure and intentional. Do not consolidate these policies as it maintains clear separation of concerns.
+**positions:**
+- ✅ SELECT: Single policy for users + super admins
+- ✅ INSERT, UPDATE, DELETE: Separate policies for user-owned data
+
+**signals:**
+- ✅ SELECT: Single policy allowing active signals to all + all signals to super admins
+- ✅ INSERT, UPDATE, DELETE: Separate policies for super admins only
 
 ---
 

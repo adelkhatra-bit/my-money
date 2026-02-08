@@ -1,9 +1,9 @@
 .compactContainer {
   background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
   border: 1px solid #00e676;
-  border-radius: 8px;
-  padding: 12px 16px;
-  margin-bottom: 16px;
+  border-radius: 6px;
+  padding: 8px 12px;
+  margin-bottom: 10px;
   box-shadow: 0 4px 16px rgba(0, 230, 118, 0.1);
   transition: all 0.3s ease;
 }
@@ -17,29 +17,29 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
 }
 
 .compactStatus {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 .compactIcon {
-  font-size: 20px;
+  font-size: 16px;
 }
 
 .compactLabel {
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 600;
   color: #fff;
 }
 
 .compactBadge {
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 9px;
   font-weight: 700;
 }
 
@@ -55,7 +55,7 @@
 
 .compactTiming {
   display: flex;
-  gap: 16px;
+  gap: 12px;
   align-items: center;
 }
 
@@ -63,24 +63,24 @@
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 2px;
+  gap: 1px;
 }
 
 .timingLabel {
-  font-size: 10px;
+  font-size: 9px;
   color: #999;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
 }
 
 .timingValue {
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 700;
   color: #00e676;
 }
 
 .compactProgress {
-  margin-top: 8px;
+  margin-top: 6px;
   height: 2px;
   background: rgba(255, 255, 255, 0.1);
   border-radius: 1px;

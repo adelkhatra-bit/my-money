@@ -479,12 +479,12 @@ const TradingDashboard = () => {
           </div>
 
           <div className={styles.controlGroup}>
-            <label>Mode Auto:</label>
             <button
               className={`${styles.toggleBtn} ${autoMode ? styles.active : ''}`}
               onClick={() => setAutoMode(!autoMode)}
+              title={autoMode ? 'Robot activé - Scan automatique toutes les 30s' : 'Robot désactivé - Scan manuel uniquement'}
             >
-              {autoMode ? 'ON' : 'OFF'}
+              {autoMode ? '🤖 ROBOT ON' : '⏸️ ROBOT OFF'}
             </button>
           </div>
 
@@ -493,7 +493,7 @@ const TradingDashboard = () => {
             onClick={handleManualScan}
             disabled={scanning || !marketStatus.open}
           >
-            {scanning ? 'Analyse...' : 'Scanner'}
+            {scanning ? '🔍 Analyse...' : '🎯 Scan Manuel'}
           </button>
         </div>
 

@@ -43,7 +43,7 @@
 
 .header {
   background: #1a1a1a;
-  padding: 20px;
+  padding: 10px 16px;
   border-bottom: 2px solid #2a2a2a;
   position: sticky;
   top: 0;
@@ -54,14 +54,14 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
+  margin-bottom: 8px;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 8px;
 }
 
 .header h1 {
   margin: 0;
-  font-size: 24px;
+  font-size: 18px;
   color: #00e676;
 }
 
@@ -69,29 +69,29 @@
   background: rgba(33, 150, 243, 0.2);
   border: 2px solid #2196f3;
   color: #2196f3;
-  padding: 6px 16px;
-  border-radius: 20px;
-  font-size: 12px;
+  padding: 3px 10px;
+  border-radius: 14px;
+  font-size: 10px;
   font-weight: 700;
   letter-spacing: 1px;
 }
 
 .controls {
   display: flex;
-  gap: 16px;
+  gap: 10px;
   flex-wrap: wrap;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 .controlGroup {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 .controlGroup label {
-  font-size: 14px;
+  font-size: 12px;
   color: #999;
 }
 
@@ -99,9 +99,9 @@
   background: #2a2a2a;
   border: 1px solid #3a3a3a;
   color: #fff;
-  padding: 8px 12px;
+  padding: 5px 10px;
   border-radius: 4px;
-  font-size: 14px;
+  font-size: 12px;
   cursor: pointer;
 }
 
@@ -113,30 +113,44 @@
   background: #2a2a2a;
   border: 2px solid #3a3a3a;
   color: #999;
-  padding: 8px 24px;
+  padding: 5px 16px;
   border-radius: 4px;
   cursor: pointer;
   font-weight: 600;
+  font-size: 12px;
   transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .toggleBtn.active {
   background: #00e676;
   border-color: #00e676;
   color: #000;
+  box-shadow: 0 0 15px rgba(0, 230, 118, 0.4);
+  animation: pulse-glow 2s infinite;
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 15px rgba(0, 230, 118, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 25px rgba(0, 230, 118, 0.6);
+  }
 }
 
 .scanBtn {
   background: linear-gradient(135deg, #00e676, #00c853);
   border: none;
   color: #000;
-  padding: 8px 32px;
+  padding: 5px 20px;
   border-radius: 4px;
   cursor: pointer;
   font-weight: 700;
-  font-size: 14px;
+  font-size: 12px;
   transition: all 0.2s;
-  text-transform: uppercase;
 }
 
 .scanBtn:hover:not(:disabled) {
@@ -192,26 +206,27 @@
 
 .scanStatus {
   background: rgba(255, 255, 255, 0.05);
-  padding: 12px 20px;
+  padding: 8px 16px;
   text-align: center;
-  font-size: 14px;
+  font-size: 12px;
   color: #ccc;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .chartSection {
   flex: 1;
-  padding: 16px 20px;
-  max-height: 520px;
+  padding: 10px 16px;
+  max-height: 380px;
+  min-height: 380px;
 }
 
 .statsBar {
   background: #1a1a1a;
   border-top: 2px solid #2a2a2a;
-  padding: 20px;
+  padding: 10px 16px;
   display: flex;
   justify-content: space-around;
-  gap: 16px;
+  gap: 12px;
   flex-wrap: wrap;
   position: sticky;
   bottom: 0;
@@ -222,19 +237,19 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  min-width: 100px;
+  min-width: 80px;
 }
 
 .statLabel {
-  font-size: 12px;
+  font-size: 10px;
   color: #999;
   text-transform: uppercase;
-  letter-spacing: 1px;
-  margin-bottom: 6px;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
 }
 
 .statValue {
-  font-size: 20px;
+  font-size: 16px;
   font-weight: 700;
   color: #fff;
 }

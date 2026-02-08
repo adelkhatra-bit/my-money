@@ -80,31 +80,42 @@ export const generateSignal = async (market, platform, candles) => {
   let takeProfit2 = null;
 
   const nearSupport = supports.length > 0 &&
-    Math.abs(currentPrice - supports[supports.length - 1]) / currentPrice < 0.02;
+    Math.abs(currentPrice - supports[supports.length - 1]) / currentPrice < 0.03;
 
   const nearResistance = resistances.length > 0 &&
-    Math.abs(currentPrice - resistances[resistances.length - 1]) / currentPrice < 0.02;
+    Math.abs(currentPrice - resistances[resistances.length - 1]) / currentPrice < 0.03;
 
-  if (rsi < 35 && macd.crossover === 'bullish' && trend !== 'downtrend' && nearSupport) {
+  if (rsi < 40 && (macd.crossover === 'bullish' || macd.trend === 'bullish') && trend !== 'downtrend') {
     direction = 'LONG';
-    reasons.push('RSI en survente (< 35)');
-    reasons.push('Croisement MACD haussier');
-    reasons.push('Prix proche du support');
-    confidence += 30;
+    reasons.push(`RSI favorable (${rsi.toFixed(1)})`);
+    confidence += 25;
 
-    if (bullishOB.length > 0) {
-      reasons.push('Order Block haussier détecté');
-      confidence += 20;
-    }
-
-    if (trend === 'uptrend') {
-      reasons.push('Tendance haussière confirmée');
-      confidence += 25;
+    if (macd.crossover === 'bullish') {
+      reasons.push('Croisement MACD haussier');
+      confidence += 15;
     } else {
+      reasons.push('MACD haussier');
       confidence += 10;
     }
 
-    const supportLevel = supports[supports.length - 1];
+    if (nearSupport) {
+      reasons.push('Prix proche du support');
+      confidence += 15;
+    }
+
+    if (bullishOB.length > 0) {
+      reasons.push('Order Block haussier détecté');
+      confidence += 15;
+    }
+
+    if (trend === 'uptrend') {
+      reasons.push('Tendance haussière');
+      confidence += 20;
+    } else if (trend === 'ranging') {
+      reasons.push('Marché en range');
+      confidence += 10;
+    }
+
     entryMin = currentPrice * 0.999;
     entryMax = currentPrice * 1.002;
     stopLoss = currentPrice * 0.985;
@@ -113,33 +124,44 @@ export const generateSignal = async (market, platform, candles) => {
       takeProfit1 = resistances[0] * 0.99;
       if (resistances.length > 1) {
         takeProfit2 = resistances[1] * 0.99;
+      } else {
+        takeProfit2 = currentPrice * 1.04;
       }
     } else {
       takeProfit1 = currentPrice * 1.025;
       takeProfit2 = currentPrice * 1.04;
     }
-
-    confidence += 15;
-  } else if (rsi > 65 && macd.crossover === 'bearish' && trend !== 'uptrend' && nearResistance) {
+  } else if (rsi > 60 && (macd.crossover === 'bearish' || macd.trend === 'bearish') && trend !== 'uptrend') {
     direction = 'SHORT';
-    reasons.push('RSI en surachat (> 65)');
-    reasons.push('Croisement MACD baissier');
-    reasons.push('Prix proche de la résistance');
-    confidence += 30;
+    reasons.push(`RSI favorable (${rsi.toFixed(1)})`);
+    confidence += 25;
 
-    if (bearishOB.length > 0) {
-      reasons.push('Order Block baissier détecté');
-      confidence += 20;
-    }
-
-    if (trend === 'downtrend') {
-      reasons.push('Tendance baissière confirmée');
-      confidence += 25;
+    if (macd.crossover === 'bearish') {
+      reasons.push('Croisement MACD baissier');
+      confidence += 15;
     } else {
+      reasons.push('MACD baissier');
       confidence += 10;
     }
 
-    const resistanceLevel = resistances[resistances.length - 1];
+    if (nearResistance) {
+      reasons.push('Prix proche de la résistance');
+      confidence += 15;
+    }
+
+    if (bearishOB.length > 0) {
+      reasons.push('Order Block baissier détecté');
+      confidence += 15;
+    }
+
+    if (trend === 'downtrend') {
+      reasons.push('Tendance baissière');
+      confidence += 20;
+    } else if (trend === 'ranging') {
+      reasons.push('Marché en range');
+      confidence += 10;
+    }
+
     entryMin = currentPrice * 0.998;
     entryMax = currentPrice * 1.001;
     stopLoss = currentPrice * 1.015;
@@ -148,13 +170,13 @@ export const generateSignal = async (market, platform, candles) => {
       takeProfit1 = supports[0] * 1.01;
       if (supports.length > 1) {
         takeProfit2 = supports[1] * 1.01;
+      } else {
+        takeProfit2 = currentPrice * 0.96;
       }
     } else {
       takeProfit1 = currentPrice * 0.975;
       takeProfit2 = currentPrice * 0.96;
     }
-
-    confidence += 15;
   }
 
   if (!direction) {
@@ -167,10 +189,10 @@ export const generateSignal = async (market, platform, candles) => {
 
   const riskReward = Math.abs((takeProfit1 - entryMin) / (entryMin - stopLoss));
 
-  if (confidence < 50) {
+  if (confidence < 45) {
     return {
       signal: null,
-      reason: `Confiance insuffisante (${confidence}% < 50%)`,
+      reason: `Confiance insuffisante (${confidence}% < 45%)`,
       analysis
     };
   }

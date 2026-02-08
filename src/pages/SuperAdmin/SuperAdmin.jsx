@@ -269,6 +269,61 @@ const SuperAdmin = () => {
     }
   };
 
+  const handleDeleteAllTrades = async () => {
+    if (!selectedUser) return;
+
+    const totalTrades = selectedUser.stats.totalTrades;
+
+    if (totalTrades === 0) {
+      alert('Cet utilisateur n\'a aucun trade à supprimer.');
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `⚠️ ATTENTION ⚠️\n\n` +
+      `Tu es sur le point de supprimer TOUS LES TRADES de ${selectedUser.email}:\n\n` +
+      `- ${totalTrades} position${totalTrades > 1 ? 's' : ''} seront supprimée${totalTrades > 1 ? 's' : ''}\n` +
+      `- Les crédits utilisés seront remis à zéro\n` +
+      `- L'historique des actions sera effacé\n` +
+      `- Les stats seront réinitialisées\n\n` +
+      `Cette action est IRRÉVERSIBLE !\n\n` +
+      `Veux-tu vraiment continuer ?`
+    );
+
+    if (!confirmed) return;
+
+    const doubleConfirm = window.confirm(
+      `Dernière confirmation:\n\n` +
+      `Supprimer ${totalTrades} trade${totalTrades > 1 ? 's' : ''} de ${selectedUser.email} ?\n\n` +
+      `Tape OK pour confirmer.`
+    );
+
+    if (!doubleConfirm) return;
+
+    try {
+      const { data, error } = await supabase.rpc('delete_user_trades', {
+        target_user_id: selectedUser.id
+      });
+
+      if (error) throw error;
+
+      if (data && data.success) {
+        alert(
+          `✅ SUCCÈS\n\n` +
+          `${data.deleted_positions} position${data.deleted_positions > 1 ? 's' : ''} supprimée${data.deleted_positions > 1 ? 's' : ''}\n` +
+          `L'utilisateur ${selectedUser.email} repart à zéro !`
+        );
+        setSelectedUser(null);
+        loadUsers();
+      } else {
+        alert('❌ Erreur: ' + (data?.error || 'Erreur inconnue'));
+      }
+    } catch (error) {
+      console.error('Error deleting trades:', error);
+      alert('❌ Erreur lors de la suppression: ' + error.message);
+    }
+  };
+
   if (loading) {
     return <div className={styles.loading}>Chargement...</div>;
   }
@@ -314,6 +369,27 @@ const SuperAdmin = () => {
         <div className={styles.creditModal}>
           <div className={styles.modalContent}>
             <h3>Gérer les positions de {selectedUser.email}</h3>
+
+            {selectedUser.stats.totalTrades > 0 && (
+              <div className={styles.userStats}>
+                <div className={styles.statItem}>
+                  <span className={styles.statLabel}>Total Trades:</span>
+                  <span className={styles.statValue}>{selectedUser.stats.totalTrades}</span>
+                </div>
+                <div className={styles.statItem}>
+                  <span className={styles.statLabel}>Wins:</span>
+                  <span className={styles.statValue}>{selectedUser.stats.wins}</span>
+                </div>
+                <div className={styles.statItem}>
+                  <span className={styles.statLabel}>Losses:</span>
+                  <span className={styles.statValue}>{selectedUser.stats.losses}</span>
+                </div>
+                <div className={styles.statItem}>
+                  <span className={styles.statLabel}>PnL:</span>
+                  <span className={styles.statValue}>${selectedUser.stats.totalPnL}</span>
+                </div>
+              </div>
+            )}
 
             <form onSubmit={handleAddCredits} className={styles.creditForm}>
               <div className={styles.formGroup}>
@@ -372,6 +448,22 @@ const SuperAdmin = () => {
                 </button>
               </div>
             </form>
+
+            {selectedUser.stats.totalTrades > 0 && (
+              <div className={styles.dangerZone}>
+                <h4 className={styles.dangerTitle}>🚨 Zone Dangereuse</h4>
+                <p className={styles.dangerText}>
+                  Supprimer tous les trades pour repartir à zéro
+                </p>
+                <button
+                  type="button"
+                  className={styles.deleteAllBtn}
+                  onClick={handleDeleteAllTrades}
+                >
+                  🗑️ Effacer tous les trades ({selectedUser.stats.totalTrades})
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}

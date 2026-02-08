@@ -384,3 +384,71 @@ td {
   background: rgba(244, 67, 54, 0.1);
   transform: translateY(-2px);
 }
+
+.userStats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  background: #2a2a2a;
+  padding: 16px;
+  border-radius: 8px;
+  margin-bottom: 24px;
+}
+
+.statItem {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.statItem .statLabel {
+  color: #999;
+  font-size: 12px;
+  margin-bottom: 0;
+}
+
+.statItem .statValue {
+  color: #fff;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.dangerZone {
+  margin-top: 24px;
+  padding: 20px;
+  background: rgba(244, 67, 54, 0.05);
+  border: 2px solid rgba(244, 67, 54, 0.3);
+  border-radius: 8px;
+}
+
+.dangerTitle {
+  color: #f44336;
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+}
+
+.dangerText {
+  color: #999;
+  font-size: 14px;
+  margin: 0 0 16px 0;
+}
+
+.deleteAllBtn {
+  width: 100%;
+  background: #f44336;
+  border: none;
+  color: #fff;
+  padding: 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.deleteAllBtn:hover {
+  background: #d32f2f;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(244, 67, 54, 0.4);
+}

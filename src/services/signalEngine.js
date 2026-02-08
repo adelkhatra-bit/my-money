@@ -207,30 +207,39 @@ export const generateSignal = async (market, platform, candles) => {
 
   const entryMid = (entryMin + entryMax) / 2;
 
-  const actualDirection = (takeProfit1 > entryMid && stopLoss < entryMid) ? 'LONG' :
-                           (takeProfit1 < entryMid && stopLoss > entryMid) ? 'SHORT' : null;
+  let direction = null;
 
-  if (!actualDirection) {
+  if (takeProfit1 < entryMid && takeProfit2 && takeProfit2 < entryMid) {
+    direction = 'SHORT';
+  } else if (takeProfit1 > entryMid) {
+    direction = 'LONG';
+  } else {
     console.error('🚨 INCOHÉRENCE DÉTECTÉE - Signal rejeté', {
       suggestedDirection,
       entry: entryMid.toFixed(5),
       stopLoss: stopLoss.toFixed(5),
       tp1: takeProfit1.toFixed(5),
       tp2: takeProfit2 ? takeProfit2.toFixed(5) : 'N/A',
-      problem: 'Les niveaux TP/SL ne correspondent à aucune direction valide'
+      problem: 'Les niveaux TP ne permettent pas de déterminer la direction'
     });
     return {
       signal: null,
-      reason: 'Incohérence dans les niveaux TP/SL - Signal rejeté',
+      reason: 'Incohérence dans les niveaux TP - Signal rejeté',
       analysis
     };
   }
 
-  let direction = actualDirection;
+  if (direction === 'SHORT' && stopLoss <= entryMid) {
+    console.warn('⚠️ CORRECTION SL SHORT: SL était en dessous, repositionnement au-dessus');
+    stopLoss = entryMid * 1.015;
+  } else if (direction === 'LONG' && stopLoss >= entryMid) {
+    console.warn('⚠️ CORRECTION SL LONG: SL était au-dessus, repositionnement en dessous');
+    stopLoss = entryMid * 0.985;
+  }
 
-  if (suggestedDirection !== actualDirection) {
-    console.warn(`⚠️ DIRECTION CORRIGÉE: RSI suggérait ${suggestedDirection} mais TPs/SL indiquent ${actualDirection}`);
-    console.warn('→ Utilisation de la direction basée sur TP/SL (source de vérité)');
+  if (suggestedDirection !== direction) {
+    console.warn(`⚠️ DIRECTION CORRIGÉE: RSI suggérait ${suggestedDirection} mais TPs indiquent ${direction}`);
+    console.warn('→ Utilisation de la direction basée sur les TP (source de vérité)');
   }
 
   if (direction === 'LONG') {

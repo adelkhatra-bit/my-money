@@ -1119,16 +1119,63 @@ const TradingDashboard = () => {
             <p>Chargement des données de marché...</p>
           </div>
         ) : (
-          <TradingChart
-            candles={candles}
-            signal={null}
-            position={currentPosition}
-            supports={credits.remaining > 0 ? supports : []}
-            resistances={credits.remaining > 0 ? resistances : []}
-            orderBlocks={credits.remaining > 0 ? orderBlocks : { bullish: [], bearish: [] }}
-            hasCredits={credits.remaining > 0}
-            showAnalysis={credits.remaining > 0 && showAnalysis}
-          />
+          <>
+            <TradingChart
+              candles={candles}
+              signal={null}
+              position={currentPosition}
+              supports={credits.remaining > 0 ? supports : []}
+              resistances={credits.remaining > 0 ? resistances : []}
+              orderBlocks={credits.remaining > 0 ? orderBlocks : { bullish: [], bearish: [] }}
+              hasCredits={credits.remaining > 0}
+              showAnalysis={credits.remaining > 0 && showAnalysis}
+            />
+            {currentPosition && currentPosition.status === 'OPEN' && (
+              <div className={styles.positionLevels}>
+                <div className={styles.levelCard}>
+                  <div className={styles.levelLabel}>🛑 STOP LOSS</div>
+                  <div className={styles.levelPrice} style={{color: '#ff1744'}}>
+                    {currentPosition.stop_loss.toFixed(5)}
+                  </div>
+                  <div className={styles.levelPercent}>
+                    {((Math.abs(currentPosition.entry_price - currentPosition.stop_loss) / currentPosition.entry_price * 100).toFixed(2))}% de l'entry
+                  </div>
+                </div>
+
+                <div className={styles.levelCard}>
+                  <div className={styles.levelLabel}>
+                    {currentPosition.take_profit_1 > currentPosition.entry_price ? '🟢 LONG' : '🔴 SHORT'}
+                  </div>
+                  <div className={styles.levelPrice} style={{color: '#ffeb3b'}}>
+                    {currentPosition.entry_price.toFixed(5)}
+                  </div>
+                  <div className={styles.levelPercent}>Prix d'entrée</div>
+                </div>
+
+                <div className={styles.levelCard}>
+                  <div className={styles.levelLabel}>🎯 TP1</div>
+                  <div className={styles.levelPrice} style={{color: '#00e676'}}>
+                    {currentPosition.take_profit_1.toFixed(5)}
+                  </div>
+                  <div className={styles.levelPercent}>
+                    +{((Math.abs(currentPosition.take_profit_1 - currentPosition.entry_price) / currentPosition.entry_price * 100).toFixed(2))}% gain
+                  </div>
+                </div>
+
+                {currentPosition.take_profit_2 && (
+                  <div className={styles.levelCard}>
+                    <div className={styles.levelLabel}>🎯 TP2</div>
+                    <div className={styles.levelPrice} style={{color: '#00e676'}}>
+                      {currentPosition.take_profit_2.toFixed(5)}
+                    </div>
+                    <div className={styles.levelPercent}>
+                      +{((Math.abs(currentPosition.take_profit_2 - currentPosition.entry_price) / currentPosition.entry_price * 100).toFixed(2))}% gain
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </>
         )}
       </div>
 

@@ -168,34 +168,46 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
         title: `${isLong ? '🟢 LONG ↑' : '🔴 SHORT ↓'} - ${position.entry_price.toFixed(5)}`,
       });
 
+      const distanceToSL = isLong
+        ? ((position.entry_price - position.stop_loss) / position.entry_price * 100)
+        : ((position.stop_loss - position.entry_price) / position.entry_price * 100);
+
       const lineSL = candleSeriesRef.current.createPriceLine({
         price: position.stop_loss,
-        color: '#f44336',
-        lineWidth: 3,
+        color: '#ff1744',
+        lineWidth: 4,
         lineStyle: 0,
         axisLabelVisible: true,
-        title: `🛑 SL - ${position.stop_loss.toFixed(5)}`,
+        title: `🛑 STOP LOSS - ${position.stop_loss.toFixed(5)} (-${distanceToSL.toFixed(2)}%)`,
       });
+
+      const gainTP1 = isLong
+        ? ((position.take_profit_1 - position.entry_price) / position.entry_price * 100)
+        : ((position.entry_price - position.take_profit_1) / position.entry_price * 100);
 
       const lineTP1 = candleSeriesRef.current.createPriceLine({
         price: position.take_profit_1,
-        color: '#4caf50',
-        lineWidth: 3,
+        color: '#00e676',
+        lineWidth: 4,
         lineStyle: 0,
         axisLabelVisible: true,
-        title: `🎯 TP1 - ${position.take_profit_1.toFixed(5)}`,
+        title: `🎯 TP1 - ${position.take_profit_1.toFixed(5)} (+${gainTP1.toFixed(2)}%)`,
       });
 
       priceLines.current.push(lineEntry, lineSL, lineTP1);
 
       if (position.take_profit_2) {
+        const gainTP2 = isLong
+          ? ((position.take_profit_2 - position.entry_price) / position.entry_price * 100)
+          : ((position.entry_price - position.take_profit_2) / position.entry_price * 100);
+
         const lineTP2 = candleSeriesRef.current.createPriceLine({
           price: position.take_profit_2,
-          color: '#4caf50',
-          lineWidth: 2,
+          color: '#00e676',
+          lineWidth: 3,
           lineStyle: 2,
           axisLabelVisible: true,
-          title: `🎯 TP2 - ${position.take_profit_2.toFixed(5)}`,
+          title: `🎯 TP2 - ${position.take_profit_2.toFixed(5)} (+${gainTP2.toFixed(2)}%)`,
         });
         priceLines.current.push(lineTP2);
       }
@@ -237,34 +249,46 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
         title: `${isLong ? '🟢 LONG ↑' : '🔴 SHORT ↓'} - ${entryPrice.toFixed(5)}`,
       });
 
+      const signalDistanceToSL = isLong
+        ? ((entryPrice - signal.stop_loss) / entryPrice * 100)
+        : ((signal.stop_loss - entryPrice) / entryPrice * 100);
+
       const lineSL = candleSeriesRef.current.createPriceLine({
         price: signal.stop_loss,
-        color: '#f44336',
-        lineWidth: 3,
+        color: '#ff1744',
+        lineWidth: 4,
         lineStyle: 0,
         axisLabelVisible: true,
-        title: `🛑 SL - ${signal.stop_loss.toFixed(5)}`,
+        title: `🛑 STOP LOSS - ${signal.stop_loss.toFixed(5)} (-${signalDistanceToSL.toFixed(2)}%)`,
       });
+
+      const signalGainTP1 = isLong
+        ? ((signal.take_profit_1 - entryPrice) / entryPrice * 100)
+        : ((entryPrice - signal.take_profit_1) / entryPrice * 100);
 
       const lineTP1 = candleSeriesRef.current.createPriceLine({
         price: signal.take_profit_1,
-        color: '#4caf50',
-        lineWidth: 3,
+        color: '#00e676',
+        lineWidth: 4,
         lineStyle: 0,
         axisLabelVisible: true,
-        title: `🎯 TP1 - ${signal.take_profit_1.toFixed(5)}`,
+        title: `🎯 TP1 - ${signal.take_profit_1.toFixed(5)} (+${signalGainTP1.toFixed(2)}%)`,
       });
 
       priceLines.current.push(lineEntry, lineSL, lineTP1);
 
       if (signal.take_profit_2) {
+        const signalGainTP2 = isLong
+          ? ((signal.take_profit_2 - entryPrice) / entryPrice * 100)
+          : ((entryPrice - signal.take_profit_2) / entryPrice * 100);
+
         const lineTP2 = candleSeriesRef.current.createPriceLine({
           price: signal.take_profit_2,
-          color: '#4caf50',
-          lineWidth: 2,
+          color: '#00e676',
+          lineWidth: 3,
           lineStyle: 2,
           axisLabelVisible: true,
-          title: `🎯 TP2 - ${signal.take_profit_2.toFixed(5)}`,
+          title: `🎯 TP2 - ${signal.take_profit_2.toFixed(5)} (+${signalGainTP2.toFixed(2)}%)`,
         });
         priceLines.current.push(lineTP2);
       }

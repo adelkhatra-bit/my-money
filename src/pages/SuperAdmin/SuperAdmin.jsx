@@ -154,11 +154,7 @@ const SuperAdmin = () => {
 
   const loadTrialRequests = async () => {
     try {
-      const { data: requests, error } = await supabase
-        .from('free_trial_requests')
-        .select('*, user_profiles(email)')
-        .eq('status', 'pending')
-        .order('created_at', { ascending: false });
+      const { data: requests, error } = await supabase.rpc('get_pending_trial_requests');
 
       if (error) {
         console.error('Error loading trial requests:', error);
@@ -166,7 +162,17 @@ const SuperAdmin = () => {
         return;
       }
 
-      setTrialRequests(requests || []);
+      const formattedRequests = (requests || []).map(req => ({
+        id: req.request_id,
+        user_id: req.user_profile_id,
+        requested_at: req.requested_at,
+        user_profiles: {
+          email: req.user_email
+        },
+        trial_count: req.trial_count
+      }));
+
+      setTrialRequests(formattedRequests);
     } catch (error) {
       console.error('Error loading trial requests:', error);
       setTrialRequests([]);
@@ -390,7 +396,7 @@ const SuperAdmin = () => {
                   {trialRequests.map((request) => (
                     <tr key={request.id}>
                       <td>{request.user_profiles?.email || 'Email non disponible'}</td>
-                      <td>{new Date(request.created_at).toLocaleString('fr-FR')}</td>
+                      <td>{new Date(request.requested_at).toLocaleString('fr-FR')}</td>
                       <td>
                         <div className={styles.actionButtons}>
                           <button

@@ -15,7 +15,8 @@ export const generateSignal = async (market, platform, candles) => {
   if (!isMarketOpen(market)) {
     return {
       signal: null,
-      reason: 'Marché fermé'
+      reason: 'Marché fermé',
+      analysis: null
     };
   }
 
@@ -26,14 +27,16 @@ export const generateSignal = async (market, platform, candles) => {
     const remainingTime = Math.ceil((COOLDOWN_MS - (now - lastSignalTime[marketKey])) / 1000);
     return {
       signal: null,
-      reason: `Cooldown actif (${Math.floor(remainingTime / 60)}m ${remainingTime % 60}s restantes)`
+      reason: `Cooldown actif (${Math.floor(remainingTime / 60)}m ${remainingTime % 60}s restantes)`,
+      analysis: null
     };
   }
 
   if (candles.length < 100) {
     return {
       signal: null,
-      reason: 'Données insuffisantes'
+      reason: 'Données insuffisantes',
+      analysis: null
     };
   }
 
@@ -49,10 +52,21 @@ export const generateSignal = async (market, platform, candles) => {
   const { supports, resistances } = findSupportResistance(candles);
   const { bullish: bullishOB, bearish: bearishOB } = detectOrderBlocks(candles);
 
+  const analysis = {
+    supports,
+    resistances,
+    orderBlocks: { bullish: bullishOB, bearish: bearishOB },
+    rsi: rsi || 0,
+    macd: macd || { trend: 'neutral', crossover: null },
+    trend,
+    currentPrice
+  };
+
   if (!rsi || !macd) {
     return {
       signal: null,
-      reason: 'Indicateurs non calculables'
+      reason: 'Indicateurs non calculables',
+      analysis
     };
   }
 
@@ -146,7 +160,8 @@ export const generateSignal = async (market, platform, candles) => {
   if (!direction) {
     return {
       signal: null,
-      reason: `Aucune opportunité détectée (RSI: ${rsi.toFixed(1)}, MACD: ${macd.trend}, Tendance: ${trend})`
+      reason: `Aucune opportunité détectée (RSI: ${rsi.toFixed(1)}, MACD: ${macd.trend}, Tendance: ${trend})`,
+      analysis
     };
   }
 
@@ -155,14 +170,16 @@ export const generateSignal = async (market, platform, candles) => {
   if (confidence < 70) {
     return {
       signal: null,
-      reason: `Confiance insuffisante (${confidence}% < 70%)`
+      reason: `Confiance insuffisante (${confidence}% < 70%)`,
+      analysis
     };
   }
 
   if (riskReward < 1.5) {
     return {
       signal: null,
-      reason: `Risk/Reward insuffisant (${riskReward.toFixed(2)} < 1.5)`
+      reason: `Risk/Reward insuffisant (${riskReward.toFixed(2)} < 1.5)`,
+      analysis
     };
   }
 
@@ -188,6 +205,7 @@ export const generateSignal = async (market, platform, candles) => {
       valid_until: validUntil.toISOString(),
       status: 'ACTIVE'
     },
+    analysis,
     reason: 'Signal généré avec succès'
   };
 };

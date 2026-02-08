@@ -1,7 +1,7 @@
 import React from 'react';
 import styles from './BotStatus.module.css';
 
-export default function BotStatus({ isActive, currentState, nextScanIn }) {
+export default function BotStatus({ isActive, currentState, nextScanIn, lastScanTime, nextScanTime, etaMinutes }) {
   const getStatusInfo = () => {
     switch (currentState) {
       case 'idle':
@@ -46,52 +46,43 @@ export default function BotStatus({ isActive, currentState, nextScanIn }) {
   const statusInfo = getStatusInfo();
 
   return (
-    <div className={`${styles.container} ${!isActive ? styles.disabled : ''}`}>
-      <div className={styles.header}>
-        <div className={styles.titleSection}>
-          <span className={styles.botIcon}>🤖</span>
-          <h3 className={styles.title}>État du Bot</h3>
-        </div>
-        <div className={`${styles.toggle} ${isActive ? styles.active : ''}`}>
-          <span className={styles.toggleLabel}>
-            {isActive ? 'ACTIF' : 'INACTIF'}
+    <div className={`${styles.compactContainer} ${!isActive ? styles.disabled : ''}`}>
+      <div className={styles.compactHeader}>
+        <div className={styles.compactStatus}>
+          <span className={styles.compactIcon}>{statusInfo.icon}</span>
+          <span className={styles.compactLabel}>{statusInfo.label}</span>
+          <span className={`${styles.compactBadge} ${isActive ? styles.activeBadge : styles.inactiveBadge}`}>
+            {isActive ? 'ON' : 'OFF'}
           </span>
         </div>
+
+        {isActive && (
+          <div className={styles.compactTiming}>
+            {etaMinutes && (
+              <div className={styles.timingItem}>
+                <span className={styles.timingLabel}>Prochaine opportunité:</span>
+                <span className={styles.timingValue}>~{etaMinutes} min</span>
+              </div>
+            )}
+            {lastScanTime && (
+              <div className={styles.timingItem}>
+                <span className={styles.timingLabel}>Dernier scan:</span>
+                <span className={styles.timingValue}>{lastScanTime}</span>
+              </div>
+            )}
+            {nextScanTime && (
+              <div className={styles.timingItem}>
+                <span className={styles.timingLabel}>Prochain scan:</span>
+                <span className={styles.timingValue}>{nextScanTime}</span>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
-      {isActive && (
-        <div className={styles.statusSection}>
-          <div className={`${styles.statusCard} ${statusInfo.className}`}>
-            <div className={styles.statusIcon}>
-              {statusInfo.icon}
-            </div>
-            <div className={styles.statusInfo}>
-              <div className={styles.statusLabel}>{statusInfo.label}</div>
-              {currentState === 'scanning' && (
-                <div className={styles.scanningAnimation}>
-                  <div className={styles.scanningBar}></div>
-                </div>
-              )}
-              {nextScanIn && currentState === 'idle' && (
-                <div className={styles.countdown}>
-                  Prochain scan dans {nextScanIn}s
-                </div>
-              )}
-            </div>
-          </div>
-
-          {currentState === 'pre_alert' && (
-            <div className={styles.alertMessage}>
-              <div className={styles.pulseIcon}>⚡</div>
-              <span>Préparez-vous, une opportunité arrive dans 2-5 minutes</span>
-            </div>
-          )}
-        </div>
-      )}
-
-      {!isActive && (
-        <div className={styles.inactiveMessage}>
-          Activez le mode automatique pour démarrer le bot
+      {currentState === 'scanning' && (
+        <div className={styles.compactProgress}>
+          <div className={styles.progressBar}></div>
         </div>
       )}
     </div>

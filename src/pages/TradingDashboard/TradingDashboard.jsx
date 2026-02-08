@@ -8,7 +8,6 @@ import { calculatePositionSize } from '../../services/riskCalculator';
 import { audioAlerts } from '../../services/audioAlerts';
 import { isMarketOpen, getMarketStatus } from '../../services/marketHours';
 import { supabase } from '../../lib/supabaseClient';
-import { findSupportResistance, detectOrderBlocks } from '../../services/indicators';
 import styles from './TradingDashboard.module.css';
 
 const TradingDashboard = () => {
@@ -38,6 +37,13 @@ const TradingDashboard = () => {
   const [credits, setCredits] = useState({ remaining: 0, total: 0 });
   const [botState, setBotState] = useState('idle');
   const [nextScanIn, setNextScanIn] = useState(null);
+  const [lastScanTime, setLastScanTime] = useState(null);
+  const [nextScanTime, setNextScanTime] = useState(null);
+  const [etaMinutes, setEtaMinutes] = useState(null);
+  const [supports, setSupports] = useState([]);
+  const [resistances, setResistances] = useState([]);
+  const [bullishOB, setBullishOB] = useState([]);
+  const [bearishOB, setBearishOB] = useState([]);
 
   useEffect(() => {
     if (market === 'NASDAQ' || market === 'GOLD') {
@@ -185,13 +191,27 @@ const TradingDashboard = () => {
       return;
     }
 
+    const now = new Date();
+    setLastScanTime(now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }));
+
+    const nextScan = new Date(now.getTime() + 30000);
+    setNextScanTime(nextScan.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }));
+
     setSignalState({ isScanning: true, preAlert: null, signal: null });
     setScanning(true);
     setBotState('scanning');
     setScanStatus('Analyse en cours...');
+    setShowAnalysis(true);
 
     try {
       const result = await generateSignal(market, platform, candles);
+
+      if (result.analysis) {
+        setSupports(result.analysis.supports || []);
+        setResistances(result.analysis.resistances || []);
+        setBullishOB(result.analysis.orderBlocks?.bullish || []);
+        setBearishOB(result.analysis.orderBlocks?.bearish || []);
+      }
 
       if (result.signal) {
         if (result.signal.market !== market) {
@@ -245,6 +265,10 @@ const TradingDashboard = () => {
         setScanStatus(result.reason);
         setSignalState({ isScanning: false, preAlert: null, signal: null });
         setBotState('idle');
+
+        setTimeout(() => {
+          setShowAnalysis(false);
+        }, 3000);
       }
     } catch (error) {
       console.error('Scan error:', error);
@@ -393,9 +417,6 @@ const TradingDashboard = () => {
     setShowPreAlert(false);
   };
 
-  const { supports, resistances } = findSupportResistance(candles);
-  const { bullish: bullishOB, bearish: bearishOB } = detectOrderBlocks(candles);
-
   return (
     <div className={styles.dashboard}>
       {!marketStatus.open && (
@@ -490,6 +511,9 @@ const TradingDashboard = () => {
         isActive={autoMode && marketStatus.open}
         currentState={botState}
         nextScanIn={nextScanIn}
+        lastScanTime={lastScanTime}
+        nextScanTime={nextScanTime}
+        etaMinutes={etaMinutes || 5}
       />
 
       {scanStatus && (

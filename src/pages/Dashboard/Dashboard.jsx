@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabaseClient';
 import styles from './Dashboard.module.css';
 
 export default function Dashboard() {
+  const navigate = useNavigate();
   const [credits, setCredits] = useState({ btc: 0, eth: 0, nasdaq: 0, gold: 0 });
   const [hasWelcomeBonus, setHasWelcomeBonus] = useState(false);
   const [pendingRequest, setPendingRequest] = useState(null);
@@ -115,6 +117,17 @@ export default function Dashboard() {
       <div className={styles.header}>
         <h1>Tableau de Bord</h1>
         <p>Gérez vos crédits et commencez à trader</p>
+        {totalCredits > 0 && (
+          <button
+            className={styles.tradingButton}
+            onClick={() => navigate('/trading')}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+            </svg>
+            Accéder au Trading
+          </button>
+        )}
       </div>
 
       <div className={styles.creditsSection}>

@@ -16,6 +16,7 @@
 .header {
   text-align: center;
   margin-bottom: 3rem;
+  position: relative;
 }
 
 .header h1 {
@@ -27,6 +28,35 @@
 .header p {
   color: #64748b;
   font-size: 1.1rem;
+  margin-bottom: 1.5rem;
+}
+
+.tradingButton {
+  background: linear-gradient(135deg, #00e676 0%, #00c853 100%);
+  color: #000;
+  border: none;
+  padding: 1rem 2rem;
+  border-radius: 12px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 16px rgba(0, 230, 118, 0.3);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.tradingButton svg {
+  width: 24px;
+  height: 24px;
+  stroke-width: 2.5;
+}
+
+.tradingButton:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(0, 230, 118, 0.4);
+  background: linear-gradient(135deg, #69f0ae 0%, #00e676 100%);
 }
 
 .creditsSection {

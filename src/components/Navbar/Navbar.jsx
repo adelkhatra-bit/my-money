@@ -37,6 +37,15 @@ const Navbar = ({ isSuperAdmin }) => {
           <span>Dashboard</span>
         </Link>
         <Link
+          to="/trading"
+          className={`${styles.navButton} ${styles.tradingButton} ${location.pathname === '/trading' ? styles.active : ''}`}
+        >
+          <svg className={styles.icon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+          </svg>
+          <span>Trading</span>
+        </Link>
+        <Link
           to="/accounts"
           className={`${styles.navButton} ${location.pathname === '/accounts' ? styles.active : ''}`}
         >

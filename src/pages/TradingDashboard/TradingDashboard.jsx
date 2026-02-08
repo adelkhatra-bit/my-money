@@ -3,6 +3,7 @@ import TradingChart from '../../components/TradingChart/TradingChart';
 import SignalProcess from '../../components/SignalProcess/SignalProcess';
 import BotStatus from '../../components/BotStatus/BotStatus';
 import PositionHistory from '../../components/PositionHistory/PositionHistory';
+import TrailingStopPopup from '../../components/TrailingStopPopup/TrailingStopPopup';
 import { fetchHistoricalData, connectToMarketData, getCurrentPrice } from '../../services/marketData';
 import { generateSignal } from '../../services/signalEngine';
 import { calculatePositionSize } from '../../services/riskCalculator';
@@ -11,6 +12,7 @@ import { isMarketOpen, getMarketStatus } from '../../services/marketHours';
 import { logAction } from '../../services/actionHistory';
 import { botService } from '../../services/botService';
 import { newsDetection } from '../../services/newsDetection';
+import { calculateTrailingStop, shouldUpdateTrailingStop } from '../../services/trailingStop';
 import { supabase } from '../../lib/supabaseClient';
 import styles from './TradingDashboard.module.css';
 
@@ -51,6 +53,9 @@ const TradingDashboard = () => {
   const [userId, setUserId] = useState(null);
   const [newsSuspension, setNewsSuspension] = useState(false);
   const [positionsHistory, setPositionsHistory] = useState([]);
+  const [showTrailingStopPopup, setShowTrailingStopPopup] = useState(false);
+  const [trailingStopData, setTrailingStopData] = useState(null);
+  const [lastTrailingStopUpdate, setLastTrailingStopUpdate] = useState(null);
 
   useEffect(() => {
     if (market === 'NASDAQ' || market === 'GOLD') {
@@ -278,6 +283,60 @@ const TradingDashboard = () => {
           const currentPrice = await getCurrentPrice(position.market, position.platform);
 
           if (!currentPrice) continue;
+
+          if (position.market === market && shouldUpdateTrailingStop(position, lastTrailingStopUpdate)) {
+            const trailingResult = calculateTrailingStop(position, currentPrice, supports, resistances);
+
+            if (trailingResult) {
+              console.log('🛡️ TRAILING STOP ACTIVÉ:', trailingResult);
+
+              const oldSL = position.stop_loss;
+              const newSL = trailingResult.newStopLoss;
+
+              await supabase
+                .from('positions')
+                .update({ stop_loss: newSL })
+                .eq('id', position.id);
+
+              await logAction(userId, 'TRAILING_STOP_MOVED', position.market, position.platform, {
+                direction: position.direction,
+                old_stop_loss: oldSL,
+                new_stop_loss: newSL,
+                current_price: currentPrice,
+                reason: trailingResult.reason,
+                gain_protected: trailingResult.gainProtected
+              });
+
+              setTrailingStopData({
+                direction: position.direction,
+                oldSL,
+                newSL,
+                currentPrice,
+                reason: trailingResult.reason,
+                gainProtected: trailingResult.gainProtected
+              });
+              setShowTrailingStopPopup(true);
+              setLastTrailingStopUpdate(Date.now());
+
+              if ('Notification' in window && Notification.permission === 'granted') {
+                new Notification('🛡️ Stop Loss Sécurisé!', {
+                  body: `+${trailingResult.gainProtected}% de gains protégés sur ${position.market}`,
+                  icon: '/logo192.png',
+                  tag: 'trailing-stop'
+                });
+              }
+
+              position.stop_loss = newSL;
+              hasUpdates = true;
+
+              if (currentPosition && currentPosition.id === position.id) {
+                setCurrentPosition({
+                  ...currentPosition,
+                  stop_loss: newSL
+                });
+              }
+            }
+          }
 
           let unrealizedPnl = 0;
           let newStatus = 'OPEN';
@@ -929,6 +988,15 @@ const TradingDashboard = () => {
       />
 
       <PositionHistory positions={positionsHistory} />
+
+      <TrailingStopPopup
+        show={showTrailingStopPopup}
+        direction={trailingStopData?.direction}
+        oldSL={trailingStopData?.oldSL}
+        newSL={trailingStopData?.newSL}
+        currentPrice={trailingStopData?.currentPrice}
+        onClose={() => setShowTrailingStopPopup(false)}
+      />
 
       <div className={styles.statsBar}>
         <div className={styles.statItem}>

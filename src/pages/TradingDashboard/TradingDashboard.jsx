@@ -478,7 +478,7 @@ const TradingDashboard = () => {
           });
         }
 
-        setShowAnalysis(true);
+        setShowAnalysis(false);
         setSignalState({
           isScanning: false,
           preAlert: { market, platform, direction: result.signal.direction },
@@ -515,6 +515,7 @@ const TradingDashboard = () => {
             confidence: result.signal.confidence || 75
           };
 
+          setShowAnalysis(true);
           setSignalState({
             isScanning: false,
             preAlert: null,

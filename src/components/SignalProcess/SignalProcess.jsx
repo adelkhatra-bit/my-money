@@ -63,7 +63,7 @@ const SignalProcess = ({
           <h3>PRÉPARE-TOI</h3>
           <p>Une position <strong>{preAlert.direction === 'LONG' ? 'ACHAT (LONG)' : 'VENTE (SHORT)'}</strong> est en préparation</p>
           <p className={styles.marketInfo}>Marché: {preAlert.market} | Plateforme: {preAlert.platform}</p>
-          <p className={styles.stayReadyText}>Les tracés sont maintenant visibles sur le graphique</p>
+          <p className={styles.stayReadyText}>Analyse en cours - Attends la confirmation</p>
           <p className={styles.stayReadyText}>La confirmation arrive dans environ 2 minutes</p>
           <div className={styles.buttonGroup}>
             <button

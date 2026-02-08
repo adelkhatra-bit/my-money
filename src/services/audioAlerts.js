@@ -27,9 +27,10 @@ class AudioAlertService {
 
     const now = Date.now();
     const lastTime = this.lastAlertTime[alertType] || 0;
+    const minTime = alertType === 'signal' ? 30000 : this.minTimeBetweenAlerts;
 
-    if (now - lastTime < this.minTimeBetweenAlerts) {
-      console.log(`[AudioAlerts] Alert "${alertType}" bloqué - Trop rapide (${now - lastTime}ms depuis le dernier)`);
+    if (now - lastTime < minTime) {
+      console.log(`[AudioAlerts] Alert "${alertType}" bloqué - Trop rapide (${now - lastTime}ms depuis le dernier, minimum ${minTime}ms)`);
       return false;
     }
 

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import TradingChart from '../../components/TradingChart/TradingChart';
 import SignalProcess from '../../components/SignalProcess/SignalProcess';
 import BotStatus from '../../components/BotStatus/BotStatus';
+import PositionHistory from '../../components/PositionHistory/PositionHistory';
 import { fetchHistoricalData, connectToMarketData, getCurrentPrice } from '../../services/marketData';
 import { generateSignal } from '../../services/signalEngine';
 import { calculatePositionSize } from '../../services/riskCalculator';
@@ -49,6 +50,7 @@ const TradingDashboard = () => {
   const [dismissedSignals, setDismissedSignals] = useState(new Set());
   const [userId, setUserId] = useState(null);
   const [newsSuspension, setNewsSuspension] = useState(false);
+  const [positionsHistory, setPositionsHistory] = useState([]);
 
   useEffect(() => {
     if (market === 'NASDAQ' || market === 'GOLD') {
@@ -190,9 +192,11 @@ const TradingDashboard = () => {
         if (accounts) {
           setActiveAccount(accounts);
           loadStats(profile.id, accounts);
+          loadPositionsHistory(profile.id);
         } else {
           setActiveAccount(null);
           loadStats(profile.id, null);
+          loadPositionsHistory(profile.id);
         }
 
         const { data: creditData } = await supabase
@@ -214,6 +218,31 @@ const TradingDashboard = () => {
       }
     } catch (error) {
       console.error('Error loading user data:', error);
+    }
+  };
+
+  const loadPositionsHistory = async (userId) => {
+    try {
+      const { data: positions } = await supabase
+        .from('positions')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('market', market)
+        .order('created_at', { ascending: false })
+        .limit(20);
+
+      if (positions) {
+        setPositionsHistory(positions);
+
+        const openPosition = positions.find(p => p.status === 'OPEN');
+        if (openPosition) {
+          setCurrentPosition(openPosition);
+        } else {
+          setCurrentPosition(null);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading positions history:', error);
     }
   };
 
@@ -347,6 +376,7 @@ const TradingDashboard = () => {
 
       if (hasUpdates) {
         await loadStats(userId, accountToUse);
+        await loadPositionsHistory(userId);
       }
 
       const allPositions = await supabase
@@ -702,6 +732,7 @@ const TradingDashboard = () => {
       setBotState('position_locked');
       await loadUserData();
       await loadStats(profile.id, activeAccount);
+      await loadPositionsHistory(profile.id);
     } catch (error) {
       console.error('[Position] Error accepting signal:', error);
 
@@ -913,6 +944,8 @@ const TradingDashboard = () => {
         onDismissSignal={handleDismissSignal}
         userCredits={credits.remaining}
       />
+
+      <PositionHistory positions={positionsHistory} />
 
       <div className={styles.statsBar}>
         <div className={styles.statItem}>

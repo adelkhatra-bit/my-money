@@ -62,9 +62,13 @@ function App() {
 
   const checkSuperAdmin = async (userId) => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const isSuperAdmin = session?.user?.app_metadata?.is_super_admin || false;
-      setIsSuperAdmin(isSuperAdmin);
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('is_super_admin')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      setIsSuperAdmin(profile?.is_super_admin || false);
     } catch (error) {
       console.error('Error checking super admin:', error);
       setIsSuperAdmin(false);

@@ -257,9 +257,9 @@ const TradingDashboard = () => {
               .eq('id', position.id);
 
             if (newStatus === 'TP1_HIT' || newStatus === 'TP2_HIT') {
-              audioAlerts.playTakeProfit();
+              audioAlerts.takeProfitAlert();
             } else if (newStatus === 'SL_HIT') {
-              audioAlerts.playStopLoss();
+              audioAlerts.stopLossAlert();
             }
           } else {
             await supabase
@@ -438,6 +438,26 @@ const TradingDashboard = () => {
     }
     performScan();
   };
+
+  useEffect(() => {
+    let scanInterval;
+
+    if (autoMode && marketStatus.open && !scanning) {
+      performScan();
+
+      scanInterval = setInterval(() => {
+        if (!scanning) {
+          performScan();
+        }
+      }, 30000);
+    }
+
+    return () => {
+      if (scanInterval) {
+        clearInterval(scanInterval);
+      }
+    };
+  }, [autoMode, marketStatus.open]);
 
   const handleAcceptSignal = async (signal) => {
     if (!activeAccount) {

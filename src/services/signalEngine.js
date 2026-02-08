@@ -188,14 +188,14 @@ export const generateSignal = async (market, platform, candles) => {
       confidence += 5;
     }
 
-    entryMin = currentPrice * 0.998;
+    entryMin = currentPrice * 0.999;
     entryMax = currentPrice * 1.001;
     stopLoss = currentPrice * 1.015;
 
     if (supports.length > 0 && supports[0] < currentPrice * 0.985) {
-      takeProfit1 = supports[0] * 1.005;
+      takeProfit1 = supports[0] * 0.995;
       if (supports.length > 1 && supports[1] < currentPrice * 0.97) {
-        takeProfit2 = supports[1] * 1.005;
+        takeProfit2 = supports[1] * 0.995;
       } else {
         takeProfit2 = currentPrice * 0.96;
       }

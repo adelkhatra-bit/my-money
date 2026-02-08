@@ -411,6 +411,13 @@ const TradingDashboard = () => {
               .from('positions')
               .update({ pnl: unrealizedPnl })
               .eq('id', position.id);
+
+            if (currentPosition && currentPosition.id === position.id) {
+              setCurrentPosition({
+                ...currentPosition,
+                pnl: unrealizedPnl
+              });
+            }
           }
         }
       }
@@ -485,6 +492,33 @@ const TradingDashboard = () => {
       setScanStatus('Crédits épuisés - Rechargez votre compte');
       setBotState('idle');
       return;
+    }
+
+    if (currentPosition && currentPosition.status === 'OPEN') {
+      setScanStatus('Position en cours - Aucun nouveau scan');
+      setBotState('idle');
+      return;
+    }
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: openPositions } = await supabase
+          .from('positions')
+          .select('id, status')
+          .eq('user_id', userId)
+          .eq('market', market)
+          .eq('platform', platform)
+          .eq('status', 'OPEN');
+
+        if (openPositions && openPositions.length > 0) {
+          setScanStatus('Position déjà ouverte - Aucun nouveau scan');
+          setBotState('idle');
+          return;
+        }
+      }
+    } catch (error) {
+      console.error('Erreur vérification positions:', error);
     }
 
     const now = new Date();
@@ -636,6 +670,9 @@ const TradingDashboard = () => {
       botService.removeCallback(scanCallback);
       if (!autoMode) {
         botService.stop();
+        setSignalState({ isScanning: false, preAlert: null, signal: null });
+        setScanStatus('');
+        setBotState('idle');
       }
     }
 
@@ -670,6 +707,20 @@ const TradingDashboard = () => {
 
       if (!profile) {
         alert('Profil introuvable');
+        return;
+      }
+
+      const { data: existingOpenPosition } = await supabase
+        .from('positions')
+        .select('id')
+        .eq('user_id', profile.id)
+        .eq('market', signal.market)
+        .eq('platform', signal.platform)
+        .eq('status', 'OPEN');
+
+      if (existingOpenPosition && existingOpenPosition.length > 0) {
+        alert('Une position est déjà ouverte sur ce marché');
+        setSignalState({ isScanning: false, preAlert: null, signal: null });
         return;
       }
 
@@ -797,12 +848,64 @@ const TradingDashboard = () => {
     }
   };
 
-  const handleDeclineSignal = () => {
+  const handleDeclineSignal = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user && userId) {
+        const { data: creditData } = await supabase
+          .from('position_credits')
+          .select('*')
+          .eq('user_id', userId)
+          .eq('market', market)
+          .maybeSingle();
+
+        if (creditData) {
+          const newUsedCredits = creditData.used_credits + 1;
+          await supabase
+            .from('position_credits')
+            .update({ used_credits: newUsedCredits })
+            .eq('user_id', userId)
+            .eq('market', market);
+
+          setCredits({
+            remaining: creditData.total_credits - newUsedCredits,
+            total: creditData.total_credits
+          });
+
+          if (signalState.signal) {
+            await supabase
+              .from('signal_history')
+              .insert({
+                user_id: userId,
+                market: signalState.signal.market,
+                platform: signalState.signal.platform,
+                timeframe: signalState.signal.timeframe || timeframe,
+                direction: signalState.signal.direction,
+                entry_price: (signalState.signal.entry_min + signalState.signal.entry_max) / 2,
+                stop_loss: signalState.signal.stop_loss,
+                take_profit_1: signalState.signal.take_profit_1,
+                take_profit_2: signalState.signal.take_profit_2,
+                lots: 0,
+                status: 'refusé',
+                result: 'refusé'
+              });
+
+            await logAction(userId, 'SIGNAL_REFUSED', signalState.signal.market, signalState.signal.platform, {
+              direction: signalState.signal.direction,
+              credit_debited: true
+            });
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Erreur lors du refus du signal:', error);
+    }
+
     setSignalState({ isScanning: false, preAlert: null, signal: null });
     setCurrentSignal(null);
     setShowAnalysis(false);
     setBotState('idle');
-    setScanStatus('Signal refusé');
+    setScanStatus('Signal refusé - 1 crédit débité');
   };
 
   const handleRejectSignal = () => {

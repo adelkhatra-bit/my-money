@@ -265,9 +265,14 @@ const TradingDashboard = () => {
         const closedPositions = positions.filter(p =>
           p.status === 'TP1_HIT' || p.status === 'TP2_HIT' || p.status === 'SL_HIT'
         );
+        const openPositions = positions.filter(p => p.status === 'OPEN');
+
         const wins = closedPositions.filter(p => p.status === 'TP1_HIT' || p.status === 'TP2_HIT').length;
         const losses = closedPositions.filter(p => p.status === 'SL_HIT').length;
-        const totalPnl = closedPositions.reduce((sum, p) => sum + (p.pnl || 0), 0);
+
+        const closedPnl = closedPositions.reduce((sum, p) => sum + (p.pnl || 0), 0);
+        const openPnl = openPositions.reduce((sum, p) => sum + (p.pnl || 0), 0);
+        const totalPnl = closedPnl + openPnl;
 
         setStats({
           balance: (accountToUse?.capital || 0) + totalPnl,
@@ -548,33 +553,6 @@ const TradingDashboard = () => {
       setScanStatus('Crédits épuisés - Rechargez votre compte');
       setBotState('idle');
       return;
-    }
-
-    if (currentPosition && currentPosition.status === 'OPEN') {
-      setScanStatus('Position en cours - Aucun nouveau scan');
-      setBotState('idle');
-      return;
-    }
-
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data: openPositions } = await supabase
-          .from('positions')
-          .select('id, status')
-          .eq('user_id', userId)
-          .eq('market', market)
-          .eq('platform', platform)
-          .eq('status', 'OPEN');
-
-        if (openPositions && openPositions.length > 0) {
-          setScanStatus('Position déjà ouverte - Aucun nouveau scan');
-          setBotState('idle');
-          return;
-        }
-      }
-    } catch (error) {
-      console.error('Erreur vérification positions:', error);
     }
 
     const now = new Date();

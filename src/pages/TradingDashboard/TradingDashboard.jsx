@@ -658,10 +658,24 @@ const TradingDashboard = () => {
           });
         }
 
+        const currentPrice = candles && candles.length > 0 ? candles[candles.length - 1].close : null;
+
         setShowAnalysis(false);
         setSignalState({
           isScanning: false,
-          preAlert: { market, platform, direction: result.signal.direction },
+          preAlert: {
+            market,
+            platform,
+            direction: result.signal.direction,
+            currentPrice,
+            entry_min: result.signal.entry_min,
+            entry_max: result.signal.entry_max,
+            stop_loss: result.signal.stop_loss,
+            take_profit_1: result.signal.take_profit_1,
+            take_profit_2: result.signal.take_profit_2,
+            supports: supports || [],
+            resistances: resistances || []
+          },
           signal: null
         });
         setBotState('pre_alert');

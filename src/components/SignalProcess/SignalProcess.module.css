@@ -304,3 +304,254 @@
   background: #2563eb;
   transform: translateY(-2px);
 }
+
+.alertHeader {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.pulsingIcon {
+  font-size: 3.5rem;
+  animation: pulse 1.5s ease-in-out infinite;
+  margin-bottom: 0.5rem;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0.8;
+  }
+}
+
+.alertTitle {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: #1e293b;
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: -0.5px;
+}
+
+.directionBanner {
+  padding: 1rem;
+  border-radius: 12px;
+  border: 2px solid;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.directionLabel {
+  font-size: 1.3rem;
+  font-weight: 800;
+  margin-bottom: 0.5rem;
+}
+
+.directionExplanation {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.marketInfo {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+  color: #3b82f6;
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.infoItem {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.infoSeparator {
+  color: #cbd5e1;
+  font-weight: 700;
+}
+
+.priceSchema {
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  border: 2px solid #cbd5e1;
+}
+
+.schemaTitle {
+  text-align: center;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.schemaBoxLong,
+.schemaBoxShort {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.schemaLevel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  gap: 0.75rem;
+  transition: transform 0.2s ease;
+}
+
+.schemaLevel:hover {
+  transform: translateX(4px);
+}
+
+.levelIcon {
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+.levelLabel {
+  flex: 1;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #1e293b;
+}
+
+.levelPrice {
+  font-weight: 700;
+  font-size: 1rem;
+  color: #1e293b;
+  font-family: 'Courier New', monospace;
+}
+
+.schemaArrow {
+  text-align: center;
+  font-size: 1.5rem;
+  font-weight: 700;
+  padding: 0.25rem 0;
+  color: #64748b;
+  animation: bounce 1.5s ease-in-out infinite;
+}
+
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+.currentPriceIndicator {
+  text-align: center;
+  padding: 0.75rem;
+  font-weight: 700;
+  font-size: 1.05rem;
+  background: rgba(255, 235, 59, 0.2);
+  border-radius: 8px;
+  border: 2px dashed #ffeb3b;
+  font-family: 'Courier New', monospace;
+}
+
+.schemaNote {
+  text-align: center;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #64748b;
+  margin-top: 0.75rem;
+  padding: 0.5rem;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 6px;
+}
+
+.confirmationInfo {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
+  border: 2px solid #38bdf8;
+  border-radius: 10px;
+  margin-bottom: 1.5rem;
+}
+
+.infoIcon {
+  font-size: 2rem;
+  flex-shrink: 0;
+  animation: rotate 3s linear infinite;
+}
+
+@keyframes rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.infoContent {
+  flex: 1;
+}
+
+.infoMain {
+  margin: 0 0 0.25rem 0;
+  font-weight: 700;
+  font-size: 1rem;
+  color: #0c4a6e;
+}
+
+.infoSub {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #0369a1;
+}
+
+.infoSub strong {
+  color: #0c4a6e;
+  font-weight: 800;
+}
+
+@media (max-width: 640px) {
+  .preAlertBox {
+    padding: 1.5rem;
+    max-width: 95%;
+  }
+
+  .alertTitle {
+    font-size: 1.4rem;
+  }
+
+  .directionLabel {
+    font-size: 1.1rem;
+  }
+
+  .schemaLevel {
+    padding: 0.6rem 0.75rem;
+  }
+
+  .levelLabel {
+    font-size: 0.8rem;
+  }
+
+  .levelPrice {
+    font-size: 0.9rem;
+  }
+
+  .pulsingIcon {
+    font-size: 2.5rem;
+  }
+
+  .confirmationInfo {
+    flex-direction: column;
+    text-align: center;
+  }
+}

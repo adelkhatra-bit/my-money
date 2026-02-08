@@ -62,27 +62,139 @@ const SignalProcess = ({
   }
 
   if (preAlert && !userReady) {
+    const isLong = preAlert.direction === 'LONG';
+    const entryMid = preAlert.entry_min && preAlert.entry_max
+      ? (preAlert.entry_min + preAlert.entry_max) / 2
+      : null;
+    const directionColor = isLong ? '#00e676' : '#ef4444';
+
     return (
       <div className={styles.preAlertOverlay}>
         <div className={styles.preAlertBox}>
-          <div className={styles.warningIcon}>⚠️</div>
-          <h3>PRÉPARE-TOI</h3>
-          <p>Une position <strong>{preAlert.direction === 'LONG' ? 'ACHAT (LONG)' : 'VENTE (SHORT)'}</strong> est en préparation</p>
-          <p className={styles.marketInfo}>Marché: {preAlert.market} | Plateforme: {preAlert.platform}</p>
-          <p className={styles.stayReadyText}>Analyse en cours - Attends la confirmation</p>
-          <p className={styles.stayReadyText}>La confirmation arrive dans 5 secondes</p>
+          <div className={styles.alertHeader}>
+            <div className={styles.pulsingIcon}>⚠️</div>
+            <h3 className={styles.alertTitle}>UNE ENTRÉE EST BIENTÔT PRÊTE !</h3>
+          </div>
+
+          <div className={styles.directionBanner} style={{ background: `linear-gradient(135deg, ${directionColor}22, ${directionColor}11)`, borderColor: directionColor }}>
+            <div className={styles.directionLabel}>
+              {isLong ? '🟢 POSITION ACHAT (LONG)' : '🔴 POSITION VENTE (SHORT)'}
+            </div>
+            <div className={styles.directionExplanation}>
+              {isLong ? '📈 Profit si le prix MONTE' : '📉 Profit si le prix DESCEND'}
+            </div>
+          </div>
+
+          <div className={styles.marketInfo}>
+            <span className={styles.infoItem}>📊 {preAlert.market}</span>
+            <span className={styles.infoSeparator}>•</span>
+            <span className={styles.infoItem}>🏦 {preAlert.platform}</span>
+          </div>
+
+          {preAlert.currentPrice && entryMid && (
+            <div className={styles.priceSchema}>
+              <div className={styles.schemaTitle}>📍 SCHÉMA DU POINT D'ENTRÉE</div>
+
+              {isLong ? (
+                <div className={styles.schemaBoxLong}>
+                  {preAlert.take_profit_2 && (
+                    <div className={styles.schemaLevel} style={{ background: '#00e67644' }}>
+                      <span className={styles.levelIcon}>🎯</span>
+                      <span className={styles.levelLabel}>TP2 (Objectif 2)</span>
+                      <span className={styles.levelPrice}>{preAlert.take_profit_2.toFixed(2)}</span>
+                    </div>
+                  )}
+
+                  <div className={styles.schemaLevel} style={{ background: '#00e67666' }}>
+                    <span className={styles.levelIcon}>🎯</span>
+                    <span className={styles.levelLabel}>TP1 (Objectif 1)</span>
+                    <span className={styles.levelPrice}>{preAlert.take_profit_1.toFixed(2)}</span>
+                  </div>
+
+                  <div className={styles.schemaArrow}>↑↑↑</div>
+
+                  <div className={styles.schemaLevel} style={{ background: '#2196f3aa', fontWeight: 'bold' }}>
+                    <span className={styles.levelIcon}>➡️</span>
+                    <span className={styles.levelLabel}>ZONE D'ENTRÉE</span>
+                    <span className={styles.levelPrice}>{preAlert.entry_min.toFixed(2)} - {preAlert.entry_max.toFixed(2)}</span>
+                  </div>
+
+                  <div className={styles.currentPriceIndicator} style={{ color: '#ffeb3b' }}>
+                    📍 Prix actuel: {preAlert.currentPrice.toFixed(2)}
+                  </div>
+
+                  <div className={styles.schemaLevel} style={{ background: '#ef444466' }}>
+                    <span className={styles.levelIcon}>🛑</span>
+                    <span className={styles.levelLabel}>STOP LOSS (Protection)</span>
+                    <span className={styles.levelPrice}>{preAlert.stop_loss.toFixed(2)}</span>
+                  </div>
+
+                  <div className={styles.schemaNote}>
+                    ✅ LONG: TP au-dessus • SL en dessous
+                  </div>
+                </div>
+              ) : (
+                <div className={styles.schemaBoxShort}>
+                  <div className={styles.schemaLevel} style={{ background: '#ef444466' }}>
+                    <span className={styles.levelIcon}>🛑</span>
+                    <span className={styles.levelLabel}>STOP LOSS (Protection)</span>
+                    <span className={styles.levelPrice}>{preAlert.stop_loss.toFixed(2)}</span>
+                  </div>
+
+                  <div className={styles.currentPriceIndicator} style={{ color: '#ffeb3b' }}>
+                    📍 Prix actuel: {preAlert.currentPrice.toFixed(2)}
+                  </div>
+
+                  <div className={styles.schemaLevel} style={{ background: '#ff4444aa', fontWeight: 'bold' }}>
+                    <span className={styles.levelIcon}>➡️</span>
+                    <span className={styles.levelLabel}>ZONE D'ENTRÉE</span>
+                    <span className={styles.levelPrice}>{preAlert.entry_min.toFixed(2)} - {preAlert.entry_max.toFixed(2)}</span>
+                  </div>
+
+                  <div className={styles.schemaArrow}>↓↓↓</div>
+
+                  <div className={styles.schemaLevel} style={{ background: '#00e67666' }}>
+                    <span className={styles.levelIcon}>🎯</span>
+                    <span className={styles.levelLabel}>TP1 (Objectif 1)</span>
+                    <span className={styles.levelPrice}>{preAlert.take_profit_1.toFixed(2)}</span>
+                  </div>
+
+                  {preAlert.take_profit_2 && (
+                    <div className={styles.schemaLevel} style={{ background: '#00e67644' }}>
+                      <span className={styles.levelIcon}>🎯</span>
+                      <span className={styles.levelLabel}>TP2 (Objectif 2)</span>
+                      <span className={styles.levelPrice}>{preAlert.take_profit_2.toFixed(2)}</span>
+                    </div>
+                  )}
+
+                  <div className={styles.schemaNote}>
+                    ✅ SHORT: SL au-dessus • TP en dessous
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className={styles.confirmationInfo}>
+            <div className={styles.infoIcon}>🔍</div>
+            <div className={styles.infoContent}>
+              <p className={styles.infoMain}>Analyse approfondie en cours...</p>
+              <p className={styles.infoSub}>La confirmation finale arrive dans <strong>5 secondes</strong></p>
+            </div>
+          </div>
+
           <div className={styles.buttonGroup}>
             <button
               className={styles.readyBtn}
               onClick={() => setUserReady(true)}
             >
-              OK - Je suis prêt
+              ✅ OK - Je suis prêt
             </button>
             <button
               className={styles.cancelBtn}
               onClick={() => onDeclineSignal()}
             >
-              Annuler
+              ❌ Annuler
             </button>
           </div>
         </div>

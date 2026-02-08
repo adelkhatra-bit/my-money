@@ -60,6 +60,43 @@ export const connectToMarketData = (market, platform, callback) => {
   return () => {};
 };
 
+const generateDemoData = (market, timeframe, limit) => {
+  const basePrice = market === 'NASDAQ' ? 16500 : 2050;
+  const volatility = market === 'NASDAQ' ? 50 : 10;
+
+  const now = Math.floor(Date.now() / 1000);
+  const timeframeSeconds = timeframe === '1m' ? 60 : timeframe === '5m' ? 300 : timeframe === '15m' ? 900 : timeframe === '1h' ? 3600 : 14400;
+
+  const candles = [];
+  let currentPrice = basePrice;
+
+  for (let i = limit - 1; i >= 0; i--) {
+    const timestamp = now - (i * timeframeSeconds);
+
+    const change = (Math.random() - 0.5) * volatility;
+    currentPrice += change;
+
+    const open = currentPrice;
+    const close = currentPrice + (Math.random() - 0.5) * volatility * 0.5;
+    const high = Math.max(open, close) + Math.random() * volatility * 0.3;
+    const low = Math.min(open, close) - Math.random() * volatility * 0.3;
+    const volume = Math.random() * 10000000;
+
+    candles.push({
+      time: timestamp,
+      open: parseFloat(open.toFixed(2)),
+      high: parseFloat(high.toFixed(2)),
+      low: parseFloat(low.toFixed(2)),
+      close: parseFloat(close.toFixed(2)),
+      volume: parseFloat(volume.toFixed(2))
+    });
+
+    currentPrice = close;
+  }
+
+  return candles;
+};
+
 export const fetchHistoricalData = async (market, platform, timeframe = '5m', limit = 500) => {
   try {
     if (market === 'BTC' || market === 'ETH') {
@@ -86,6 +123,11 @@ export const fetchHistoricalData = async (market, platform, timeframe = '5m', li
       }));
     }
 
+    if (market === 'NASDAQ' || market === 'GOLD') {
+      console.log(`Generating demo data for ${market} (Paper Trading Mode)`);
+      return generateDemoData(market, timeframe, limit);
+    }
+
     return [];
   } catch (error) {
     console.error('Error fetching historical data:', error);
@@ -109,6 +151,15 @@ export const getCurrentPrice = async (market, platform) => {
       const data = await response.json();
       return parseFloat(data.price);
     }
+
+    if (market === 'NASDAQ') {
+      return 16500 + (Math.random() - 0.5) * 100;
+    }
+
+    if (market === 'GOLD') {
+      return 2050 + (Math.random() - 0.5) * 20;
+    }
+
     return 0;
   } catch (error) {
     console.error('Error fetching current price:', error);

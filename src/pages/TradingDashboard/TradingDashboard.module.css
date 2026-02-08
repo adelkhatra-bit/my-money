@@ -6,6 +6,28 @@
   flex-direction: column;
 }
 
+.warningBanner {
+  background: rgba(255, 193, 7, 0.2);
+  border: 2px solid #ffc107;
+  color: #ffc107;
+  padding: 16px 24px;
+  border-radius: 8px;
+  margin: 20px 20px 0;
+  text-align: center;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.warningBanner a {
+  color: #00e676;
+  text-decoration: underline;
+  font-weight: 700;
+}
+
+.warningBanner a:hover {
+  opacity: 0.8;
+}
+
 .header {
   background: #1a1a1a;
   padding: 20px;
@@ -15,10 +37,30 @@
   z-index: 100;
 }
 
+.titleRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
 .header h1 {
-  margin: 0 0 16px 0;
+  margin: 0;
   font-size: 24px;
   color: #00e676;
+}
+
+.paperTradingBadge {
+  background: rgba(33, 150, 243, 0.2);
+  border: 2px solid #2196f3;
+  color: #2196f3;
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
 }
 
 .controls {

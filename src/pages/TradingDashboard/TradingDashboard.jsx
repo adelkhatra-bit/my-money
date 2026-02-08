@@ -35,6 +35,18 @@ const TradingDashboard = () => {
   const [credits, setCredits] = useState({ remaining: 0, total: 0 });
 
   useEffect(() => {
+    if (market === 'NASDAQ' || market === 'GOLD') {
+      if (platform === 'binance' || platform === 'bybit' || platform === 'coinbase') {
+        setPlatform('ftmo');
+      }
+    } else if (market === 'BTC' || market === 'ETH') {
+      if (platform === 'ftmo' || platform === 'topstep' || platform === 'apex') {
+        setPlatform('binance');
+      }
+    }
+  }, [market]);
+
+  useEffect(() => {
     loadHistoricalData();
     checkMarketStatus();
 
@@ -80,6 +92,10 @@ const TradingDashboard = () => {
 
         if (accounts) {
           setActiveAccount(accounts);
+          loadStats(profile.id, accounts);
+        } else {
+          setActiveAccount(null);
+          loadStats(profile.id, null);
         }
 
         const { data: creditData } = await supabase
@@ -94,34 +110,39 @@ const TradingDashboard = () => {
             remaining: creditData.remaining_credits,
             total: creditData.total_credits
           });
+        } else {
+          setCredits({ remaining: 0, total: 0 });
         }
-
-        loadStats(profile.id);
       }
     } catch (error) {
       console.error('Error loading user data:', error);
     }
   };
 
-  const loadStats = async (userId) => {
+  const loadStats = async (userId, account = null) => {
     try {
+      const accountToUse = account || activeAccount;
+
       const { data: positions } = await supabase
         .from('positions')
         .select('*')
         .eq('user_id', userId);
 
       if (positions) {
-        const wins = positions.filter(p => p.status === 'TP1_HIT' || p.status === 'TP2_HIT').length;
-        const losses = positions.filter(p => p.status === 'SL_HIT').length;
-        const totalPnl = positions.reduce((sum, p) => sum + (p.pnl || 0), 0);
+        const closedPositions = positions.filter(p =>
+          p.status === 'TP1_HIT' || p.status === 'TP2_HIT' || p.status === 'SL_HIT'
+        );
+        const wins = closedPositions.filter(p => p.status === 'TP1_HIT' || p.status === 'TP2_HIT').length;
+        const losses = closedPositions.filter(p => p.status === 'SL_HIT').length;
+        const totalPnl = closedPositions.reduce((sum, p) => sum + (p.pnl || 0), 0);
 
         setStats({
-          balance: activeAccount?.capital || 0,
+          balance: accountToUse?.capital || 0,
           pnl: totalPnl,
           wins,
           losses,
-          winrate: positions.length > 0 ? (wins / positions.length) * 100 : 0,
-          totalTrades: positions.length
+          winrate: closedPositions.length > 0 ? (wins / closedPositions.length) * 100 : 0,
+          totalTrades: closedPositions.length
         });
       }
     } catch (error) {
@@ -292,8 +313,17 @@ const TradingDashboard = () => {
 
   return (
     <div className={styles.dashboard}>
+      {!activeAccount && (
+        <div className={styles.warningBanner}>
+          Aucun compte de trading actif configuré. <a href="/accounts">Créez un compte</a> pour commencer à recevoir des signaux.
+        </div>
+      )}
+
       <div className={styles.header}>
-        <h1>AI Trading Platform</h1>
+        <div className={styles.titleRow}>
+          <h1>AI Trading Platform</h1>
+          <div className={styles.paperTradingBadge}>PAPER TRADING MODE</div>
+        </div>
 
         <div className={styles.controls}>
           <div className={styles.controlGroup}>

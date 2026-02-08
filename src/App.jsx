@@ -7,6 +7,7 @@ import Signup from './pages/Auth/Signup';
 import AccountManagement from './pages/AccountManagement/AccountManagement';
 import SuperAdmin from './pages/SuperAdmin/SuperAdmin';
 import LegalDisclaimer from './components/LegalDisclaimer/LegalDisclaimer';
+import Navbar from './components/Navbar/Navbar';
 import './App.css';
 
 function App() {
@@ -85,6 +86,7 @@ function App() {
 
   return (
     <BrowserRouter>
+      {user && <Navbar isSuperAdmin={isSuperAdmin} />}
       <Routes>
         <Route
           path="/login"

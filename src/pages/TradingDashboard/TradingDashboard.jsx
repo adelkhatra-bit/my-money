@@ -636,6 +636,8 @@ const TradingDashboard = () => {
         setBotState('pre_alert');
         setScanStatus(`⚠️ PRÉPARE-TOI : Une position ${result.signal.direction === 'LONG' ? 'ACHAT' : 'VENTE'} est en préparation sur ${market}`);
 
+        audioAlerts.playAlert('pre_alert');
+
         if ('Notification' in window && Notification.permission === 'granted' && document.hidden) {
           new Notification('🤖 Signal de Trading Détecté!', {
             body: `Une position ${result.signal.direction === 'LONG' ? 'ACHAT' : 'VENTE'} est en préparation sur ${market}`,
@@ -664,6 +666,8 @@ const TradingDashboard = () => {
             confidence: result.signal.confidence || 75
           };
 
+          audioAlerts.playAlert('signal');
+
           setShowAnalysis(true);
           setSignalState({
             isScanning: false,
@@ -683,7 +687,7 @@ const TradingDashboard = () => {
               requireInteraction: true
             });
           }
-        }, 120000);
+        }, 5000);
       } else {
         setScanStatus(`ℹ️ ${result.reason || 'Aucune opportunité détectée pour le moment'}`);
         setSignalState({ isScanning: false, preAlert: null, signal: null });

@@ -22,7 +22,7 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
         horzLines: { color: '#2b2b2b' },
       },
       width: chartContainerRef.current.clientWidth,
-      height: isFullscreen ? window.innerHeight - 100 : 450,
+      height: isFullscreen ? window.innerHeight - 100 : 330,
       rightPriceScale: {
         borderColor: '#3a3a3a',
       },

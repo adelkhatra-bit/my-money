@@ -9,7 +9,7 @@ import { getCurrentPrice } from './marketData';
 import { isMarketOpen } from './marketHours';
 
 const lastSignalTime = {};
-const COOLDOWN_MS = 2 * 60 * 1000;
+const COOLDOWN_MS = 30 * 1000;
 
 export const generateSignal = async (market, platform, candles) => {
   if (!isMarketOpen(market)) {
@@ -85,10 +85,10 @@ export const generateSignal = async (market, platform, candles) => {
   const nearResistance = resistances.length > 0 &&
     Math.abs(currentPrice - resistances[resistances.length - 1]) / currentPrice < 0.03;
 
-  if (rsi < 40 && (macd.crossover === 'bullish' || macd.trend === 'bullish') && trend !== 'downtrend') {
+  if (rsi < 50 && macd.trend === 'bullish') {
     direction = 'LONG';
     reasons.push(`RSI favorable (${rsi.toFixed(1)})`);
-    confidence += 25;
+    confidence += 30;
 
     if (macd.crossover === 'bullish') {
       reasons.push('Croisement MACD haussier');
@@ -131,10 +131,10 @@ export const generateSignal = async (market, platform, candles) => {
       takeProfit1 = currentPrice * 1.025;
       takeProfit2 = currentPrice * 1.04;
     }
-  } else if (rsi > 60 && (macd.crossover === 'bearish' || macd.trend === 'bearish') && trend !== 'uptrend') {
+  } else if (rsi > 50 && macd.trend === 'bearish') {
     direction = 'SHORT';
     reasons.push(`RSI favorable (${rsi.toFixed(1)})`);
-    confidence += 25;
+    confidence += 30;
 
     if (macd.crossover === 'bearish') {
       reasons.push('Croisement MACD baissier');
@@ -189,18 +189,18 @@ export const generateSignal = async (market, platform, candles) => {
 
   const riskReward = Math.abs((takeProfit1 - entryMin) / (entryMin - stopLoss));
 
-  if (confidence < 45) {
+  if (confidence < 35) {
     return {
       signal: null,
-      reason: `Confiance insuffisante (${confidence}% < 45%)`,
+      reason: `Confiance insuffisante (${confidence}% < 35%)`,
       analysis
     };
   }
 
-  if (riskReward < 1.2) {
+  if (riskReward < 0.8) {
     return {
       signal: null,
-      reason: `Risk/Reward insuffisant (${riskReward.toFixed(2)} < 1.2)`,
+      reason: `Risk/Reward insuffisant (${riskReward.toFixed(2)} < 0.8)`,
       analysis
     };
   }

@@ -139,6 +139,16 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
       const correctDirection = position.take_profit_1 > position.entry_price ? 'LONG' : 'SHORT';
       const isLong = correctDirection === 'LONG';
 
+      console.log('📊 GRAPHIQUE MIS À JOUR avec position:', {
+        id: position.id,
+        market: position.market,
+        direction: correctDirection,
+        entry: position.entry_price.toFixed(5),
+        sl: position.stop_loss.toFixed(5),
+        tp1: position.take_profit_1.toFixed(5),
+        pnl: position.pnl?.toFixed(2) || '0.00'
+      });
+
       if (position.direction !== correctDirection) {
         console.warn('⚠️ DIRECTION POSITION INCORRECTE DÉTECTÉE ET CORRIGÉE', {
           positionDirection: position.direction,

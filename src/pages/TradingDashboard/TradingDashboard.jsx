@@ -179,11 +179,11 @@ const TradingDashboard = () => {
         if (accounts) {
           setActiveAccount(accounts);
           loadStats(profile.id, accounts);
-          loadPositionsHistory(profile.id);
+          loadPositionsHistory(profile.id, accounts);
         } else {
           setActiveAccount(null);
           loadStats(profile.id, null);
-          loadPositionsHistory(profile.id);
+          loadPositionsHistory(profile.id, null);
         }
 
         const { data: creditData } = await supabase
@@ -208,13 +208,23 @@ const TradingDashboard = () => {
     }
   };
 
-  const loadPositionsHistory = async (userId) => {
+  const loadPositionsHistory = async (userId, account = null) => {
     try {
+      const accountToUse = account || activeAccount;
+
+      if (!accountToUse) {
+        console.log('⚠️ Aucun compte actif');
+        setPositionsHistory([]);
+        setCurrentPosition(null);
+        return;
+      }
+
       const { data: positions } = await supabase
         .from('positions')
         .select('*')
         .eq('user_id', userId)
         .eq('market', market)
+        .eq('trading_account_id', accountToUse.id)
         .order('created_at', { ascending: false })
         .limit(20);
 
@@ -223,8 +233,17 @@ const TradingDashboard = () => {
 
         const openPosition = positions.find(p => p.status === 'OPEN');
         if (openPosition) {
+          console.log('📊 Position OUVERTE chargée pour le graphique:', {
+            id: openPosition.id,
+            market: openPosition.market,
+            account: openPosition.trading_account_id,
+            entry: openPosition.entry_price,
+            sl: openPosition.stop_loss,
+            tp1: openPosition.take_profit_1
+          });
           setCurrentPosition(openPosition);
         } else {
+          console.log('✅ Aucune position ouverte sur', market);
           setCurrentPosition(null);
         }
       }
@@ -275,6 +294,16 @@ const TradingDashboard = () => {
         .eq('user_id', userId);
 
       if (!positions) return;
+
+      const openPositions = positions.filter(p => p.status === 'OPEN');
+      if (openPositions.length > 0) {
+        console.log('🔄 SUIVI TEMPS RÉEL:', {
+          totalPositions: openPositions.length,
+          comptes: [...new Set(openPositions.map(p => p.trading_account_id))],
+          markets: [...new Set(openPositions.map(p => p.market))],
+          currentAccount: accountToUse?.id
+        });
+      }
 
       let hasUpdates = false;
 
@@ -336,10 +365,12 @@ const TradingDashboard = () => {
               hasUpdates = true;
 
               if (currentPosition &&
-                  currentPosition.market === position.market &&
-                  currentPosition.platform === position.platform &&
-                  currentPosition.status === 'OPEN') {
+                  currentPosition.id === position.id) {
                 console.log('📈 MISE À JOUR DU SL AFFICHÉ SUR LE GRAPHIQUE:', {
+                  positionId: position.id,
+                  market: position.market,
+                  platform: position.platform,
+                  account: position.trading_account_id,
                   ancien: currentPosition.stop_loss,
                   nouveau: newSL
                 });
@@ -437,10 +468,7 @@ const TradingDashboard = () => {
               .update({ pnl: unrealizedPnl })
               .eq('id', position.id);
 
-            if (currentPosition &&
-                currentPosition.market === position.market &&
-                currentPosition.platform === position.platform &&
-                currentPosition.status === 'OPEN') {
+            if (currentPosition && currentPosition.id === position.id) {
               setCurrentPosition({
                 ...currentPosition,
                 pnl: unrealizedPnl
@@ -452,7 +480,7 @@ const TradingDashboard = () => {
 
       if (hasUpdates) {
         await loadStats(userId, accountToUse);
-        await loadPositionsHistory(userId);
+        await loadPositionsHistory(userId, accountToUse);
       }
 
       const allPositions = await supabase
@@ -849,7 +877,7 @@ const TradingDashboard = () => {
       setBotState('position_locked');
       await loadUserData();
       await loadStats(profile.id, activeAccount);
-      await loadPositionsHistory(profile.id);
+      await loadPositionsHistory(profile.id, activeAccount);
     } catch (error) {
       console.error('[Position] Error accepting signal:', error);
 

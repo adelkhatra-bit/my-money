@@ -37,17 +37,7 @@ const Signup = () => {
       if (authError) throw authError;
 
       if (authData.user) {
-        const { error: profileError } = await supabase
-          .from('user_profiles')
-          .insert({
-            user_id: authData.user.id,
-            email: email,
-            is_super_admin: false
-          });
-
-        if (profileError) throw profileError;
-
-        alert('Compte créé avec succès !');
+        alert('Compte créé avec succès ! Vous pouvez maintenant vous connecter.');
         navigate('/login');
       }
     } catch (error) {

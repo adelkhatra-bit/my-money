@@ -66,25 +66,54 @@ const AccountManagement = () => {
   const loadAccounts = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        setLoading(false);
+        return;
+      }
 
-      const { data: profile } = await supabase
+      let { data: profile, error: profileError } = await supabase
         .from('user_profiles')
         .select('id')
         .eq('user_id', user.id)
         .maybeSingle();
 
-      if (profile) {
-        const { data: accountsData } = await supabase
-          .from('trading_accounts')
-          .select('*')
-          .eq('user_id', profile.id)
-          .order('created_at', { ascending: false });
-
-        setAccounts(accountsData || []);
+      if (profileError) {
+        console.error('Error loading profile:', profileError);
+        setLoading(false);
+        return;
       }
+
+      if (!profile) {
+        const { data: newProfile, error: createError } = await supabase
+          .from('user_profiles')
+          .insert({
+            user_id: user.id,
+            email: user.email,
+            is_super_admin: false
+          })
+          .select()
+          .single();
+
+        if (createError) {
+          console.error('Error creating profile:', createError);
+          alert('Impossible de créer votre profil. Veuillez vous reconnecter.');
+          setLoading(false);
+          return;
+        }
+
+        profile = newProfile;
+      }
+
+      const { data: accountsData } = await supabase
+        .from('trading_accounts')
+        .select('*')
+        .eq('user_id', profile.id)
+        .order('created_at', { ascending: false });
+
+      setAccounts(accountsData || []);
     } catch (error) {
       console.error('Error loading accounts:', error);
+      alert('Erreur de chargement: ' + error.message);
     } finally {
       setLoading(false);
     }
@@ -95,16 +124,25 @@ const AccountManagement = () => {
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        alert('Session expirée. Veuillez vous reconnecter.');
+        return;
+      }
 
-      let { data: profile } = await supabase
+      let { data: profile, error: profileError } = await supabase
         .from('user_profiles')
         .select('id')
         .eq('user_id', user.id)
         .maybeSingle();
 
+      if (profileError) {
+        console.error('Error loading profile:', profileError);
+        alert('Erreur: ' + profileError.message);
+        return;
+      }
+
       if (!profile) {
-        const { data: newProfile, error: profileError } = await supabase
+        const { data: newProfile, error: createError } = await supabase
           .from('user_profiles')
           .insert({
             user_id: user.id,
@@ -114,13 +152,18 @@ const AccountManagement = () => {
           .select()
           .single();
 
-        if (profileError) {
-          console.error('Error creating profile:', profileError);
-          alert('Erreur lors de la création du profil. Veuillez réessayer.');
+        if (createError) {
+          console.error('Error creating profile:', createError);
+          alert('Impossible de créer votre profil. Détails: ' + createError.message + '. Veuillez vous reconnecter.');
           return;
         }
 
         profile = newProfile;
+      }
+
+      if (!newAccount.capital || parseFloat(newAccount.capital) < 200) {
+        alert('Le capital doit être d\'au moins 200 ' + newAccount.currency);
+        return;
       }
 
       const { error } = await supabase
@@ -137,7 +180,10 @@ const AccountManagement = () => {
           max_total_loss: newAccount.max_total_loss ? parseFloat(newAccount.max_total_loss) : null
         });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error creating trading account:', error);
+        throw error;
+      }
 
       alert('Compte créé avec succès !');
       setShowForm(false);

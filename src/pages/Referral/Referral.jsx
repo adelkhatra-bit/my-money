@@ -17,13 +17,30 @@ const Referral = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data: profile } = await supabase
+      let { data: profile } = await supabase
         .from('user_profiles')
         .select('id')
         .eq('user_id', user.id)
         .maybeSingle();
 
-      if (!profile) return;
+      if (!profile) {
+        const { data: newProfile, error: profileError } = await supabase
+          .from('user_profiles')
+          .insert({
+            user_id: user.id,
+            email: user.email,
+            is_super_admin: false
+          })
+          .select()
+          .single();
+
+        if (profileError) {
+          console.error('Error creating profile:', profileError);
+          return;
+        }
+
+        profile = newProfile;
+      }
 
       let { data: refData } = await supabase
         .from('referral_system')

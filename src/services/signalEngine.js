@@ -91,9 +91,9 @@ export const generateSignal = async (market, platform, candles) => {
     }
 
     const supportLevel = supports[supports.length - 1];
-    entryMin = supportLevel * 0.998;
-    entryMax = supportLevel * 1.005;
-    stopLoss = supportLevel * 0.985;
+    entryMin = currentPrice * 0.999;
+    entryMax = currentPrice * 1.002;
+    stopLoss = currentPrice * 0.985;
 
     if (resistances.length > 0) {
       takeProfit1 = resistances[0] * 0.99;
@@ -126,9 +126,9 @@ export const generateSignal = async (market, platform, candles) => {
     }
 
     const resistanceLevel = resistances[resistances.length - 1];
-    entryMin = resistanceLevel * 0.995;
-    entryMax = resistanceLevel * 1.002;
-    stopLoss = resistanceLevel * 1.015;
+    entryMin = currentPrice * 0.998;
+    entryMax = currentPrice * 1.001;
+    stopLoss = currentPrice * 1.015;
 
     if (supports.length > 0) {
       takeProfit1 = supports[0] * 1.01;

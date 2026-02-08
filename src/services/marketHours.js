@@ -2,6 +2,7 @@ export const isMarketOpen = (market) => {
   const now = new Date();
   const day = now.getUTCDay();
   const hours = now.getUTCHours();
+  const minutes = now.getUTCMinutes();
 
   if (market === 'BTC' || market === 'ETH') {
     return true;
@@ -12,14 +13,26 @@ export const isMarketOpen = (market) => {
       return false;
     }
 
+    if (day === 5 && hours >= 21) {
+      return false;
+    }
+
+    if (day === 1 && hours < 13) {
+      return false;
+    }
+
     if (market === 'NASDAQ') {
-      const estHours = (hours - 5 + 24) % 24;
-      return estHours >= 9 && estHours < 16;
+      const totalMinutes = hours * 60 + minutes;
+      const marketOpenMinutes = 14 * 60 + 30;
+      const marketCloseMinutes = 21 * 60;
+      return totalMinutes >= marketOpenMinutes && totalMinutes < marketCloseMinutes;
     }
 
     if (market === 'GOLD') {
-      const estHours = (hours - 5 + 24) % 24;
-      return estHours >= 8 && estHours < 17;
+      const totalMinutes = hours * 60 + minutes;
+      const marketOpenMinutes = 13 * 60;
+      const marketCloseMinutes = 22 * 60;
+      return totalMinutes >= marketOpenMinutes && totalMinutes < marketCloseMinutes;
     }
   }
 

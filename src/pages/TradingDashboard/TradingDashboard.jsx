@@ -184,6 +184,13 @@ const TradingDashboard = () => {
       const result = await generateSignal(market, platform, candles);
 
       if (result.signal) {
+        if (result.signal.market !== market) {
+          console.error(`Signal market mismatch: expected ${market}, got ${result.signal.market}`);
+          setScanStatus(`Erreur: Signal généré pour ${result.signal.market} au lieu de ${market}`);
+          setScanning(false);
+          return;
+        }
+
         if (activeAccount) {
           const calc = calculatePositionSize(activeAccount, result.signal);
           setRiskCalc(calc);
@@ -213,6 +220,8 @@ const TradingDashboard = () => {
   };
 
   const handleAcceptSignal = async () => {
+    console.log('Accept signal clicked', { activeAccount, currentSignal, credits });
+
     if (!activeAccount || !currentSignal) {
       alert('Veuillez configurer un compte de trading');
       return;
@@ -225,6 +234,8 @@ const TradingDashboard = () => {
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
+      console.log('Current user:', user);
+
       if (!user) {
         alert('Veuillez vous connecter');
         return;
@@ -236,6 +247,8 @@ const TradingDashboard = () => {
         .eq('user_id', user.id)
         .maybeSingle();
 
+      console.log('User profile:', profile);
+
       if (!profile) {
         alert('Profil introuvable');
         return;
@@ -244,7 +257,21 @@ const TradingDashboard = () => {
       const entryPrice = (currentSignal.entry_min + currentSignal.entry_max) / 2;
       const positionSize = riskCalc?.positionSize || 1;
 
-      const { error: positionError } = await supabase
+      console.log('Creating position:', {
+        user_id: profile.id,
+        account_id: activeAccount.id,
+        market,
+        platform,
+        direction: currentSignal.direction,
+        entry_price: entryPrice,
+        stop_loss: currentSignal.stop_loss,
+        take_profit_1: currentSignal.take_profit_1,
+        take_profit_2: currentSignal.take_profit_2,
+        position_size: positionSize,
+        status: 'OPEN'
+      });
+
+      const { data: positionData, error: positionError } = await supabase
         .from('positions')
         .insert({
           user_id: profile.id,
@@ -258,9 +285,15 @@ const TradingDashboard = () => {
           take_profit_2: currentSignal.take_profit_2,
           position_size: positionSize,
           status: 'OPEN'
-        });
+        })
+        .select();
 
-      if (positionError) throw positionError;
+      if (positionError) {
+        console.error('Position creation error:', positionError);
+        throw positionError;
+      }
+
+      console.log('Position created successfully:', positionData);
 
       const { data: creditData } = await supabase
         .from('position_credits')
@@ -269,11 +302,19 @@ const TradingDashboard = () => {
         .eq('market', market)
         .maybeSingle();
 
+      console.log('Credit data:', creditData);
+
       if (creditData) {
-        await supabase
+        const { error: creditError } = await supabase
           .from('position_credits')
           .update({ used_credits: creditData.used_credits + 1 })
           .eq('id', creditData.id);
+
+        if (creditError) {
+          console.error('Credit update error:', creditError);
+        } else {
+          console.log('Credits updated successfully');
+        }
 
         setCredits(prev => ({
           ...prev,
@@ -281,7 +322,7 @@ const TradingDashboard = () => {
         }));
       }
 
-      setCurrentPosition({
+      const newPosition = {
         direction: currentSignal.direction,
         entry_price: entryPrice,
         stop_loss: currentSignal.stop_loss,
@@ -289,13 +330,17 @@ const TradingDashboard = () => {
         take_profit_2: currentSignal.take_profit_2,
         position_size: positionSize,
         status: 'OPEN'
-      });
+      };
+
+      console.log('Setting current position:', newPosition);
+      setCurrentPosition(newPosition);
 
       setShowSignalPopup(false);
       setCurrentSignal(null);
 
+      console.log('Position accepted successfully, reloading user data...');
       alert('Position enregistrée avec succès !');
-      loadUserData();
+      await loadUserData();
     } catch (error) {
       console.error('Error accepting signal:', error);
       alert('Erreur lors de l\'enregistrement de la position: ' + error.message);
@@ -313,6 +358,12 @@ const TradingDashboard = () => {
 
   return (
     <div className={styles.dashboard}>
+      {!marketStatus.open && (
+        <div className={styles.marketClosedBanner}>
+          ⚠️ Marché {market} fermé - {marketStatus.message}
+        </div>
+      )}
+
       {!activeAccount && (
         <div className={styles.warningBanner}>
           Aucun compte de trading actif configuré. <a href="/accounts">Créez un compte</a> pour commencer à recevoir des signaux.

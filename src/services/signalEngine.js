@@ -67,7 +67,8 @@ export const generateSignal = async (market, platform, candles, userAccount = nu
     rsi: rsi || 0,
     macd: macd || { trend: 'neutral', crossover: null },
     trend,
-    currentPrice
+    currentPrice,
+    potentialEntry: null
   };
 
   if (!rsi || !macd) {
@@ -79,6 +80,21 @@ export const generateSignal = async (market, platform, candles, userAccount = nu
   }
 
   if (rsi >= 30 && rsi <= 70) {
+    const tempDirection = rsi < 50 ? 'LONG' : 'SHORT';
+    const tempEntry = currentPrice;
+    const tempTP1 = tempDirection === 'LONG' ? currentPrice * 1.02 : currentPrice * 0.98;
+    const tempTP2 = tempDirection === 'LONG' ? currentPrice * 1.04 : currentPrice * 0.96;
+    const tempSL = tempDirection === 'LONG' ? currentPrice * 0.985 : currentPrice * 1.015;
+
+    analysis.potentialEntry = {
+      direction: tempDirection,
+      entry_min: tempEntry * 0.999,
+      entry_max: tempEntry * 1.001,
+      stop_loss: tempSL,
+      take_profit_1: tempTP1,
+      take_profit_2: tempTP2
+    };
+
     return {
       signal: null,
       reason: `RSI neutre (${rsi.toFixed(1)}) - Pas d'opportunité claire`,
@@ -277,6 +293,15 @@ export const generateSignal = async (market, platform, candles, userAccount = nu
   const isValid = direction === 'LONG'
     ? (takeProfit1 > entryMid && stopLoss < entryMid)
     : (takeProfit1 < entryMid && stopLoss > entryMid);
+
+  analysis.potentialEntry = {
+    direction,
+    entry_min: entryMin,
+    entry_max: entryMax,
+    stop_loss: stopLoss,
+    take_profit_1: takeProfit1,
+    take_profit_2: takeProfit2
+  };
 
   if (!isValid) {
     console.error('🚨 VALIDATION FINALE ÉCHOUÉE', {

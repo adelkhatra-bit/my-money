@@ -58,6 +58,7 @@ const TradingDashboard = () => {
   const [trailingStopData, setTrailingStopData] = useState(null);
   const [lastTrailingStopUpdate, setLastTrailingStopUpdate] = useState(null);
   const [activityLogCallback, setActivityLogCallback] = useState(null);
+  const [potentialEntry, setPotentialEntry] = useState(null);
 
   const addActivityLog = (message, type = 'info') => {
     if (activityLogCallback) {
@@ -656,9 +657,15 @@ const TradingDashboard = () => {
         setSupports(result.analysis.supports || []);
         setResistances(result.analysis.resistances || []);
         setOrderBlocks(result.analysis.orderBlocks || { bullish: [], bearish: [] });
+
+        if (result.analysis.potentialEntry) {
+          setPotentialEntry(result.analysis.potentialEntry);
+          addActivityLog(`📍 Zone d'entrée potentielle détectée: ${result.analysis.potentialEntry.direction}`, 'info');
+        }
       }
 
       if (result.signal) {
+        setPotentialEntry(null);
         addActivityLog(`🎯 SIGNAL DÉTECTÉ! Direction: ${result.signal.direction}`, 'signal');
         addActivityLog(`📍 Prix d'entrée: ${result.signal.entry_min} - ${result.signal.entry_max}`, 'signal');
         addActivityLog(`🛡️ Stop Loss: ${result.signal.stop_loss}`, 'info');
@@ -777,6 +784,10 @@ const TradingDashboard = () => {
         addActivityLog(`ℹ️ ${reason}`, 'info');
         setSignalState({ isScanning: false, preAlert: null, signal: null });
         setBotState('idle');
+
+        setTimeout(() => {
+          setPotentialEntry(null);
+        }, 10000);
 
         setTimeout(() => {
           setShowAnalysis(false);
@@ -1083,6 +1094,7 @@ const TradingDashboard = () => {
     setShowAnalysis(false);
     setBotState('idle');
     setScanStatus('Signal refusé - 1 crédit débité');
+    setPotentialEntry(null);
   };
 
   const handleRejectSignal = () => {
@@ -1090,6 +1102,7 @@ const TradingDashboard = () => {
     setCurrentSignal(null);
     setShowAnalysis(false);
     setScanStatus('Signal refusé');
+    setPotentialEntry(null);
   };
 
   const handleClosePreAlert = () => {
@@ -1113,6 +1126,7 @@ const TradingDashboard = () => {
     setShowAnalysis(false);
     setBotState('idle');
     setScanStatus('Signal ignoré');
+    setPotentialEntry(null);
   };
 
   return (
@@ -1255,6 +1269,7 @@ const TradingDashboard = () => {
               orderBlocks={credits.remaining > 0 ? orderBlocks : { bullish: [], bearish: [] }}
               hasCredits={credits.remaining > 0}
               showAnalysis={credits.remaining > 0 && showAnalysis}
+              potentialEntry={credits.remaining > 0 ? potentialEntry : null}
             />
             {currentPosition && currentPosition.status === 'OPEN' && (
               <div className={styles.positionLevels}>

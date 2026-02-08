@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { createChart } from 'lightweight-charts';
 import styles from './TradingChart.module.css';
 
-const TradingChart = ({ candles, signal, position, supports, resistances, orderBlocks, hasCredits = false, showAnalysis = false }) => {
+const TradingChart = ({ candles, signal, position, supports, resistances, orderBlocks, hasCredits = false, showAnalysis = false, potentialEntry = null }) => {
   const chartContainerRef = useRef(null);
   const chartRef = useRef(null);
   const candleSeriesRef = useRef(null);
@@ -293,6 +293,59 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
         priceLines.current.push(lineTP2);
       }
     }
+    else if (potentialEntry) {
+      const entryPrice = (potentialEntry.entry_min + potentialEntry.entry_max) / 2;
+      const correctDirection = potentialEntry.take_profit_1 > entryPrice ? 'LONG' : 'SHORT';
+      const isLong = correctDirection === 'LONG';
+
+      console.log('📍 GRAPHIQUE - ZONE D\'ENTRÉE POTENTIELLE:', {
+        direction: correctDirection,
+        entry: entryPrice.toFixed(5),
+        sl: potentialEntry.stop_loss.toFixed(5),
+        tp1: potentialEntry.take_profit_1.toFixed(5)
+      });
+
+      const lineEntry = candleSeriesRef.current.createPriceLine({
+        price: entryPrice,
+        color: isLong ? '#26a69a' : '#ef5350',
+        lineWidth: 3,
+        lineStyle: 2,
+        axisLabelVisible: true,
+        title: `${isLong ? '🟢 ZONE ENTRÉE LONG ↑' : '🔴 ZONE ENTRÉE SHORT ↓'} - ${entryPrice.toFixed(5)}`,
+      });
+
+      const lineSL = candleSeriesRef.current.createPriceLine({
+        price: potentialEntry.stop_loss,
+        color: '#ff1744',
+        lineWidth: 2,
+        lineStyle: 2,
+        axisLabelVisible: true,
+        title: `🛑 SL - ${potentialEntry.stop_loss.toFixed(5)}`,
+      });
+
+      const lineTP1 = candleSeriesRef.current.createPriceLine({
+        price: potentialEntry.take_profit_1,
+        color: '#00e676',
+        lineWidth: 2,
+        lineStyle: 2,
+        axisLabelVisible: true,
+        title: `🎯 TP1 - ${potentialEntry.take_profit_1.toFixed(5)}`,
+      });
+
+      priceLines.current.push(lineEntry, lineSL, lineTP1);
+
+      if (potentialEntry.take_profit_2) {
+        const lineTP2 = candleSeriesRef.current.createPriceLine({
+          price: potentialEntry.take_profit_2,
+          color: '#00e676',
+          lineWidth: 2,
+          lineStyle: 3,
+          axisLabelVisible: true,
+          title: `🎯 TP2 - ${potentialEntry.take_profit_2.toFixed(5)}`,
+        });
+        priceLines.current.push(lineTP2);
+      }
+    }
     else if (showAnalysis) {
       if (supports && supports.length > 0) {
         const topSupports = supports.slice(0, 2);
@@ -368,7 +421,7 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
         }
       }
     }
-  }, [signal, position, supports, resistances, orderBlocks, showAnalysis, clearPriceLines]);
+  }, [signal, position, supports, resistances, orderBlocks, showAnalysis, potentialEntry, clearPriceLines]);
 
   const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen);

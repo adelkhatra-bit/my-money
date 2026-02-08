@@ -19,22 +19,24 @@ function App() {
   useEffect(() => {
     checkUser();
 
-    const { data: authListener } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setUser(session?.user || null);
-        if (session?.user) {
-          await checkSuperAdmin(session.user.id);
-        }
-      }
-    );
-
     const disclaimerAccepted = localStorage.getItem('disclaimer_accepted');
     if (!disclaimerAccepted) {
       setShowDisclaimer(true);
     }
 
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        (async () => {
+          setUser(session?.user || null);
+          if (session?.user) {
+            await checkSuperAdmin(session.user.id);
+          }
+        })();
+      }
+    );
+
     return () => {
-      authListener?.subscription?.unsubscribe();
+      subscription?.unsubscribe();
     };
   }, []);
 

@@ -4,6 +4,7 @@ import SignalProcess from '../../components/SignalProcess/SignalProcess';
 import BotStatus from '../../components/BotStatus/BotStatus';
 import PositionHistory from '../../components/PositionHistory/PositionHistory';
 import TrailingStopPopup from '../../components/TrailingStopPopup/TrailingStopPopup';
+import BotActivityLog from '../../components/BotActivityLog/BotActivityLog';
 import { fetchHistoricalData, connectToMarketData, getCurrentPrice } from '../../services/marketData';
 import { generateSignal } from '../../services/signalEngine';
 import { calculatePositionSize } from '../../services/riskCalculator';
@@ -56,6 +57,13 @@ const TradingDashboard = () => {
   const [showTrailingStopPopup, setShowTrailingStopPopup] = useState(false);
   const [trailingStopData, setTrailingStopData] = useState(null);
   const [lastTrailingStopUpdate, setLastTrailingStopUpdate] = useState(null);
+  const [activityLogCallback, setActivityLogCallback] = useState(null);
+
+  const addActivityLog = (message, type = 'info') => {
+    if (activityLogCallback) {
+      activityLogCallback({ message, type });
+    }
+  };
 
   useEffect(() => {
     if (market === 'NASDAQ' || market === 'GOLD') {
@@ -536,9 +544,12 @@ const TradingDashboard = () => {
   };
 
   const performScan = async () => {
+    addActivityLog('🔄 Démarrage du scan automatique...', 'scan');
+
     if (!marketStatus.open) {
       setScanStatus(`Marché fermé: ${marketStatus.message}`);
       setBotState('idle');
+      addActivityLog(`⏸️ Marché ${market} fermé - ${marketStatus.message}`, 'warning');
       return;
     }
 
@@ -546,12 +557,14 @@ const TradingDashboard = () => {
       const status = newsDetection.getStatus();
       setScanStatus(`🚨 TRADING SUSPENDU - Événement majeur en cours (${status.remainingMinutes} min restantes)`);
       setBotState('idle');
+      addActivityLog(`🚨 Trading suspendu - Événement majeur détecté (${status.remainingMinutes} min)`, 'warning');
       return;
     }
 
     if (credits.remaining <= 0) {
       setScanStatus('❌ Crédits épuisés - Rechargez votre compte');
       setBotState('idle');
+      addActivityLog('❌ Crédits épuisés - Impossible de prendre une position', 'error');
       return;
     }
 
@@ -620,8 +633,14 @@ const TradingDashboard = () => {
     setScanStatus('🔍 Le robot analyse le marché en temps réel...');
     setShowAnalysis(false);
 
+    addActivityLog(`📊 Analyse du marché ${market} sur ${platform} en cours...`, 'scan');
+    addActivityLog('🔍 Calcul des indicateurs techniques (RSI, MACD, EMA...)', 'scan');
+
     try {
       const result = await generateSignal(market, platform, candles, activeAccount);
+
+      addActivityLog('✅ Analyse technique terminée', 'success');
+      addActivityLog(`📈 Vérification des conditions d'entrée...`, 'scan');
 
       if (result.analysis) {
         setSupports(result.analysis.supports || []);
@@ -630,9 +649,17 @@ const TradingDashboard = () => {
       }
 
       if (result.signal) {
+        addActivityLog(`🎯 SIGNAL DÉTECTÉ! Direction: ${result.signal.direction}`, 'signal');
+        addActivityLog(`📍 Prix d'entrée: ${result.signal.entry_min} - ${result.signal.entry_max}`, 'signal');
+        addActivityLog(`🛡️ Stop Loss: ${result.signal.stop_loss}`, 'info');
+        addActivityLog(`🎯 Take Profit 1: ${result.signal.take_profit_1}`, 'info');
+        addActivityLog(`🎯 Take Profit 2: ${result.signal.take_profit_2}`, 'info');
+        addActivityLog(`💪 Confiance: ${result.signal.confidence}%`, result.signal.confidence >= 75 ? 'success' : 'warning');
+
         if (result.signal.market !== market) {
           console.error(`Signal market mismatch: expected ${market}, got ${result.signal.market}`);
           setScanStatus(`❌ Erreur: Signal pour ${result.signal.market} au lieu de ${market}`);
+          addActivityLog(`❌ Erreur: Signal reçu pour ${result.signal.market} au lieu de ${market}`, 'error');
           setScanning(false);
           setSignalState({ isScanning: false, preAlert: null, signal: null });
           return;
@@ -642,6 +669,7 @@ const TradingDashboard = () => {
           console.log('Signal déjà ignoré, skip:', result.signal.id);
           setScanning(false);
           setScanStatus('Signal déjà vu - En attente du prochain');
+          addActivityLog('⏭️ Signal déjà vu, en attente du prochain', 'info');
           setBotState('idle');
           return;
         }
@@ -734,7 +762,9 @@ const TradingDashboard = () => {
           }
         }, 5000);
       } else {
-        setScanStatus(`ℹ️ ${result.reason || 'Aucune opportunité détectée pour le moment'}`);
+        const reason = result.reason || 'Aucune opportunité détectée pour le moment';
+        setScanStatus(`ℹ️ ${reason}`);
+        addActivityLog(`ℹ️ ${reason}`, 'info');
         setSignalState({ isScanning: false, preAlert: null, signal: null });
         setBotState('idle');
 
@@ -746,10 +776,12 @@ const TradingDashboard = () => {
     } catch (error) {
       console.error('Scan error:', error);
       setScanStatus('❌ Erreur lors de l\'analyse du marché');
+      addActivityLog(`❌ Erreur: ${error.message || 'Erreur inconnue'}`, 'error');
       setSignalState({ isScanning: false, preAlert: null, signal: null });
       setBotState('idle');
     } finally {
       setScanning(false);
+      addActivityLog('⏸️ Scan terminé, prochaine analyse dans 30 secondes', 'info');
     }
   };
 
@@ -758,7 +790,18 @@ const TradingDashboard = () => {
       alert(`Le marché ${market} est actuellement fermé. ${marketStatus.message}`);
       return;
     }
+    addActivityLog('🖱️ Scan manuel déclenché par l\'utilisateur', 'scan');
     performScan();
+  };
+
+  const handleToggleBot = () => {
+    const newState = !autoMode;
+    setAutoMode(newState);
+    if (newState) {
+      addActivityLog('🤖 Robot activé - Scan automatique toutes les 30 secondes', 'success');
+    } else {
+      addActivityLog('⏸️ Robot désactivé - Scan manuel uniquement', 'warning');
+    }
   };
 
   useEffect(() => {
@@ -1120,7 +1163,7 @@ const TradingDashboard = () => {
           <div className={styles.controlGroup}>
             <button
               className={`${styles.toggleBtn} ${autoMode ? styles.active : ''}`}
-              onClick={() => setAutoMode(!autoMode)}
+              onClick={handleToggleBot}
               title={autoMode ? 'Robot activé - Scan automatique toutes les 30s' : 'Robot désactivé - Scan manuel uniquement'}
             >
               {autoMode ? '🤖 ROBOT ON' : '⏸️ ROBOT OFF'}
@@ -1154,6 +1197,14 @@ const TradingDashboard = () => {
         nextScanTime={nextScanTime}
         etaMinutes={etaMinutes || 5}
       />
+
+      <div style={{ margin: '20px' }}>
+        <BotActivityLog
+          isActive={autoMode}
+          currentState={botState}
+          onActivityUpdate={(callback) => setActivityLogCallback(() => callback)}
+        />
+      </div>
 
       {signalState.isScanning && (
         <div className={styles.scanningIndicator}>

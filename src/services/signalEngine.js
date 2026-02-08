@@ -49,8 +49,16 @@ export const generateSignal = async (market, platform, candles) => {
   const rsi = calculateRSI(closes);
   const macd = calculateMACD(closes);
   const trend = detectTrend(candles);
-  const { supports, resistances } = findSupportResistance(candles);
+  const { supports: rawSupports, resistances: rawResistances } = findSupportResistance(candles);
   const { bullish: bullishOB, bearish: bearishOB } = detectOrderBlocks(candles);
+
+  const supports = rawSupports
+    .filter(s => s < currentPrice)
+    .sort((a, b) => b - a);
+
+  const resistances = rawResistances
+    .filter(r => r > currentPrice)
+    .sort((a, b) => a - b);
 
   const analysis = {
     supports,

@@ -118,17 +118,6 @@ const TradingDashboard = () => {
   }, [market]);
 
   useEffect(() => {
-    if (autoMode && marketStatus.open) {
-      performScan();
-      const scanInterval = setInterval(() => {
-        performScan();
-      }, 10000);
-
-      return () => clearInterval(scanInterval);
-    }
-  }, [autoMode, market, platform, candles, marketStatus.open]);
-
-  useEffect(() => {
     const updatePnL = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
@@ -173,13 +162,6 @@ const TradingDashboard = () => {
         if (settingsData) {
           audioAlerts.setEnabled(settingsData.audio_enabled);
           audioAlerts.setVolume(parseFloat(settingsData.audio_volume));
-
-          const savedBotState = localStorage.getItem(`bot_active_${market}`);
-          if (savedBotState !== null) {
-            setAutoMode(savedBotState === 'true');
-          } else if (settingsData.bot_auto_mode !== null) {
-            setAutoMode(settingsData.bot_auto_mode);
-          }
         }
 
         const { data: accounts } = await supabase

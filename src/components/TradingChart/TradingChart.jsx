@@ -140,11 +140,11 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
 
       const lineEntry = candleSeriesRef.current.createPriceLine({
         price: position.entry_price,
-        color: '#00BFFF',
+        color: isLong ? '#00BFFF' : '#FF4444',
         lineWidth: 3,
         lineStyle: 0,
         axisLabelVisible: true,
-        title: `🔵 ENTRÉE ${isLong ? 'LONG ↑' : 'SHORT ↓'} - ${position.entry_price.toFixed(5)}`,
+        title: `${isLong ? '🟢 ENTRÉE LONG ↑' : '🔴 ENTRÉE SHORT ↓'} - ${position.entry_price.toFixed(5)}`,
       });
 
       const lineSL = candleSeriesRef.current.createPriceLine({
@@ -197,11 +197,11 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
 
       const lineEntry = candleSeriesRef.current.createPriceLine({
         price: entryPrice,
-        color: '#00BFFF',
+        color: isLong ? '#00BFFF' : '#FF4444',
         lineWidth: 3,
         lineStyle: 0,
         axisLabelVisible: true,
-        title: `🔵 ENTRÉE ${isLong ? 'LONG ↑' : 'SHORT ↓'} - ${entryPrice.toFixed(5)}`,
+        title: `${isLong ? '🟢 ENTRÉE LONG ↑' : '🔴 ENTRÉE SHORT ↓'} - ${entryPrice.toFixed(5)}`,
       });
 
       const lineSL = candleSeriesRef.current.createPriceLine({

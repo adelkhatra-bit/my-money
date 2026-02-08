@@ -73,7 +73,7 @@ const SuperAdmin = () => {
           *,
           user_profiles!inner(email)
         `)
-        .eq('status', 'PENDING')
+        .eq('status', 'pending')
         .order('created_at', { ascending: false });
 
       setTrialRequests(requests || []);
@@ -143,7 +143,7 @@ const SuperAdmin = () => {
         await supabase
           .from('position_credits')
           .update({
-            bonus_credits: (existingCredits.bonus_credits || 0) + creditsAmount
+            total_credits: existingCredits.total_credits + creditsAmount
           })
           .eq('id', existingCredits.id);
       } else {
@@ -152,8 +152,7 @@ const SuperAdmin = () => {
           .insert({
             user_id: selectedUser.id,
             market: creditForm.market,
-            bonus_credits: creditsAmount,
-            purchased_credits: 0,
+            total_credits: creditsAmount,
             used_credits: 0
           });
       }

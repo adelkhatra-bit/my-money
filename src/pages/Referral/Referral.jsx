@@ -3,8 +3,10 @@ import { supabase } from '../../lib/supabaseClient';
 import styles from './Referral.module.css';
 
 const Referral = () => {
-  const [referralData, setReferralData] = useState(null);
+  const [profileId, setProfileId] = useState(null);
+  const [referralCode, setReferralCode] = useState('');
   const [referrals, setReferrals] = useState([]);
+  const [stats, setStats] = useState({ total: 0, validated: 0, bonusEarned: 0 });
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
 
@@ -17,63 +19,41 @@ const Referral = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data: profile, error: profileError } = await supabase
+      const { data: profile } = await supabase
         .from('user_profiles')
         .select('id')
         .eq('user_id', user.id)
         .maybeSingle();
 
-      if (profileError) {
-        console.error('Error loading profile:', profileError.message);
-        return;
-      }
-
       if (!profile) {
-        console.error('Profile not found. Please refresh the page.');
         setLoading(false);
         return;
       }
 
-      let { data: refData } = await supabase
-        .from('referral_system')
-        .select('*')
-        .eq('user_id', profile.id)
-        .maybeSingle();
+      setProfileId(profile.id);
+      setReferralCode(profile.id.substring(0, 8).toUpperCase());
 
-      if (!refData) {
-        const referralCode = generateReferralCode();
-        const { data: newRefData, error } = await supabase
-          .from('referral_system')
-          .insert({
-            user_id: profile.id,
-            referral_code: referralCode,
-            referrals_count: 0,
-            bonus_credits_earned: 0
-          })
-          .select()
-          .single();
-
-        if (error) {
-          console.error('Error creating referral system:', error);
-          return;
-        }
-        refData = newRefData;
-      }
-
-      setReferralData(refData);
-
-      const { data: refLinks } = await supabase
-        .from('referral_links')
+      const { data: myReferrals } = await supabase
+        .from('referrals')
         .select(`
           *,
-          referred_user:referred_user_id (
+          referred:referred_id (
             email
           )
         `)
         .eq('referrer_id', profile.id)
         .order('created_at', { ascending: false });
 
-      setReferrals(refLinks || []);
+      setReferrals(myReferrals || []);
+
+      const validated = myReferrals?.filter(r => r.status === 'validated').length || 0;
+      const bonusEarned = validated * 5;
+
+      setStats({
+        total: myReferrals?.length || 0,
+        validated,
+        bonusEarned
+      });
     } catch (error) {
       console.error('Error loading referral data:', error);
     } finally {
@@ -81,28 +61,15 @@ const Referral = () => {
     }
   };
 
-  const generateReferralCode = () => {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    let result = '';
-    for (let i = 0; i < 8; i++) {
-      result += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return result;
-  };
-
   const copyReferralLink = () => {
-    if (!referralData) return;
-
-    const referralUrl = `${window.location.origin}/signup?ref=${referralData.referral_code}`;
+    const referralUrl = `${window.location.origin}/signup?ref=${referralCode}`;
     navigator.clipboard.writeText(referralUrl);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
   const shareOnPlatform = (platform) => {
-    if (!referralData) return;
-
-    const referralUrl = `${window.location.origin}/signup?ref=${referralData.referral_code}`;
+    const referralUrl = `${window.location.origin}/signup?ref=${referralCode}`;
     const message = encodeURIComponent('Rejoins-moi sur cette plateforme de trading IA ! Reçois 3 positions offertes à l\'inscription 🚀');
 
     let shareUrl = '';
@@ -138,15 +105,7 @@ const Referral = () => {
     );
   }
 
-  if (!referralData) {
-    return (
-      <div className={styles.container}>
-        <div className={styles.error}>Erreur lors du chargement des données de parrainage</div>
-      </div>
-    );
-  }
-
-  const referralUrl = `${window.location.origin}/signup?ref=${referralData.referral_code}`;
+  const referralUrl = `${window.location.origin}/signup?ref=${referralCode}`;
 
   return (
     <div className={styles.container}>
@@ -160,24 +119,20 @@ const Referral = () => {
       <div className={styles.statsGrid}>
         <div className={styles.statCard}>
           <div className={styles.statIcon}>👥</div>
-          <div className={styles.statValue}>{referralData.referrals_count}</div>
+          <div className={styles.statValue}>{stats.total}</div>
           <div className={styles.statLabel}>Filleuls</div>
         </div>
 
         <div className={styles.statCard}>
-          <div className={styles.statIcon}>🎁</div>
-          <div className={styles.statValue}>{referralData.bonus_credits_earned}</div>
-          <div className={styles.statLabel}>Positions gagnées</div>
+          <div className={styles.statIcon}>✓</div>
+          <div className={styles.statValue}>{stats.validated}</div>
+          <div className={styles.statLabel}>Validés</div>
         </div>
 
         <div className={styles.statCard}>
-          <div className={styles.statIcon}>📈</div>
-          <div className={styles.statValue}>
-            {referralData.referrals_count > 0
-              ? `${((referrals.filter(r => r.status === 'VALIDATED').length / referralData.referrals_count) * 100).toFixed(0)}%`
-              : '0%'}
-          </div>
-          <div className={styles.statLabel}>Taux de validation</div>
+          <div className={styles.statIcon}>🎁</div>
+          <div className={styles.statValue}>{stats.bonusEarned}</div>
+          <div className={styles.statLabel}>Positions gagnées</div>
         </div>
       </div>
 
@@ -215,6 +170,7 @@ const Referral = () => {
             {copied ? '✓ Copié' : '📋 Copier'}
           </button>
         </div>
+        <p className={styles.referralCode}>Code: <strong>{referralCode}</strong></p>
       </div>
 
       <div className={styles.shareSection}>
@@ -259,16 +215,16 @@ const Referral = () => {
               <tbody>
                 {referrals.map((ref) => (
                   <tr key={ref.id}>
-                    <td>{ref.referred_user?.email || 'Non disponible'}</td>
+                    <td>{ref.referred?.email || 'Non disponible'}</td>
                     <td>
-                      <span className={`${styles.status} ${styles[ref.status.toLowerCase()]}`}>
-                        {ref.status === 'VALIDATED' ? '✓ Validé' :
-                         ref.status === 'CREDITED' ? '✓ Crédité' : '⏳ En attente'}
+                      <span className={`${styles.status} ${styles[ref.status]}`}>
+                        {ref.status === 'validated' ? '✓ Validé' :
+                         ref.status === 'rejected' ? '✗ Rejeté' : '⏳ En attente'}
                       </span>
                     </td>
                     <td>{new Date(ref.created_at).toLocaleDateString('fr-FR')}</td>
                     <td>
-                      {ref.bonus_credited ? (
+                      {ref.bonus_granted ? (
                         <span className={styles.credited}>+5 positions</span>
                       ) : (
                         <span className={styles.pending}>En attente</span>

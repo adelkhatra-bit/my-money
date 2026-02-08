@@ -9,6 +9,7 @@ import { audioAlerts } from '../../services/audioAlerts';
 import { isMarketOpen, getMarketStatus } from '../../services/marketHours';
 import { logAction } from '../../services/actionHistory';
 import { botService } from '../../services/botService';
+import { newsDetection } from '../../services/newsDetection';
 import { supabase } from '../../lib/supabaseClient';
 import styles from './TradingDashboard.module.css';
 
@@ -47,6 +48,7 @@ const TradingDashboard = () => {
   const [orderBlocks, setOrderBlocks] = useState({ bullish: [], bearish: [] });
   const [dismissedSignals, setDismissedSignals] = useState(new Set());
   const [userId, setUserId] = useState(null);
+  const [newsSuspension, setNewsSuspension] = useState(false);
 
   useEffect(() => {
     if (market === 'NASDAQ' || market === 'GOLD') {
@@ -73,6 +75,24 @@ const TradingDashboard = () => {
 
   useEffect(() => {
     loadUserData();
+  }, [market]);
+
+  useEffect(() => {
+    const newsListener = (isActive) => {
+      setNewsSuspension(isActive);
+      if (isActive) {
+        const status = newsDetection.getStatus();
+        setScanStatus(`🚨 TRADING SUSPENDU - Événement majeur détecté (${status.remainingMinutes} min restantes)`);
+        setBotState('idle');
+      }
+    };
+
+    newsDetection.addListener(newsListener);
+    newsDetection.startAutoCheck([market]);
+
+    return () => {
+      newsDetection.removeListener(newsListener);
+    };
   }, [market]);
 
   useEffect(() => {
@@ -121,6 +141,17 @@ const TradingDashboard = () => {
 
       if (profile) {
         setUserId(profile.id);
+
+        const { data: settingsData } = await supabase
+          .from('user_settings')
+          .select('*')
+          .eq('user_id', profile.id)
+          .maybeSingle();
+
+        if (settingsData) {
+          audioAlerts.setEnabled(settingsData.audio_enabled);
+          audioAlerts.setVolume(parseFloat(settingsData.audio_volume));
+        }
 
         const { data: accounts } = await supabase
           .from('trading_accounts')
@@ -262,7 +293,6 @@ const TradingDashboard = () => {
               .eq('id', position.id);
 
             if (newStatus === 'TP1_HIT' || newStatus === 'TP2_HIT') {
-              audioAlerts.takeProfitAlert();
               await logAction(userId, newStatus === 'TP1_HIT' ? 'TP1_HIT' : 'TP2_HIT', position.market, position.platform, {
                 direction: position.direction,
                 entry_price: position.entry_price,
@@ -271,7 +301,6 @@ const TradingDashboard = () => {
                 position_id: position.id
               });
             } else if (newStatus === 'SL_HIT') {
-              audioAlerts.stopLossAlert();
               await logAction(userId, 'SL_HIT', position.market, position.platform, {
                 direction: position.direction,
                 entry_price: position.entry_price,
@@ -343,6 +372,13 @@ const TradingDashboard = () => {
   const performScan = async () => {
     if (!marketStatus.open) {
       setScanStatus(`Marché fermé: ${marketStatus.message}`);
+      setBotState('idle');
+      return;
+    }
+
+    if (newsDetection.isNewsSuspension()) {
+      const status = newsDetection.getStatus();
+      setScanStatus(`🚨 TRADING SUSPENDU - Événement majeur en cours (${status.remainingMinutes} min restantes)`);
       setBotState('idle');
       return;
     }
@@ -619,7 +655,6 @@ const TradingDashboard = () => {
       setSignalState({ isScanning: false, preAlert: null, signal: null });
       setCurrentSignal(null);
       setBotState('position_locked');
-      audioAlerts.signalAlert();
       await loadUserData();
       await loadStats(profile.id, activeAccount);
     } catch (error) {
@@ -687,6 +722,12 @@ const TradingDashboard = () => {
       {!marketStatus.open && (
         <div className={styles.marketClosedBanner}>
           ⚠️ Marché {market} fermé - {marketStatus.message}
+        </div>
+      )}
+
+      {newsSuspension && (
+        <div className={styles.newsSuspensionBanner}>
+          🚨 TRADING SUSPENDU - Événement majeur en cours ({newsDetection.getStatus().remainingMinutes} min restantes)
         </div>
       )}
 
@@ -781,6 +822,16 @@ const TradingDashboard = () => {
         nextScanTime={nextScanTime}
         etaMinutes={etaMinutes || 5}
       />
+
+      {signalState.isScanning && (
+        <div className={styles.scanningIndicator}>
+          <div className={styles.scanningPulse}></div>
+          <span className={styles.scanningText}>PATIENTEZ - ANALYSE EN COURS</span>
+          <div className={styles.scanningDots}>
+            <span>.</span><span>.</span><span>.</span>
+          </div>
+        </div>
+      )}
 
       {scanStatus && (
         <div className={styles.scanStatus}>

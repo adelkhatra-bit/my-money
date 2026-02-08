@@ -7,9 +7,22 @@
 }
 
 .marketClosedBanner {
-  background: rgba(233, 30, 99, 0.2);
-  border: 2px solid #e91e63;
-  color: #e91e63;
+  background: rgba(239, 68, 68, 0.2);
+  border: 2px solid #ef4444;
+  color: #ef4444;
+  padding: 16px 24px;
+  border-radius: 8px;
+  margin: 20px 20px 10px;
+  text-align: center;
+  font-size: 18px;
+  font-weight: 700;
+  animation: pulse 2s infinite;
+}
+
+.newsSuspensionBanner {
+  background: rgba(255, 152, 0, 0.2);
+  border: 2px solid #ff9800;
+  color: #ff9800;
   padding: 16px 24px;
   border-radius: 8px;
   margin: 20px 20px 10px;
@@ -185,7 +198,7 @@
 }
 
 .statusDot.closed {
-  background: #e91e63;
+  background: #ef4444;
 }
 
 @keyframes pulse {
@@ -202,6 +215,88 @@
   font-size: 14px;
   color: #ffc107;
   font-weight: 600;
+}
+
+.scanningIndicator {
+  background: linear-gradient(135deg, rgba(33, 150, 243, 0.15) 0%, rgba(33, 150, 243, 0.25) 100%);
+  border: 2px solid #2196f3;
+  padding: 16px 24px;
+  margin: 10px 20px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  animation: borderPulse 2s ease-in-out infinite;
+}
+
+@keyframes borderPulse {
+  0%, 100% {
+    border-color: #2196f3;
+    box-shadow: 0 0 10px rgba(33, 150, 243, 0.3);
+  }
+  50% {
+    border-color: #64b5f6;
+    box-shadow: 0 0 20px rgba(33, 150, 243, 0.6);
+  }
+}
+
+.scanningPulse {
+  width: 12px;
+  height: 12px;
+  background: #2196f3;
+  border-radius: 50%;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.scanningText {
+  font-size: 16px;
+  font-weight: 700;
+  color: #2196f3;
+  letter-spacing: 1px;
+  animation: textBlink 1.5s ease-in-out infinite;
+}
+
+@keyframes textBlink {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.scanningDots {
+  display: flex;
+  gap: 4px;
+}
+
+.scanningDots span {
+  color: #2196f3;
+  font-size: 20px;
+  font-weight: 700;
+  animation: dotBounce 1.4s ease-in-out infinite;
+}
+
+.scanningDots span:nth-child(1) {
+  animation-delay: 0s;
+}
+
+.scanningDots span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.scanningDots span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes dotBounce {
+  0%, 60%, 100% {
+    transform: translateY(0);
+  }
+  30% {
+    transform: translateY(-10px);
+  }
 }
 
 .scanStatus {
@@ -259,7 +354,7 @@
 }
 
 .statValue.negative {
-  color: #e91e63;
+  color: #ef4444;
 }
 
 @media (max-width: 768px) {

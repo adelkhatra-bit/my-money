@@ -12,7 +12,7 @@ const lastSignalTime = {};
 const lastSignalData = {};
 const COOLDOWN_MS = 5 * 60 * 1000;
 
-export const generateSignal = async (market, platform, candles) => {
+export const generateSignal = async (market, platform, candles, userAccount = null) => {
   if (!isMarketOpen(market)) {
     return {
       signal: null,
@@ -186,10 +186,8 @@ export const generateSignal = async (market, platform, candles) => {
 
   if (takeProfit1 < entryMid && (!takeProfit2 || takeProfit2 < entryMid)) {
     direction = 'SHORT';
-    stopLoss = entryMid * 1.015;
   } else if (takeProfit1 > entryMid) {
     direction = 'LONG';
-    stopLoss = entryMid * 0.985;
   } else {
     console.error('🚨 INCOHÉRENCE - Signal rejeté', {
       entry: entryMid.toFixed(5),
@@ -202,6 +200,26 @@ export const generateSignal = async (market, platform, candles) => {
       reason: 'Incohérence dans les niveaux TP',
       analysis
     };
+  }
+
+  if (userAccount && userAccount.capital && userAccount.risk_per_trade_percent) {
+    const riskAmount = userAccount.capital * (userAccount.risk_per_trade_percent / 100);
+    const platformRules = getPlatformRules(platform, market);
+    const estimatedLotSize = 1;
+    const slDistance = riskAmount / (estimatedLotSize * platformRules.pointValue * currentPrice);
+    const slPercent = slDistance * 100;
+
+    if (direction === 'SHORT') {
+      stopLoss = entryMid * (1 + slPercent / 100);
+    } else {
+      stopLoss = entryMid * (1 - slPercent / 100);
+    }
+  } else {
+    if (direction === 'SHORT') {
+      stopLoss = entryMid * 1.015;
+    } else {
+      stopLoss = entryMid * 0.985;
+    }
   }
 
   if (direction === 'LONG' && takeProfit2 && takeProfit2 <= entryMid) {
@@ -286,4 +304,27 @@ export const generateSignal = async (market, platform, candles) => {
 
 export const shouldScan = (market) => {
   return isMarketOpen(market);
+};
+
+const getPlatformRules = (platform, market) => {
+  const rules = {
+    binance: {
+      BTC: { pointValue: 1, minLotSize: 0.001, tickSize: 0.01 },
+      ETH: { pointValue: 1, minLotSize: 0.01, tickSize: 0.01 }
+    },
+    bybit: {
+      BTC: { pointValue: 1, minLotSize: 0.001, tickSize: 0.01 },
+      ETH: { pointValue: 1, minLotSize: 0.01, tickSize: 0.01 }
+    },
+    ftmo: {
+      NASDAQ: { pointValue: 5, minLotSize: 1, tickSize: 0.25 },
+      GOLD: { pointValue: 100, minLotSize: 1, tickSize: 0.1 }
+    },
+    topstep: {
+      NASDAQ: { pointValue: 5, minLotSize: 1, tickSize: 0.25 },
+      GOLD: { pointValue: 100, minLotSize: 1, tickSize: 0.1 }
+    }
+  };
+
+  return rules[platform]?.[market] || { pointValue: 1, minLotSize: 1, tickSize: 0.01 };
 };

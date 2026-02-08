@@ -534,7 +534,7 @@ const TradingDashboard = () => {
     setShowAnalysis(false);
 
     try {
-      const result = await generateSignal(market, platform, candles);
+      const result = await generateSignal(market, platform, candles, activeAccount);
 
       if (result.analysis) {
         setSupports(result.analysis.supports || []);

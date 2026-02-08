@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import TradingChart from '../../components/TradingChart/TradingChart';
 import SignalPopup from '../../components/SignalPopup/SignalPopup';
+import PreAlertPopup from '../../components/PreAlertPopup/PreAlertPopup';
 import { fetchHistoricalData, connectToMarketData, getCurrentPrice } from '../../services/marketData';
 import { generateSignal } from '../../services/signalEngine';
 import { calculatePositionSize } from '../../services/riskCalculator';
@@ -19,6 +20,9 @@ const TradingDashboard = () => {
   const [currentSignal, setCurrentSignal] = useState(null);
   const [currentPosition, setCurrentPosition] = useState(null);
   const [showSignalPopup, setShowSignalPopup] = useState(false);
+  const [showPreAlert, setShowPreAlert] = useState(false);
+  const [preAlertData, setPreAlertData] = useState(null);
+  const [showAnalysis, setShowAnalysis] = useState(false);
   const [riskCalc, setRiskCalc] = useState(null);
   const [stats, setStats] = useState({
     balance: 0,
@@ -191,15 +195,29 @@ const TradingDashboard = () => {
           return;
         }
 
-        if (activeAccount) {
-          const calc = calculatePositionSize(activeAccount, result.signal);
-          setRiskCalc(calc);
-        }
-
-        setCurrentSignal(result.signal);
-        setShowSignalPopup(true);
+        setPreAlertData({
+          market,
+          platform,
+          expectedDirection: result.signal.direction,
+          timeRemaining: 300
+        });
+        setShowPreAlert(true);
+        setShowAnalysis(true);
         audioAlerts.signalAlert();
-        setScanStatus('Signal détecté !');
+        setScanStatus('Opportunité en préparation...');
+
+        setTimeout(() => {
+          if (activeAccount) {
+            const calc = calculatePositionSize(activeAccount, result.signal);
+            setRiskCalc(calc);
+          }
+
+          setCurrentSignal(result.signal);
+          setShowSignalPopup(true);
+          setShowPreAlert(false);
+          audioAlerts.signalAlert();
+          setScanStatus('Signal confirmé !');
+        }, 300000);
       } else {
         setScanStatus(result.reason);
       }
@@ -350,7 +368,12 @@ const TradingDashboard = () => {
   const handleRejectSignal = () => {
     setShowSignalPopup(false);
     setCurrentSignal(null);
+    setShowAnalysis(false);
     setScanStatus('Signal refusé');
+  };
+
+  const handleClosePreAlert = () => {
+    setShowPreAlert(false);
   };
 
   const { supports, resistances } = findSupportResistance(candles);
@@ -459,8 +482,20 @@ const TradingDashboard = () => {
           position={currentPosition}
           supports={supports}
           resistances={resistances}
+          hasCredits={credits.remaining > 0}
+          showAnalysis={showAnalysis || credits.remaining > 0}
         />
       </div>
+
+      {showPreAlert && preAlertData && (
+        <PreAlertPopup
+          market={preAlertData.market}
+          platform={preAlertData.platform}
+          expectedDirection={preAlertData.expectedDirection}
+          timeRemaining={preAlertData.timeRemaining}
+          onClose={handleClosePreAlert}
+        />
+      )}
 
       {showSignalPopup && currentSignal && (
         <SignalPopup

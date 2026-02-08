@@ -5,6 +5,7 @@ import TradingDashboard from './pages/TradingDashboard/TradingDashboard';
 import Login from './pages/Auth/Login';
 import Signup from './pages/Auth/Signup';
 import AccountManagement from './pages/AccountManagement/AccountManagement';
+import Referral from './pages/Referral/Referral';
 import SuperAdmin from './pages/SuperAdmin/SuperAdmin';
 import LegalDisclaimer from './components/LegalDisclaimer/LegalDisclaimer';
 import Navbar from './components/Navbar/Navbar';
@@ -108,6 +109,10 @@ function App() {
         <Route
           path="/accounts"
           element={user ? <AccountManagement /> : <Navigate to="/login" />}
+        />
+        <Route
+          path="/referral"
+          element={user ? <Referral /> : <Navigate to="/login" />}
         />
         <Route
           path="/admin"

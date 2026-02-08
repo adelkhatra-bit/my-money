@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { createChart } from 'lightweight-charts';
 import styles from './TradingChart.module.css';
 
-const TradingChart = ({ candles, signal, position, supports, resistances, orderBlocks }) => {
+const TradingChart = ({ candles, signal, position, supports, resistances, orderBlocks, hasCredits = false, showAnalysis = false }) => {
   const chartContainerRef = useRef(null);
   const chartRef = useRef(null);
   const candleSeriesRef = useRef(null);
@@ -28,8 +28,20 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
       timeScale: {
         borderColor: '#3a3a3a',
         rightOffset: 50,
+        barSpacing: 12,
         timeVisible: true,
         secondsVisible: false,
+      },
+      handleScroll: {
+        mouseWheel: true,
+        pressedMouseMove: true,
+        horzTouchDrag: true,
+        vertTouchDrag: true,
+      },
+      handleScale: {
+        axisPressedMouseMove: true,
+        mouseWheel: true,
+        pinch: true,
       },
       crosshair: {
         mode: 1,
@@ -56,7 +68,7 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
 
     candleSeries.setData(candles);
 
-    if (supports && supports.length > 0) {
+    if (showAnalysis && supports && supports.length > 0) {
       supports.forEach(support => {
         candleSeries.createPriceLine({
           price: support,
@@ -69,7 +81,7 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
       });
     }
 
-    if (resistances && resistances.length > 0) {
+    if (showAnalysis && resistances && resistances.length > 0) {
       resistances.forEach(resistance => {
         candleSeries.createPriceLine({
           price: resistance,
@@ -182,7 +194,7 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
         chart.remove();
       }
     };
-  }, [candles, signal, position, supports, resistances, orderBlocks, isFullscreen]);
+  }, [candles, signal, position, supports, resistances, orderBlocks, isFullscreen, hasCredits, showAnalysis]);
 
   useEffect(() => {
     if (candleSeriesRef.current && candles.length > 0) {
@@ -203,6 +215,14 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
 
   return (
     <div className={`${styles.chartWrapper} ${isFullscreen ? styles.fullscreen : ''}`}>
+      {!hasCredits && (
+        <div className={styles.noCreditsOverlay}>
+          <div className={styles.noCreditsMessage}>
+            <h3>🔒 Crédits requis</h3>
+            <p>Rechargez votre compte pour accéder aux analyses et recevoir des signaux</p>
+          </div>
+        </div>
+      )}
       <div className={styles.chartControls}>
         <button onClick={recenter} className={styles.controlBtn}>
           Recentrer

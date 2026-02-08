@@ -31,6 +31,12 @@ const Navbar = ({ isSuperAdmin }) => {
         >
           Mes Comptes
         </Link>
+        <Link
+          to="/referral"
+          className={location.pathname === '/referral' ? styles.active : ''}
+        >
+          Parrainage
+        </Link>
         {isSuperAdmin && (
           <Link
             to="/admin"

@@ -1,0 +1,300 @@
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 20px;
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 48px;
+}
+
+.header h1 {
+  font-size: 36px;
+  font-weight: 700;
+  color: #fff;
+  margin: 0 0 12px 0;
+}
+
+.subtitle {
+  font-size: 18px;
+  color: rgba(255, 255, 255, 0.7);
+  margin: 0;
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 24px;
+  margin-bottom: 48px;
+}
+
+.statCard {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 16px;
+  padding: 32px;
+  text-align: center;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  transition: transform 0.2s;
+}
+
+.statCard:hover {
+  transform: translateY(-4px);
+}
+
+.statIcon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.statValue {
+  font-size: 48px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 8px;
+}
+
+.statLabel {
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 500;
+}
+
+.rewardInfo {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  padding: 32px;
+  margin-bottom: 48px;
+}
+
+.rewardInfo h3 {
+  font-size: 24px;
+  color: #fff;
+  margin: 0 0 24px 0;
+  text-align: center;
+}
+
+.rewardGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 24px;
+}
+
+.rewardCard {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 24px;
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.rewardIcon {
+  font-size: 36px;
+  margin-bottom: 12px;
+}
+
+.rewardCard h4 {
+  font-size: 18px;
+  color: #fff;
+  margin: 0 0 8px 0;
+}
+
+.rewardCard p {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.7);
+  margin: 0;
+}
+
+.linkSection {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  padding: 32px;
+  margin-bottom: 32px;
+}
+
+.linkSection h3 {
+  font-size: 20px;
+  color: #fff;
+  margin: 0 0 16px 0;
+}
+
+.linkBox {
+  display: flex;
+  gap: 12px;
+}
+
+.linkInput {
+  flex: 1;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  padding: 16px;
+  color: #fff;
+  font-size: 14px;
+  font-family: 'Courier New', monospace;
+}
+
+.copyBtn {
+  background: #667eea;
+  border: none;
+  color: #fff;
+  padding: 16px 32px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.copyBtn:hover {
+  background: #5a67d8;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.shareSection {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  padding: 32px;
+  margin-bottom: 48px;
+}
+
+.shareSection h3 {
+  font-size: 20px;
+  color: #fff;
+  margin: 0 0 20px 0;
+}
+
+.shareGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+}
+
+.shareBtn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  padding: 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.shareBtn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.shareIcon {
+  font-size: 32px;
+}
+
+.referralsSection {
+  margin-top: 48px;
+}
+
+.referralsSection h3 {
+  font-size: 24px;
+  color: #fff;
+  margin: 0 0 24px 0;
+}
+
+.referralsTable {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.referralsTable table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.referralsTable thead {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.referralsTable th {
+  padding: 16px;
+  text-align: left;
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 600;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.referralsTable td {
+  padding: 16px;
+  color: #fff;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.status {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.status.validated,
+.status.credited {
+  background: rgba(76, 175, 80, 0.2);
+  color: #4caf50;
+}
+
+.status.pending {
+  background: rgba(255, 193, 7, 0.2);
+  color: #ffc107;
+}
+
+.credited {
+  color: #4caf50;
+  font-weight: 600;
+}
+
+.pending {
+  color: #ffc107;
+}
+
+.loading,
+.error {
+  text-align: center;
+  padding: 60px 20px;
+  font-size: 18px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.error {
+  color: #f44336;
+}
+
+@media (max-width: 768px) {
+  .header h1 {
+    font-size: 28px;
+  }
+
+  .statsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .linkBox {
+    flex-direction: column;
+  }
+
+  .shareGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .referralsTable {
+    overflow-x: auto;
+  }
+}

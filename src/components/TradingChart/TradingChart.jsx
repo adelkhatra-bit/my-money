@@ -251,18 +251,17 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
 
     return () => {
       window.removeEventListener('resize', handleResize);
-      if (chart) {
-        chart.remove();
+      if (chartRef.current) {
+        try {
+          chartRef.current.remove();
+        } catch (e) {
+          console.warn('Chart cleanup error:', e);
+        }
+        chartRef.current = null;
+        candleSeriesRef.current = null;
       }
     };
   }, [candles, signal, position, supports, resistances, orderBlocks, isFullscreen, hasCredits, showAnalysis]);
-
-  useEffect(() => {
-    if (candleSeriesRef.current && candles.length > 0) {
-      const latestCandle = candles[candles.length - 1];
-      candleSeriesRef.current.update(latestCandle);
-    }
-  }, [candles]);
 
   const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen);

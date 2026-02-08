@@ -76,18 +76,22 @@ const SuperAdmin = () => {
 
   const loadTrialRequests = async () => {
     try {
-      const { data: requests } = await supabase
+      const { data: requests, error } = await supabase
         .from('free_trial_requests')
-        .select(`
-          *,
-          user_profiles!inner(email)
-        `)
+        .select('*, user_profiles(email)')
         .eq('status', 'pending')
         .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error loading trial requests:', error);
+        setTrialRequests([]);
+        return;
+      }
 
       setTrialRequests(requests || []);
     } catch (error) {
       console.error('Error loading trial requests:', error);
+      setTrialRequests([]);
     }
   };
 
@@ -225,7 +229,7 @@ const SuperAdmin = () => {
       {selectedUser && (
         <div className={styles.creditModal}>
           <div className={styles.modalContent}>
-            <h3>Gérer les crédits de {selectedUser.email}</h3>
+            <h3>Gérer les positions de {selectedUser.email}</h3>
 
             <form onSubmit={handleAddCredits} className={styles.creditForm}>
               <div className={styles.formGroup}>
@@ -234,8 +238,8 @@ const SuperAdmin = () => {
                   value={creditForm.action}
                   onChange={(e) => setCreditForm({ ...creditForm, action: e.target.value })}
                 >
-                  <option value="add">Ajouter des crédits</option>
-                  <option value="set">Définir le total</option>
+                  <option value="add">Ajouter des positions</option>
+                  <option value="set">Définir le total de positions</option>
                 </select>
               </div>
 
@@ -254,15 +258,19 @@ const SuperAdmin = () => {
 
               <div className={styles.formGroup}>
                 <label>
-                  {creditForm.action === 'add' ? 'Nombre de crédits à ajouter' : 'Nouveau total de crédits'}
+                  {creditForm.action === 'add' ? 'Nombre de positions à ajouter' : 'Nouveau total de positions'}
                 </label>
                 <input
                   type="number"
                   value={creditForm.credits}
                   onChange={(e) => setCreditForm({ ...creditForm, credits: e.target.value })}
                   placeholder="Ex: 25"
+                  min="0"
                   required
                 />
+                <small style={{color: '#64748b', marginTop: '0.5rem', display: 'block'}}>
+                  1 position = 1 signal de trading utilisable
+                </small>
               </div>
 
               {selectedUser.credits.find(c => c.market === creditForm.market) && (
@@ -303,7 +311,7 @@ const SuperAdmin = () => {
                 <tbody>
                   {trialRequests.map((request) => (
                     <tr key={request.id}>
-                      <td>{request.user_profiles.email}</td>
+                      <td>{request.user_profiles?.email || 'Email non disponible'}</td>
                       <td>{new Date(request.created_at).toLocaleString('fr-FR')}</td>
                       <td>
                         <div className={styles.actionButtons}>
@@ -311,7 +319,7 @@ const SuperAdmin = () => {
                             className={styles.approveBtn}
                             onClick={() => handleApproveTrial(request.id)}
                           >
-                            ✓ Approuver
+                            ✓ Approuver (5 positions)
                           </button>
                           <button
                             className={styles.rejectBtn}

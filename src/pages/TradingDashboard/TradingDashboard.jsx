@@ -141,7 +141,7 @@ const TradingDashboard = () => {
         const totalPnl = closedPositions.reduce((sum, p) => sum + (p.pnl || 0), 0);
 
         setStats({
-          balance: accountToUse?.capital || 0,
+          balance: (accountToUse?.capital || 0) + totalPnl,
           pnl: totalPnl,
           wins,
           losses,

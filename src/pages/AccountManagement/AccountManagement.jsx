@@ -6,6 +6,7 @@ const AccountManagement = () => {
   const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [editingAccount, setEditingAccount] = useState(null);
   const [newAccount, setNewAccount] = useState({
     name: '',
     platform: 'binance',
@@ -220,6 +221,82 @@ const AccountManagement = () => {
     }
   };
 
+  const startEditAccount = (account) => {
+    setEditingAccount({
+      ...account,
+      capitalOption: 'custom'
+    });
+    setShowForm(false);
+  };
+
+  const handleUpdateAccount = async (e) => {
+    e.preventDefault();
+
+    try {
+      if (!editingAccount.capital || parseFloat(editingAccount.capital) < 200) {
+        alert('Le capital doit être d\'au moins 200 ' + editingAccount.currency);
+        return;
+      }
+
+      const { error } = await supabase
+        .from('trading_accounts')
+        .update({
+          name: editingAccount.name,
+          platform: editingAccount.platform,
+          market: editingAccount.market,
+          capital: parseFloat(editingAccount.capital),
+          currency: editingAccount.currency,
+          risk_per_trade_percent: parseFloat(editingAccount.risk_per_trade_percent),
+          max_daily_loss: editingAccount.max_daily_loss ? parseFloat(editingAccount.max_daily_loss) : null,
+          max_total_loss: editingAccount.max_total_loss ? parseFloat(editingAccount.max_total_loss) : null
+        })
+        .eq('id', editingAccount.id);
+
+      if (error) {
+        console.error('Error updating account:', error);
+        throw error;
+      }
+
+      alert('Compte mis à jour avec succès !');
+      setEditingAccount(null);
+      loadAccounts();
+    } catch (error) {
+      console.error('Error updating account:', error);
+      alert('Erreur lors de la mise à jour: ' + error.message);
+    }
+  };
+
+  const handleDeleteAccount = async (accountId, accountName) => {
+    if (!window.confirm(`Êtes-vous sûr de vouloir supprimer le compte "${accountName}" ? Cette action est irréversible.`)) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('trading_accounts')
+        .delete()
+        .eq('id', accountId);
+
+      if (error) throw error;
+
+      alert('Compte supprimé avec succès');
+      loadAccounts();
+    } catch (error) {
+      console.error('Error deleting account:', error);
+      alert('Erreur lors de la suppression: ' + error.message);
+    }
+  };
+
+  const handleEditCapitalChange = (value) => {
+    const limits = calculateRiskLimits(value);
+    setEditingAccount({
+      ...editingAccount,
+      capital: value,
+      max_daily_loss: limits.daily,
+      max_total_loss: limits.total
+    });
+  };
+
   if (loading) {
     return <div className={styles.loading}>Chargement...</div>;
   }
@@ -230,11 +307,154 @@ const AccountManagement = () => {
         <h1>Gestion des Comptes de Trading</h1>
         <button
           className={styles.addBtn}
-          onClick={() => setShowForm(!showForm)}
+          onClick={() => {
+            setShowForm(!showForm);
+            setEditingAccount(null);
+          }}
         >
           {showForm ? 'Annuler' : '+ Ajouter un compte'}
         </button>
       </div>
+
+      {editingAccount && (
+        <form onSubmit={handleUpdateAccount} className={styles.form}>
+          <h2>Modifier le compte: {editingAccount.name}</h2>
+          <div className={styles.formRow}>
+            <div className={styles.formGroup}>
+              <label>Nom du compte *</label>
+              <input
+                type="text"
+                value={editingAccount.name}
+                onChange={(e) => setEditingAccount({ ...editingAccount, name: e.target.value })}
+                placeholder="Ex: Binance Personnel"
+                required
+              />
+            </div>
+
+            <div className={styles.formGroup}>
+              <label>Plateforme *</label>
+              <select
+                value={editingAccount.platform}
+                onChange={(e) => setEditingAccount({ ...editingAccount, platform: e.target.value })}
+                required
+              >
+                <option value="binance">Binance</option>
+                <option value="bybit">Bybit</option>
+                <option value="coinbase">Coinbase</option>
+                <option value="ftmo">FTMO</option>
+                <option value="topstep">TopStep</option>
+                <option value="apex">Apex</option>
+              </select>
+            </div>
+
+            <div className={styles.formGroup}>
+              <label>Marché *</label>
+              <select
+                value={editingAccount.market}
+                onChange={(e) => setEditingAccount({ ...editingAccount, market: e.target.value })}
+                required
+              >
+                <option value="BTC">BTC</option>
+                <option value="ETH">ETH</option>
+                <option value="NASDAQ">NASDAQ</option>
+                <option value="GOLD">GOLD</option>
+              </select>
+            </div>
+          </div>
+
+          <div className={styles.formRow}>
+            <div className={styles.formGroup}>
+              <label>Devise *</label>
+              <select
+                value={editingAccount.currency}
+                onChange={(e) => {
+                  setEditingAccount({ ...editingAccount, currency: e.target.value });
+                  if (editingAccount.capital) {
+                    handleEditCapitalChange(editingAccount.capital);
+                  }
+                }}
+                required
+              >
+                <option value="USD">USD ($)</option>
+                <option value="EUR">EUR (€)</option>
+                <option value="GBP">GBP (£)</option>
+              </select>
+            </div>
+
+            <div className={styles.formGroup}>
+              <label>Capital *</label>
+              <input
+                type="number"
+                step="1"
+                min="200"
+                value={editingAccount.capital}
+                onChange={(e) => handleEditCapitalChange(e.target.value)}
+                placeholder="Entrer un montant"
+                required
+              />
+            </div>
+
+            <div className={styles.formGroup}>
+              <label>Risque par trade (%) *</label>
+              <input
+                type="number"
+                step="0.1"
+                value={editingAccount.risk_per_trade_percent}
+                onChange={(e) => setEditingAccount({ ...editingAccount, risk_per_trade_percent: e.target.value })}
+                placeholder="Ex: 0.5"
+                required
+              />
+            </div>
+          </div>
+
+          <div className={styles.formRow}>
+            <div className={styles.formGroup}>
+              <label>Perte max journalière ({editingAccount.currency})</label>
+              <input
+                type="number"
+                step="0.01"
+                value={editingAccount.max_daily_loss || ''}
+                onChange={(e) => setEditingAccount({ ...editingAccount, max_daily_loss: e.target.value })}
+                placeholder="Auto-calculé"
+              />
+              <small className={styles.helperText}>
+                {editingAccount.capital && parseFloat(editingAccount.capital) >= 200 && editingAccount.max_daily_loss
+                  ? `${((parseFloat(editingAccount.max_daily_loss) / parseFloat(editingAccount.capital)) * 100).toFixed(1)}% du capital`
+                  : 'Calculé automatiquement selon votre capital'}
+              </small>
+            </div>
+
+            <div className={styles.formGroup}>
+              <label>Perte max totale ({editingAccount.currency})</label>
+              <input
+                type="number"
+                step="0.01"
+                value={editingAccount.max_total_loss || ''}
+                onChange={(e) => setEditingAccount({ ...editingAccount, max_total_loss: e.target.value })}
+                placeholder="Auto-calculé"
+              />
+              <small className={styles.helperText}>
+                {editingAccount.capital && parseFloat(editingAccount.capital) >= 200 && editingAccount.max_total_loss
+                  ? `${((parseFloat(editingAccount.max_total_loss) / parseFloat(editingAccount.capital)) * 100).toFixed(1)}% du capital`
+                  : 'Calculé automatiquement selon votre capital'}
+              </small>
+            </div>
+          </div>
+
+          <div className={styles.formActions}>
+            <button type="submit" className={styles.submitBtn}>
+              Sauvegarder les modifications
+            </button>
+            <button
+              type="button"
+              className={styles.cancelBtn}
+              onClick={() => setEditingAccount(null)}
+            >
+              Annuler
+            </button>
+          </div>
+        </form>
+      )}
 
       {showForm && (
         <form onSubmit={handleCreateAccount} className={styles.form}>
@@ -402,12 +622,28 @@ const AccountManagement = () => {
             <div key={account.id} className={`${styles.accountCard} ${!account.is_active ? styles.inactive : ''}`}>
               <div className={styles.accountHeader}>
                 <h3>{account.name}</h3>
-                <button
-                  className={styles.toggleBtn}
-                  onClick={() => toggleAccountStatus(account.id, account.is_active)}
-                >
-                  {account.is_active ? 'Actif' : 'Inactif'}
-                </button>
+                <div className={styles.headerActions}>
+                  <button
+                    className={styles.toggleBtn}
+                    onClick={() => toggleAccountStatus(account.id, account.is_active)}
+                  >
+                    {account.is_active ? 'Actif' : 'Inactif'}
+                  </button>
+                  <button
+                    className={styles.editBtn}
+                    onClick={() => startEditAccount(account)}
+                    title="Modifier le compte"
+                  >
+                    ✏️
+                  </button>
+                  <button
+                    className={styles.deleteBtn}
+                    onClick={() => handleDeleteAccount(account.id, account.name)}
+                    title="Supprimer le compte"
+                  >
+                    🗑️
+                  </button>
+                </div>
               </div>
 
               <div className={styles.accountDetails}>

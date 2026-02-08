@@ -190,6 +190,13 @@
   color: #fff;
   font-size: 18px;
   margin: 0;
+  flex: 1;
+}
+
+.headerActions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
 }
 
 .toggleBtn {
@@ -210,6 +217,79 @@
 
 .toggleBtn:hover {
   background: rgba(0, 230, 118, 0.3);
+}
+
+.editBtn {
+  background: rgba(33, 150, 243, 0.2);
+  border: 2px solid #2196f3;
+  color: #2196f3;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: all 0.2s;
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.editBtn:hover {
+  background: rgba(33, 150, 243, 0.3);
+  transform: scale(1.05);
+}
+
+.deleteBtn {
+  background: rgba(244, 67, 54, 0.2);
+  border: 2px solid #f44336;
+  color: #f44336;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: all 0.2s;
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.deleteBtn:hover {
+  background: rgba(244, 67, 54, 0.3);
+  transform: scale(1.05);
+}
+
+.formActions {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.cancelBtn {
+  background: #2a2a2a;
+  border: 2px solid #3a3a3a;
+  color: #999;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cancelBtn:hover {
+  background: #3a3a3a;
+  color: #fff;
+}
+
+.form h2 {
+  color: #00e676;
+  font-size: 20px;
+  margin-bottom: 24px;
 }
 
 .accountDetails {

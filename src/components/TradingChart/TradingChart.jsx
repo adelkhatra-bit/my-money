@@ -136,7 +136,18 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
     clearPriceLines();
 
     if (position && position.status === 'OPEN') {
-      const isLong = position.direction === 'LONG';
+      const correctDirection = position.take_profit_1 > position.entry_price ? 'LONG' : 'SHORT';
+      const isLong = correctDirection === 'LONG';
+
+      if (position.direction !== correctDirection) {
+        console.warn('⚠️ DIRECTION POSITION INCORRECTE DÉTECTÉE ET CORRIGÉE', {
+          positionDirection: position.direction,
+          correctDirection,
+          entry: position.entry_price.toFixed(5),
+          tp1: position.take_profit_1.toFixed(5),
+          sl: position.stop_loss.toFixed(5)
+        });
+      }
 
       const lineEntry = candleSeriesRef.current.createPriceLine({
         price: position.entry_price,
@@ -180,11 +191,23 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
       }
     }
     else if (signal && signal.status === 'ACTIVE') {
-      const isLong = signal.direction === 'LONG';
       const entryPrice = (signal.entry_min + signal.entry_max) / 2;
 
+      const correctDirection = signal.take_profit_1 > entryPrice ? 'LONG' : 'SHORT';
+      const isLong = correctDirection === 'LONG';
+
+      if (signal.direction !== correctDirection) {
+        console.warn('⚠️ DIRECTION INCORRECTE DÉTECTÉE ET CORRIGÉE', {
+          signalDirection: signal.direction,
+          correctDirection,
+          entry: entryPrice.toFixed(5),
+          tp1: signal.take_profit_1.toFixed(5),
+          sl: signal.stop_loss.toFixed(5)
+        });
+      }
+
       console.log('📊 CHART DRAWING SIGNAL:', {
-        direction: signal.direction,
+        direction: correctDirection,
         entry: entryPrice.toFixed(5),
         sl: signal.stop_loss.toFixed(5),
         tp1: signal.take_profit_1.toFixed(5),

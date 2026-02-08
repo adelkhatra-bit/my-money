@@ -28,6 +28,11 @@ const PositionHistory = ({ positions = [] }) => {
     return styles.open;
   };
 
+  const getCorrectDirection = (position) => {
+    if (!position.entry_price || !position.take_profit_1) return position.direction;
+    return position.take_profit_1 > position.entry_price ? 'LONG' : 'SHORT';
+  };
+
   return (
     <div className={styles.historyContainer}>
       <h3 className={styles.title}>Historique des Positions</h3>
@@ -36,13 +41,14 @@ const PositionHistory = ({ positions = [] }) => {
           const pnl = position.pnl || 0;
           const isProfit = pnl > 0;
           const isLoss = pnl < 0;
+          const correctDirection = getCorrectDirection(position);
 
           return (
             <div key={position.id || index} className={`${styles.positionCard} ${getStatusClass(position.status)}`}>
               <div className={styles.header}>
                 <div className={styles.direction}>
-                  <span className={position.direction === 'LONG' ? styles.longBadge : styles.shortBadge}>
-                    {position.direction === 'LONG' ? '↑ LONG' : '↓ SHORT'}
+                  <span className={correctDirection === 'LONG' ? styles.longBadge : styles.shortBadge}>
+                    {correctDirection === 'LONG' ? '↑ LONG' : '↓ SHORT'}
                   </span>
                   <span className={styles.market}>{position.market}</span>
                 </div>

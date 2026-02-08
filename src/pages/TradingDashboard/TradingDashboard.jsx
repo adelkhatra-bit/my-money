@@ -342,7 +342,19 @@ const TradingDashboard = () => {
           let newStatus = 'OPEN';
           let hitPrice = null;
 
-          if (position.direction === 'LONG') {
+          const correctDirection = position.take_profit_1 > position.entry_price ? 'LONG' : 'SHORT';
+
+          if (position.direction !== correctDirection) {
+            console.warn('⚠️ [PnL Calculation] Direction incorrecte détectée et corrigée:', {
+              stored: position.direction,
+              correct: correctDirection,
+              entry: position.entry_price.toFixed(5),
+              tp1: position.take_profit_1.toFixed(5),
+              sl: position.stop_loss.toFixed(5)
+            });
+          }
+
+          if (correctDirection === 'LONG') {
             if (currentPrice <= position.stop_loss) {
               newStatus = 'SL_HIT';
               hitPrice = position.stop_loss;
@@ -358,7 +370,7 @@ const TradingDashboard = () => {
             } else {
               unrealizedPnl = (currentPrice - position.entry_price) * position.position_size * 100000;
             }
-          } else if (position.direction === 'SHORT') {
+          } else if (correctDirection === 'SHORT') {
             if (currentPrice >= position.stop_loss) {
               newStatus = 'SL_HIT';
               hitPrice = position.stop_loss;

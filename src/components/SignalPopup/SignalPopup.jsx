@@ -33,10 +33,21 @@ const SignalPopup = ({ signal, riskCalc, onAccept, onReject, onDismiss }) => {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const directionColor = signal.direction === 'LONG' ? '#00e676' : '#ef4444';
-  const progressPercent = (timeRemaining / (10 * 60)) * 100;
-  const isLong = signal.direction === 'LONG';
   const entryMid = (signal.entry_min + signal.entry_max) / 2;
+
+  const correctDirection = signal.take_profit_1 > entryMid ? 'LONG' : 'SHORT';
+  const isLong = correctDirection === 'LONG';
+  const directionColor = isLong ? '#00e676' : '#ef4444';
+  const progressPercent = (timeRemaining / (10 * 60)) * 100;
+
+  if (signal.direction !== correctDirection) {
+    console.warn('⚠️ [SignalPopup] Direction incorrecte corrigée:', {
+      stored: signal.direction,
+      correct: correctDirection,
+      entry: entryMid.toFixed(5),
+      tp1: signal.take_profit_1.toFixed(5)
+    });
+  }
 
   return (
     <div className={styles.overlay}>

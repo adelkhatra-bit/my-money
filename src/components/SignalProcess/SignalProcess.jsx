@@ -13,6 +13,12 @@ const SignalProcess = ({
   const [timeRemaining, setTimeRemaining] = useState(null);
   const [userReady, setUserReady] = useState(false);
 
+  const getCorrectDirection = (sig) => {
+    if (!sig) return null;
+    const entryMid = (sig.entry_min + sig.entry_max) / 2;
+    return sig.take_profit_1 > entryMid ? 'LONG' : 'SHORT';
+  };
+
   useEffect(() => {
     if (signal && signal.validUntil) {
       const interval = setInterval(() => {
@@ -106,12 +112,24 @@ const SignalProcess = ({
       );
     }
 
+    const correctDirection = getCorrectDirection(signal);
+    const displayDirection = correctDirection || signal.direction;
+
+    if (signal.direction !== correctDirection) {
+      console.warn('⚠️ [SignalProcess] Direction incorrecte corrigée:', {
+        stored: signal.direction,
+        correct: correctDirection,
+        entry: ((signal.entry_min + signal.entry_max) / 2).toFixed(5),
+        tp1: signal.take_profit_1.toFixed(5)
+      });
+    }
+
     return (
       <div className={styles.signalOverlay}>
         <div className={styles.signalBox}>
           <div className={styles.signalHeader}>
-            <div className={`${styles.signalBadge} ${styles[signal.direction.toLowerCase()]}`}>
-              {signal.direction === 'LONG' ? '🟢 ACHAT CONFIRMÉ (LONG)' : '🔴 VENTE CONFIRMÉE (SHORT)'}
+            <div className={`${styles.signalBadge} ${styles[displayDirection.toLowerCase()]}`}>
+              {displayDirection === 'LONG' ? '🟢 ACHAT CONFIRMÉ (LONG)' : '🔴 VENTE CONFIRMÉE (SHORT)'}
             </div>
             <div className={styles.timer}>
               ⏱️ {formatTime(timeRemaining)}

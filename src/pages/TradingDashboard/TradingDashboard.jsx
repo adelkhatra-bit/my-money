@@ -1116,7 +1116,8 @@ const TradingDashboard = () => {
         </div>
       )}
 
-      <div className={styles.chartSection}>
+      <div className={styles.mainContent}>
+        <div className={styles.chartSection}>
         {candles.length === 0 ? (
           <div className={styles.loadingChart}>
             <div className={styles.loadingSpinner}></div>
@@ -1181,6 +1182,9 @@ const TradingDashboard = () => {
             )}
           </>
         )}
+        </div>
+
+        <PositionHistory positions={positionsHistory} />
       </div>
 
       <SignalProcess
@@ -1192,8 +1196,6 @@ const TradingDashboard = () => {
         onDismissSignal={handleDismissSignal}
         userCredits={credits.remaining}
       />
-
-      <PositionHistory positions={positionsHistory} />
 
       <TrailingStopPopup
         show={showTrailingStopPopup}

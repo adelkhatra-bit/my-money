@@ -2,7 +2,7 @@
   background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
   border-radius: 12px;
   padding: 20px;
-  margin-top: 20px;
+  margin: 16px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 }
 
@@ -17,10 +17,14 @@
 }
 
 .emptyHistory {
-  text-align: center;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  border-radius: 12px;
   padding: 40px 20px;
+  margin: 16px;
+  text-align: center;
   color: rgba(255, 255, 255, 0.6);
   font-size: 1rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 }
 
 .positionsList {

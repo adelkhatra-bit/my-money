@@ -17,13 +17,19 @@ export default function Dashboard() {
   const loadUserData = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        console.log('No user found');
+        return;
+      }
 
-      const { data: profile } = await supabase
+      console.log('Loading profile for user:', user.id);
+      const { data: profile, error: profileError } = await supabase
         .from('user_profiles')
         .select('*')
         .eq('user_id', user.id)
         .maybeSingle();
+
+      console.log('Profile loaded:', { profile, profileError });
 
       if (profile) {
         const { data: allCredits } = await supabase

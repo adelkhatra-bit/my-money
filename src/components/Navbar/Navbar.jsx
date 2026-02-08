@@ -7,6 +7,8 @@ const Navbar = ({ isSuperAdmin }) => {
   const navigate = useNavigate();
   const location = useLocation();
 
+  console.log('Navbar received isSuperAdmin:', isSuperAdmin);
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate('/login');

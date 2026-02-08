@@ -59,13 +59,24 @@ function App() {
 
   const checkSuperAdmin = async (userId) => {
     try {
-      const { data: profile } = await supabase
+      console.log('Checking super admin for user:', userId);
+      const { data: profile, error } = await supabase
         .from('user_profiles')
         .select('is_super_admin')
         .eq('user_id', userId)
         .maybeSingle();
 
-      setIsSuperAdmin(profile?.is_super_admin || false);
+      console.log('Super admin check result:', { profile, error });
+
+      if (error) {
+        console.error('Error in super admin check:', error);
+        setIsSuperAdmin(false);
+        return;
+      }
+
+      const isSA = profile?.is_super_admin === true;
+      console.log('Setting isSuperAdmin to:', isSA);
+      setIsSuperAdmin(isSA);
     } catch (error) {
       console.error('Error checking super admin:', error);
       setIsSuperAdmin(false);

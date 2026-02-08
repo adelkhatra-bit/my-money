@@ -1188,30 +1188,34 @@ const TradingDashboard = () => {
 
       <div className={styles.statsBar}>
         <div className={styles.statItem}>
-          <span className={styles.statLabel}>Balance</span>
-          <span className={styles.statValue}>${stats.balance.toFixed(2)}</span>
-        </div>
-        <div className={styles.statItem}>
-          <span className={styles.statLabel}>PnL</span>
-          <span className={`${styles.statValue} ${stats.pnl >= 0 ? styles.positive : styles.negative}`}>
-            ${stats.pnl.toFixed(2)}
+          <span className={styles.statLabel}>💰 Balance</span>
+          <span className={styles.statValue}>
+            {activeAccount?.currency === 'EUR' ? '€' : '$'}{stats.balance.toFixed(2)}
           </span>
         </div>
         <div className={styles.statItem}>
-          <span className={styles.statLabel}>Trades</span>
+          <span className={styles.statLabel}>📊 PnL Total</span>
+          <span className={`${styles.statValue} ${stats.pnl >= 0 ? styles.positive : styles.negative}`}>
+            {stats.pnl >= 0 ? '+' : ''}{activeAccount?.currency === 'EUR' ? '€' : '$'}{stats.pnl.toFixed(2)}
+          </span>
+        </div>
+        <div className={styles.statItem}>
+          <span className={styles.statLabel}>📈 Total Trades</span>
           <span className={styles.statValue}>{stats.totalTrades}</span>
         </div>
         <div className={styles.statItem}>
-          <span className={styles.statLabel}>Gains</span>
+          <span className={styles.statLabel}>✅ Gains</span>
           <span className={`${styles.statValue} ${styles.positive}`}>{stats.wins}</span>
         </div>
         <div className={styles.statItem}>
-          <span className={styles.statLabel}>Pertes</span>
+          <span className={styles.statLabel}>❌ Pertes</span>
           <span className={`${styles.statValue} ${styles.negative}`}>{stats.losses}</span>
         </div>
         <div className={styles.statItem}>
-          <span className={styles.statLabel}>Winrate</span>
-          <span className={styles.statValue}>{stats.winrate.toFixed(1)}%</span>
+          <span className={styles.statLabel}>🎯 Winrate</span>
+          <span className={`${styles.statValue} ${stats.winrate >= 50 ? styles.positive : stats.winrate > 0 ? '' : styles.neutral}`}>
+            {stats.winrate.toFixed(1)}%
+          </span>
         </div>
       </div>
     </div>

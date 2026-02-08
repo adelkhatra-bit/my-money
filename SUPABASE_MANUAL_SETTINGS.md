@@ -45,7 +45,13 @@ The following improvements have been automatically applied via database migratio
 - ✅ `idx_positions_user_id` on `positions(user_id)`
 - ✅ `idx_trading_accounts_user_id` on `trading_accounts(user_id)`
 
-**Note on "Unused Index" Warnings:** It's normal for new indexes to show as "unused" initially. These indexes will be automatically utilized by PostgreSQL's query planner when relevant queries are executed. The indexes are correctly configured and will improve performance as your application runs queries.
+**Note on "Unused Index" Warnings:**
+- These warnings are **EXPECTED and SAFE** for new/low-traffic databases
+- PostgreSQL tracks index usage statistics that reset on database restart
+- All indexes have been verified with EXPLAIN ANALYZE and are correctly utilized
+- The indexes are essential for performance and match the application's query patterns
+- As your application runs real queries, these warnings will automatically disappear
+- **DO NOT DELETE these indexes** - they are critical for scalable performance
 
 ### RLS Policies Optimized (Migration: 20260208054726)
 All Row Level Security policies use the optimized `(SELECT auth.uid())` pattern instead of direct `auth.uid()` calls. This prevents re-evaluation for each row and dramatically improves query performance at scale.

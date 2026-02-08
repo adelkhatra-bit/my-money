@@ -44,8 +44,8 @@ const SignalProcess = ({
       <div className={styles.scanningOverlay}>
         <div className={styles.scanningBox}>
           <div className={styles.spinner}></div>
-          <h3>Scan en cours...</h3>
-          <p>Recherche d'une position optimale</p>
+          <h3>🔍 Analyse du marché</h3>
+          <p>Le robot recherche les meilleures opportunités...</p>
           <div className={styles.progressBar}>
             <div className={styles.progressFill}></div>
           </div>
@@ -59,9 +59,11 @@ const SignalProcess = ({
       <div className={styles.preAlertOverlay}>
         <div className={styles.preAlertBox}>
           <div className={styles.warningIcon}>⚠️</div>
-          <h3>Signal bientôt disponible</h3>
-          <p>Une opportunité arrive dans <strong>3 minutes</strong></p>
-          <p className={styles.stayReadyText}>Reste devant l'écran</p>
+          <h3>PRÉPARE-TOI</h3>
+          <p>Une position <strong>{preAlert.direction === 'LONG' ? 'ACHAT (LONG)' : 'VENTE (SHORT)'}</strong> est en préparation</p>
+          <p className={styles.marketInfo}>Marché: {preAlert.market} | Plateforme: {preAlert.platform}</p>
+          <p className={styles.stayReadyText}>Les tracés sont maintenant visibles sur le graphique</p>
+          <p className={styles.stayReadyText}>La confirmation arrive dans environ 2 minutes</p>
           <div className={styles.buttonGroup}>
             <button
               className={styles.readyBtn}
@@ -73,7 +75,7 @@ const SignalProcess = ({
               className={styles.cancelBtn}
               onClick={() => onDeclineSignal()}
             >
-              Pas maintenant
+              Annuler
             </button>
           </div>
         </div>
@@ -89,9 +91,9 @@ const SignalProcess = ({
         <div className={styles.expiredOverlay}>
           <div className={styles.expiredBox}>
             <div className={styles.stopIcon}>⛔</div>
-            <h3>Trop tard</h3>
-            <p>Entrée verrouillée. La fenêtre de validité est expirée.</p>
-            <p className={styles.nextSignalText}>Attends le prochain signal...</p>
+            <h3>TROP TARD</h3>
+            <p>La fenêtre d'entrée est maintenant fermée.</p>
+            <p className={styles.nextSignalText}>Le prochain signal arrivera bientôt...</p>
             <button
               className={styles.okBtn}
               onClick={() => onDeclineSignal()}
@@ -108,7 +110,7 @@ const SignalProcess = ({
         <div className={styles.signalBox}>
           <div className={styles.signalHeader}>
             <div className={`${styles.signalBadge} ${styles[signal.direction.toLowerCase()]}`}>
-              {signal.direction === 'LONG' ? '🟢 BUY CONFIRMÉ' : '🔴 SELL CONFIRMÉ'}
+              {signal.direction === 'LONG' ? '🟢 ACHAT CONFIRMÉ (LONG)' : '🔴 VENTE CONFIRMÉE (SHORT)'}
             </div>
             <div className={styles.timer}>
               ⏱️ {formatTime(timeRemaining)}
@@ -157,7 +159,7 @@ const SignalProcess = ({
           </div>
 
           <div className={styles.entryStatus}>
-            ✅ Entrée encore possible
+            ✅ Tu peux encore entrer maintenant
           </div>
 
           <div className={styles.buttonGroup}>
@@ -165,7 +167,7 @@ const SignalProcess = ({
               className={styles.acceptBtn}
               onClick={() => onAcceptSignal(signal)}
             >
-              OK - Je prends la position
+              OK - J'accepte
             </button>
             <button
               className={styles.declineBtn}
@@ -176,7 +178,7 @@ const SignalProcess = ({
           </div>
 
           <div className={styles.creditInfo}>
-            1 position sera débitée si vous acceptez
+            1 crédit sera débité quand tu acceptes
           </div>
         </div>
       </div>

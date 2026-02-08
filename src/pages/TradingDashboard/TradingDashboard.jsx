@@ -46,7 +46,7 @@ const TradingDashboard = () => {
 
   useEffect(() => {
     if (market === 'NASDAQ' || market === 'GOLD') {
-      if (platform === 'binance' || platform === 'bybit' || platform === 'coinbase') {
+      if (platform === 'binance' || platform === 'bybit' || platform === 'okx' || platform === 'coinbase') {
         setPlatform('ftmo');
       }
     } else if (market === 'BTC' || market === 'ETH') {
@@ -199,8 +199,8 @@ const TradingDashboard = () => {
     setSignalState({ isScanning: true, preAlert: null, signal: null });
     setScanning(true);
     setBotState('scanning');
-    setScanStatus('Analyse en cours...');
-    setShowAnalysis(true);
+    setScanStatus('🔍 Le robot analyse le marché en temps réel...');
+    setShowAnalysis(false);
 
     try {
       const result = await generateSignal(market, platform, candles);
@@ -214,21 +214,21 @@ const TradingDashboard = () => {
       if (result.signal) {
         if (result.signal.market !== market) {
           console.error(`Signal market mismatch: expected ${market}, got ${result.signal.market}`);
-          setScanStatus(`Erreur: Signal généré pour ${result.signal.market} au lieu de ${market}`);
+          setScanStatus(`❌ Erreur: Signal pour ${result.signal.market} au lieu de ${market}`);
           setScanning(false);
           setSignalState({ isScanning: false, preAlert: null, signal: null });
           return;
         }
 
+        setShowAnalysis(true);
         setSignalState({
           isScanning: false,
           preAlert: { market, platform, direction: result.signal.direction },
           signal: null
         });
-        setShowAnalysis(true);
         setBotState('pre_alert');
         audioAlerts.signalAlert();
-        setScanStatus('Opportunité en préparation...');
+        setScanStatus(`⚠️ PRÉPARE-TOI : Une position ${result.signal.direction === 'LONG' ? 'ACHAT' : 'VENTE'} est en préparation sur ${market}`);
 
         setTimeout(() => {
           if (activeAccount) {
@@ -238,7 +238,7 @@ const TradingDashboard = () => {
 
           const signalWithTimer = {
             ...result.signal,
-            validUntil: Date.now() + 180000,
+            validUntil: Date.now() + 120000,
             entryMin: result.signal.entry_min,
             entryMax: result.signal.entry_max,
             sl: result.signal.stop_loss,
@@ -257,20 +257,21 @@ const TradingDashboard = () => {
           setCurrentSignal(result.signal);
           setBotState('signal_ready');
           audioAlerts.signalAlert();
-          setScanStatus('Signal confirmé !');
-        }, 180000);
+          setScanStatus(`✅ POSITION ${result.signal.direction === 'LONG' ? 'ACHAT' : 'VENTE'} CONFIRMÉE - Clique OK pour accepter`);
+        }, 120000);
       } else {
-        setScanStatus(result.reason);
+        setScanStatus(`ℹ️ ${result.reason || 'Aucune opportunité détectée pour le moment'}`);
         setSignalState({ isScanning: false, preAlert: null, signal: null });
         setBotState('idle');
 
         setTimeout(() => {
           setShowAnalysis(false);
-        }, 3000);
+          setScanStatus('');
+        }, 5000);
       }
     } catch (error) {
       console.error('Scan error:', error);
-      setScanStatus('Erreur lors de l\'analyse');
+      setScanStatus('❌ Erreur lors de l\'analyse du marché');
       setSignalState({ isScanning: false, preAlert: null, signal: null });
       setBotState('idle');
     } finally {
@@ -453,6 +454,7 @@ const TradingDashboard = () => {
                 <>
                   <option value="binance">Binance</option>
                   <option value="bybit">Bybit</option>
+                  <option value="okx">OKX</option>
                   <option value="coinbase">Coinbase</option>
                 </>
               )}

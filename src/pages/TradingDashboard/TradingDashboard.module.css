@@ -201,7 +201,8 @@
 
 .chartSection {
   flex: 1;
-  padding: 20px;
+  padding: 16px 20px;
+  max-height: 520px;
 }
 
 .statsBar {

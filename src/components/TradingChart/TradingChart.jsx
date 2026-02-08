@@ -22,14 +22,14 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
         horzLines: { color: '#2b2b2b' },
       },
       width: chartContainerRef.current.clientWidth,
-      height: isFullscreen ? window.innerHeight - 100 : 600,
+      height: isFullscreen ? window.innerHeight - 100 : 450,
       rightPriceScale: {
         borderColor: '#3a3a3a',
       },
       timeScale: {
         borderColor: '#3a3a3a',
-        rightOffset: 50,
-        barSpacing: 12,
+        rightOffset: 80,
+        barSpacing: 15,
         timeVisible: true,
         secondsVisible: false,
       },
@@ -70,27 +70,27 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
     candleSeries.setData(candles);
 
     if (showAnalysis && supports && supports.length > 0) {
-      supports.forEach(support => {
+      supports.forEach((support, idx) => {
         candleSeries.createPriceLine({
           price: support,
           color: '#4caf50',
-          lineWidth: 2,
+          lineWidth: 3,
           lineStyle: 2,
           axisLabelVisible: true,
-          title: 'Support',
+          title: `Support ${idx + 1}`,
         });
       });
     }
 
     if (showAnalysis && resistances && resistances.length > 0) {
-      resistances.forEach(resistance => {
+      resistances.forEach((resistance, idx) => {
         candleSeries.createPriceLine({
           price: resistance,
           color: '#f44336',
-          lineWidth: 2,
+          lineWidth: 3,
           lineStyle: 2,
           axisLabelVisible: true,
-          title: 'Resistance',
+          title: `Résistance ${idx + 1}`,
         });
       });
     }
@@ -101,18 +101,18 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
           candleSeries.createPriceLine({
             price: block.high,
             color: '#00e676',
-            lineWidth: 3,
+            lineWidth: 4,
             lineStyle: 0,
             axisLabelVisible: true,
-            title: `OB Bull High ${index + 1}`,
+            title: `Zone Achat Haut ${index + 1}`,
           });
           candleSeries.createPriceLine({
             price: block.low,
             color: '#00e676',
-            lineWidth: 3,
+            lineWidth: 4,
             lineStyle: 0,
             axisLabelVisible: true,
-            title: `OB Bull Low ${index + 1}`,
+            title: `Zone Achat Bas ${index + 1}`,
           });
         });
       }
@@ -122,44 +122,46 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
           candleSeries.createPriceLine({
             price: block.high,
             color: '#e91e63',
-            lineWidth: 3,
+            lineWidth: 4,
             lineStyle: 0,
             axisLabelVisible: true,
-            title: `OB Bear High ${index + 1}`,
+            title: `Zone Vente Haut ${index + 1}`,
           });
           candleSeries.createPriceLine({
             price: block.low,
             color: '#e91e63',
-            lineWidth: 3,
+            lineWidth: 4,
             lineStyle: 0,
             axisLabelVisible: true,
-            title: `OB Bear Low ${index + 1}`,
+            title: `Zone Vente Bas ${index + 1}`,
           });
         });
       }
     }
 
     if (signal && signal.status === 'ACTIVE') {
+      const directionLabel = signal.direction === 'LONG' ? 'Achat' : 'Vente';
+
       candleSeries.createPriceLine({
         price: signal.entry_min,
         color: '#ffc107',
-        lineWidth: 2,
+        lineWidth: 3,
         axisLabelVisible: true,
-        title: `Entry Min ${signal.direction}`,
+        title: `Entrée Min ${directionLabel}`,
       });
 
       candleSeries.createPriceLine({
         price: signal.entry_max,
         color: '#ffc107',
-        lineWidth: 2,
+        lineWidth: 3,
         axisLabelVisible: true,
-        title: 'Entry Max',
+        title: `Entrée Max ${directionLabel}`,
       });
 
       candleSeries.createPriceLine({
         price: signal.stop_loss,
         color: '#e91e63',
-        lineWidth: 3,
+        lineWidth: 4,
         axisLabelVisible: true,
         title: 'Stop Loss',
       });
@@ -167,7 +169,7 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
       candleSeries.createPriceLine({
         price: signal.take_profit_1,
         color: '#00e676',
-        lineWidth: 3,
+        lineWidth: 4,
         axisLabelVisible: true,
         title: 'TP1',
       });
@@ -176,7 +178,7 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
         candleSeries.createPriceLine({
           price: signal.take_profit_2,
           color: '#00e676',
-          lineWidth: 3,
+          lineWidth: 4,
           axisLabelVisible: true,
           title: 'TP2',
         });
@@ -184,26 +186,28 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
     }
 
     if (position && position.status === 'OPEN') {
+      const posDirectionLabel = position.direction === 'LONG' ? 'Achat' : 'Vente';
+
       candleSeries.createPriceLine({
         price: position.entry_price,
         color: '#2196f3',
-        lineWidth: 3,
+        lineWidth: 4,
         axisLabelVisible: true,
-        title: `Entry ${position.direction}`,
+        title: `Position ${posDirectionLabel}`,
       });
 
       candleSeries.createPriceLine({
         price: position.stop_loss,
         color: '#e91e63',
-        lineWidth: 3,
+        lineWidth: 4,
         axisLabelVisible: true,
-        title: 'SL',
+        title: 'Stop Loss',
       });
 
       candleSeries.createPriceLine({
         price: position.take_profit_1,
         color: '#00e676',
-        lineWidth: 3,
+        lineWidth: 4,
         axisLabelVisible: true,
         title: 'TP1',
       });
@@ -212,7 +216,7 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
         candleSeries.createPriceLine({
           price: position.take_profit_2,
           color: '#00e676',
-          lineWidth: 3,
+          lineWidth: 4,
           axisLabelVisible: true,
           title: 'TP2',
         });

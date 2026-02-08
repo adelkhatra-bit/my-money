@@ -140,29 +140,29 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
 
       const lineEntry = candleSeriesRef.current.createPriceLine({
         price: position.entry_price,
-        color: isLong ? '#00BFFF' : '#FF4444',
+        color: isLong ? '#26a69a' : '#ef5350',
         lineWidth: 3,
         lineStyle: 0,
         axisLabelVisible: true,
-        title: `${isLong ? '🟢 ENTRÉE LONG ↑' : '🔴 ENTRÉE SHORT ↓'} - ${position.entry_price.toFixed(5)}`,
+        title: `${isLong ? '🟢 LONG ↑' : '🔴 SHORT ↓'} - ${position.entry_price.toFixed(5)}`,
       });
 
       const lineSL = candleSeriesRef.current.createPriceLine({
         price: position.stop_loss,
-        color: '#FF0000',
+        color: '#f44336',
         lineWidth: 3,
         lineStyle: 0,
         axisLabelVisible: true,
-        title: `🔴 STOP LOSS - ${position.stop_loss.toFixed(5)}`,
+        title: `🛑 SL - ${position.stop_loss.toFixed(5)}`,
       });
 
       const lineTP1 = candleSeriesRef.current.createPriceLine({
         price: position.take_profit_1,
-        color: '#00FF00',
+        color: '#4caf50',
         lineWidth: 3,
         lineStyle: 0,
         axisLabelVisible: true,
-        title: `🟢 TP1 - ${position.take_profit_1.toFixed(5)}`,
+        title: `🎯 TP1 - ${position.take_profit_1.toFixed(5)}`,
       });
 
       priceLines.current.push(lineEntry, lineSL, lineTP1);
@@ -170,11 +170,11 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
       if (position.take_profit_2) {
         const lineTP2 = candleSeriesRef.current.createPriceLine({
           price: position.take_profit_2,
-          color: '#00FF00',
+          color: '#4caf50',
           lineWidth: 2,
           lineStyle: 2,
           axisLabelVisible: true,
-          title: `🟢 TP2 - ${position.take_profit_2.toFixed(5)}`,
+          title: `🎯 TP2 - ${position.take_profit_2.toFixed(5)}`,
         });
         priceLines.current.push(lineTP2);
       }
@@ -197,29 +197,29 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
 
       const lineEntry = candleSeriesRef.current.createPriceLine({
         price: entryPrice,
-        color: isLong ? '#00BFFF' : '#FF4444',
+        color: isLong ? '#26a69a' : '#ef5350',
         lineWidth: 3,
         lineStyle: 0,
         axisLabelVisible: true,
-        title: `${isLong ? '🟢 ENTRÉE LONG ↑' : '🔴 ENTRÉE SHORT ↓'} - ${entryPrice.toFixed(5)}`,
+        title: `${isLong ? '🟢 LONG ↑' : '🔴 SHORT ↓'} - ${entryPrice.toFixed(5)}`,
       });
 
       const lineSL = candleSeriesRef.current.createPriceLine({
         price: signal.stop_loss,
-        color: '#FF0000',
+        color: '#f44336',
         lineWidth: 3,
         lineStyle: 0,
         axisLabelVisible: true,
-        title: `🔴 STOP LOSS - ${signal.stop_loss.toFixed(5)}`,
+        title: `🛑 SL - ${signal.stop_loss.toFixed(5)}`,
       });
 
       const lineTP1 = candleSeriesRef.current.createPriceLine({
         price: signal.take_profit_1,
-        color: '#00FF00',
+        color: '#4caf50',
         lineWidth: 3,
         lineStyle: 0,
         axisLabelVisible: true,
-        title: `🟢 TP1 - ${signal.take_profit_1.toFixed(5)}`,
+        title: `🎯 TP1 - ${signal.take_profit_1.toFixed(5)}`,
       });
 
       priceLines.current.push(lineEntry, lineSL, lineTP1);
@@ -227,11 +227,11 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
       if (signal.take_profit_2) {
         const lineTP2 = candleSeriesRef.current.createPriceLine({
           price: signal.take_profit_2,
-          color: '#00FF00',
+          color: '#4caf50',
           lineWidth: 2,
           lineStyle: 2,
           axisLabelVisible: true,
-          title: `🟢 TP2 - ${signal.take_profit_2.toFixed(5)}`,
+          title: `🎯 TP2 - ${signal.take_profit_2.toFixed(5)}`,
         });
         priceLines.current.push(lineTP2);
       }

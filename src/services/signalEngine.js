@@ -184,7 +184,7 @@ export const generateSignal = async (market, platform, candles, userAccount = nu
     }
   }
 
-  if (takeProfit1 < entryMid && (!takeProfit2 || takeProfit2 < entryMid)) {
+  if (takeProfit1 < entryMid) {
     direction = 'SHORT';
   } else if (takeProfit1 > entryMid) {
     direction = 'LONG';
@@ -193,7 +193,7 @@ export const generateSignal = async (market, platform, candles, userAccount = nu
       entry: entryMid.toFixed(5),
       tp1: takeProfit1.toFixed(5),
       tp2: takeProfit2 ? takeProfit2.toFixed(5) : 'N/A',
-      problem: 'Position des TP ambiguë'
+      problem: 'TP1 égal à entry (impossible)'
     });
     return {
       signal: null,
@@ -207,14 +207,25 @@ export const generateSignal = async (market, platform, candles, userAccount = nu
     const platformRules = getPlatformRules(platform, market);
     const estimatedLotSize = 1;
     const slDistance = riskAmount / (estimatedLotSize * platformRules.pointValue * currentPrice);
-    const slPercent = slDistance * 100;
+    const slPercent = Math.max(0.5, Math.min(slDistance * 100, 3));
 
     if (direction === 'SHORT') {
       stopLoss = entryMid * (1 + slPercent / 100);
     } else {
       stopLoss = entryMid * (1 - slPercent / 100);
     }
+
+    console.log('💰 SL CALCULÉ DEPUIS PROFIL:', {
+      capital: userAccount.capital,
+      riskPercent: userAccount.risk_per_trade_percent,
+      riskAmount: riskAmount.toFixed(2),
+      slPercent: slPercent.toFixed(3),
+      slPrice: stopLoss.toFixed(5),
+      direction,
+      placement: direction === 'SHORT' ? 'AU-DESSUS entry' : 'EN DESSOUS entry'
+    });
   } else {
+    console.warn('⚠️ PROFIL NON TROUVÉ - SL par défaut utilisé');
     if (direction === 'SHORT') {
       stopLoss = entryMid * 1.015;
     } else {
@@ -268,15 +279,18 @@ export const generateSignal = async (market, platform, candles, userAccount = nu
   const validUntil = new Date(now + validityMinutes * 60 * 1000);
   const signalId = `${marketKey}_${now}_${direction}`;
 
-  console.log('✅ SIGNAL VALIDÉ:', {
+  console.log('✅ SIGNAL VALIDÉ (v2.4.0):', {
     direction,
     currentPrice: currentPrice.toFixed(5),
     entry: entryMid.toFixed(5),
     stopLoss: stopLoss.toFixed(5),
     tp1: takeProfit1.toFixed(5),
     tp2: takeProfit2 ? takeProfit2.toFixed(5) : 'N/A',
-    slPosition: direction === 'SHORT' ? 'AU-DESSUS' : 'EN DESSOUS',
-    tpPosition: direction === 'SHORT' ? 'EN DESSOUS' : 'AU-DESSUS'
+    validation: direction === 'SHORT'
+      ? `SL(${stopLoss.toFixed(5)}) > Entry(${entryMid.toFixed(5)}) > TP1(${takeProfit1.toFixed(5)}) ✓`
+      : `TP1(${takeProfit1.toFixed(5)}) > Entry(${entryMid.toFixed(5)}) > SL(${stopLoss.toFixed(5)}) ✓`,
+    slPosition: direction === 'SHORT' ? 'AU-DESSUS ↑' : 'EN DESSOUS ↓',
+    tpPosition: direction === 'SHORT' ? 'EN DESSOUS ↓' : 'AU-DESSUS ↑'
   });
 
   return {

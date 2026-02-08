@@ -193,9 +193,9 @@ export const generateSignal = async (market, platform, candles) => {
     stopLoss = currentPrice * 1.015;
 
     if (supports.length > 0) {
-      takeProfit1 = supports[0] * 0.99;
+      takeProfit1 = supports[0] * 1.01;
       if (supports.length > 1) {
-        takeProfit2 = supports[1] * 0.99;
+        takeProfit2 = supports[1] * 1.01;
       } else {
         takeProfit2 = currentPrice * 0.96;
       }

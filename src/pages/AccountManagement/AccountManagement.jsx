@@ -11,11 +11,14 @@ const AccountManagement = () => {
     platform: 'binance',
     market: 'BTC',
     capital: '',
+    capitalOption: 'preset',
     risk_per_trade_percent: '0.5',
     max_daily_loss: '',
     max_total_loss: '',
     currency: 'USD'
   });
+
+  const capitalPresets = [200, 400, 600, 800, 1000, 1500, 2000, 3000, 5000, 10000, 25000, 50000, 100000, 250000, 500000, 700000];
 
   const calculateRiskLimits = (capital) => {
     const cap = parseFloat(capital);
@@ -94,15 +97,30 @@ const AccountManagement = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data: profile } = await supabase
+      let { data: profile } = await supabase
         .from('user_profiles')
         .select('id')
         .eq('user_id', user.id)
         .maybeSingle();
 
       if (!profile) {
-        alert('Profil introuvable');
-        return;
+        const { data: newProfile, error: profileError } = await supabase
+          .from('user_profiles')
+          .insert({
+            user_id: user.id,
+            email: user.email,
+            is_super_admin: false
+          })
+          .select()
+          .single();
+
+        if (profileError) {
+          console.error('Error creating profile:', profileError);
+          alert('Erreur lors de la création du profil. Veuillez réessayer.');
+          return;
+        }
+
+        profile = newProfile;
       }
 
       const { error } = await supabase
@@ -128,6 +146,7 @@ const AccountManagement = () => {
         platform: 'binance',
         market: 'BTC',
         capital: '',
+        capitalOption: 'preset',
         risk_per_trade_percent: '0.5',
         max_daily_loss: '',
         max_total_loss: '',
@@ -237,16 +256,41 @@ const AccountManagement = () => {
 
             <div className={styles.formGroup}>
               <label>Capital *</label>
-              <input
-                type="number"
-                step="0.01"
-                min="200"
-                value={newAccount.capital}
-                onChange={(e) => handleCapitalChange(e.target.value)}
-                placeholder="Minimum 200"
-                required
-              />
-              <small className={styles.helperText}>Minimum recommandé : 200 {newAccount.currency}</small>
+              {newAccount.capitalOption === 'preset' ? (
+                <select
+                  value={newAccount.capital}
+                  onChange={(e) => handleCapitalChange(e.target.value)}
+                  required
+                >
+                  <option value="">Sélectionner un montant</option>
+                  {capitalPresets.map((amount) => (
+                    <option key={amount} value={amount}>
+                      {amount.toLocaleString()} {newAccount.currency}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  type="number"
+                  step="1"
+                  min="200"
+                  value={newAccount.capital}
+                  onChange={(e) => handleCapitalChange(e.target.value)}
+                  placeholder="Entrer un montant"
+                  required
+                />
+              )}
+              <button
+                type="button"
+                className={styles.toggleCapitalBtn}
+                onClick={() => setNewAccount({
+                  ...newAccount,
+                  capitalOption: newAccount.capitalOption === 'preset' ? 'custom' : 'preset',
+                  capital: ''
+                })}
+              >
+                {newAccount.capitalOption === 'preset' ? 'Autre montant' : 'Montants prédéfinis'}
+              </button>
             </div>
 
             <div className={styles.formGroup}>

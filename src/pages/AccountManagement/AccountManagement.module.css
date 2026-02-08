@@ -95,6 +95,25 @@
   font-style: italic;
 }
 
+.toggleCapitalBtn {
+  background: #2a2a2a;
+  border: 2px solid #3a3a3a;
+  color: #00e676;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 8px;
+}
+
+.toggleCapitalBtn:hover {
+  background: #3a3a3a;
+  border-color: #00e676;
+  transform: translateY(-1px);
+}
+
 .submitBtn {
   background: linear-gradient(135deg, #00e676, #00c853);
   border: none;

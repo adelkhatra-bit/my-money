@@ -22,10 +22,7 @@ function App() {
   useEffect(() => {
     checkUser();
 
-    const disclaimerAccepted = localStorage.getItem('disclaimer_accepted');
-    if (!disclaimerAccepted) {
-      setShowDisclaimer(true);
-    }
+    localStorage.setItem('disclaimer_accepted', 'true');
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {

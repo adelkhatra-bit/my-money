@@ -198,11 +198,6 @@ export const generateSignal = async (market, platform, candles) => {
 
   const riskReward = Math.abs((takeProfit1 - entryMin) / (entryMin - stopLoss));
 
-  console.log(`[SIGNAL DEBUG] Direction: ${direction}, Confidence: ${confidence}%, RR: ${riskReward.toFixed(2)}`);
-  console.log(`[SIGNAL DEBUG] Reasons:`, reasons);
-
-  console.log(`[SIGNAL ACCEPTED] ✅ Signal ${direction} généré avec ${confidence}% de confiance`);
-
   lastSignalTime[marketKey] = now;
 
   const validityMinutes = 10;

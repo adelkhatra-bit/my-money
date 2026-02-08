@@ -46,7 +46,6 @@ export const connectToMarketData = (market, platform, callback) => {
     };
 
     wsConnection.onclose = () => {
-      console.log('WebSocket connection closed');
     };
 
     return () => {
@@ -124,7 +123,6 @@ export const fetchHistoricalData = async (market, platform, timeframe = '5m', li
     }
 
     if (market === 'NASDAQ' || market === 'GOLD') {
-      console.log(`Generating demo data for ${market} (Paper Trading Mode)`);
       return generateDemoData(market, timeframe, limit);
     }
 

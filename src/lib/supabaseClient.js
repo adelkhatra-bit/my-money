@@ -4,8 +4,6 @@ const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || process.env.VITE_SUPAB
 const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('Supabase URL:', supabaseUrl);
-  console.error('Supabase Key exists:', !!supabaseAnonKey);
   throw new Error('Missing Supabase environment variables');
 }
 

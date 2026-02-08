@@ -389,7 +389,7 @@ const TradingDashboard = () => {
       setSignalState({ isScanning: false, preAlert: null, signal: null });
       setCurrentSignal(null);
       setBotState('position_locked');
-      audioAlerts.tpAlert();
+      audioAlerts.takeProfitAlert();
       await loadUserData();
       await loadStats(profile.id, activeAccount);
     } catch (error) {

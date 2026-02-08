@@ -33,7 +33,7 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
         horzLines: { color: '#2b2b2b' },
       },
       width: chartContainerRef.current.clientWidth,
-      height: isFullscreen ? window.innerHeight - 100 : 280,
+      height: isFullscreen ? window.innerHeight - 100 : 320,
       rightPriceScale: {
         borderColor: '#3a3a3a',
       },
@@ -97,7 +97,7 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
         try {
           chartRef.current.applyOptions({
             width: chartContainerRef.current.clientWidth,
-            height: isFullscreen ? window.innerHeight - 100 : 280,
+            height: isFullscreen ? window.innerHeight - 100 : 320,
           });
         } catch (e) {}
       }

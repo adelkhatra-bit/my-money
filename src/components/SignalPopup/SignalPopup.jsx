@@ -91,38 +91,43 @@ const SignalPopup = ({ signal, riskCalc, onAccept, onReject, onDismiss }) => {
         )}
 
         <div className={styles.priceInfo}>
+          <div className={styles.schemaTitle}>📊 SCHÉMA DE LA POSITION</div>
           <div className={styles.visualStructure}>
             {isLong ? (
               <div className={styles.structureBox}>
-                <div className={styles.structureLine} style={{ background: '#00e676' }}>
-                  🎯 TP2: {signal.take_profit_2 ? signal.take_profit_2.toFixed(2) : 'N/A'}
+                <div className={styles.structureLine} style={{ background: 'linear-gradient(90deg, #00e676, #00c853)' }}>
+                  ⬆️ TP2: {signal.take_profit_2 ? signal.take_profit_2.toFixed(2) : 'N/A'} 💰
                 </div>
-                <div className={styles.structureLine} style={{ background: '#00e676' }}>
-                  🎯 TP1: {signal.take_profit_1.toFixed(2)}
+                <div className={styles.structureLine} style={{ background: 'linear-gradient(90deg, #00e676, #00b04a)' }}>
+                  ⬆️ TP1: {signal.take_profit_1.toFixed(2)} 💰
                 </div>
-                <div className={styles.structureLine} style={{ background: '#00BFFF', fontWeight: 'bold' }}>
-                  ➡️ ENTRÉE: {entryMid.toFixed(2)}
+                <div className={styles.structureLine} style={{ background: 'linear-gradient(90deg, #2196F3, #1976D2)', fontSize: '16px', fontWeight: 'bold' }}>
+                  ▶️ ENTRÉE: {entryMid.toFixed(2)}
                 </div>
-                <div className={styles.structureLine} style={{ background: '#ef4444' }}>
-                  🛑 STOP LOSS: {signal.stop_loss.toFixed(2)}
+                <div className={styles.structureLine} style={{ background: 'linear-gradient(90deg, #ef4444, #d32f2f)' }}>
+                  ⬇️ STOP LOSS: {signal.stop_loss.toFixed(2)} 🛑
                 </div>
-                <div className={styles.structureLabel}>↑ LONG: TP au-dessus, SL en dessous</div>
+                <div className={styles.structureLabel}>
+                  📈 POSITION LONG - On achète et on vise le HAUT ↑↑↑
+                </div>
               </div>
             ) : (
               <div className={styles.structureBox}>
-                <div className={styles.structureLine} style={{ background: '#ef4444' }}>
-                  🛑 STOP LOSS: {signal.stop_loss.toFixed(2)}
+                <div className={styles.structureLine} style={{ background: 'linear-gradient(90deg, #ef4444, #d32f2f)' }}>
+                  ⬆️ STOP LOSS: {signal.stop_loss.toFixed(2)} 🛑
                 </div>
-                <div className={styles.structureLine} style={{ background: '#FF4444', fontWeight: 'bold' }}>
-                  ➡️ ENTRÉE: {entryMid.toFixed(2)}
+                <div className={styles.structureLine} style={{ background: 'linear-gradient(90deg, #FF5722, #E64A19)', fontSize: '16px', fontWeight: 'bold' }}>
+                  ▶️ ENTRÉE: {entryMid.toFixed(2)}
                 </div>
-                <div className={styles.structureLine} style={{ background: '#00e676' }}>
-                  🎯 TP1: {signal.take_profit_1.toFixed(2)}
+                <div className={styles.structureLine} style={{ background: 'linear-gradient(90deg, #00e676, #00b04a)' }}>
+                  ⬇️ TP1: {signal.take_profit_1.toFixed(2)} 💰
                 </div>
-                <div className={styles.structureLine} style={{ background: '#00e676' }}>
-                  🎯 TP2: {signal.take_profit_2 ? signal.take_profit_2.toFixed(2) : 'N/A'}
+                <div className={styles.structureLine} style={{ background: 'linear-gradient(90deg, #00e676, #00c853)' }}>
+                  ⬇️ TP2: {signal.take_profit_2 ? signal.take_profit_2.toFixed(2) : 'N/A'} 💰
                 </div>
-                <div className={styles.structureLabel}>↓ SHORT: SL au-dessus, TP en dessous</div>
+                <div className={styles.structureLabel}>
+                  📉 POSITION SHORT - On vend et on vise le BAS ↓↓↓
+                </div>
               </div>
             )}
           </div>

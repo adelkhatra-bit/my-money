@@ -338,6 +338,9 @@ const TradingDashboard = () => {
                 ...trailingResult
               });
 
+              addActivityLog(`🛡️ Trailing Stop activé sur ${position.market}!`, 'success');
+              addActivityLog(`📈 SL déplacé pour protéger +${trailingResult.gainProtected}% de gains`, 'position');
+
               const oldSL = position.stop_loss;
               const newSL = trailingResult.newStopLoss;
 
@@ -459,6 +462,10 @@ const TradingDashboard = () => {
               .eq('id', position.id);
 
             if (newStatus === 'TP1_HIT' || newStatus === 'TP2_HIT') {
+              const tpLabel = newStatus === 'TP1_HIT' ? 'TP1' : 'TP2';
+              addActivityLog(`🎯 ${tpLabel} ATTEINT sur ${position.market}!`, 'success');
+              addActivityLog(`💰 Profit réalisé: ${unrealizedPnl >= 0 ? '+' : ''}$${unrealizedPnl.toFixed(2)}`, 'success');
+
               await logAction(userId, newStatus === 'TP1_HIT' ? 'TP1_HIT' : 'TP2_HIT', position.market, position.platform, {
                 direction: position.direction,
                 entry_price: position.entry_price,
@@ -467,6 +474,9 @@ const TradingDashboard = () => {
                 position_id: position.id
               });
             } else if (newStatus === 'SL_HIT') {
+              addActivityLog(`🛑 STOP LOSS atteint sur ${position.market}`, 'error');
+              addActivityLog(`💸 Perte: ${unrealizedPnl >= 0 ? '+' : ''}$${unrealizedPnl.toFixed(2)}`, 'error');
+
               await logAction(userId, 'SL_HIT', position.market, position.platform, {
                 direction: position.direction,
                 entry_price: position.entry_price,
@@ -830,15 +840,21 @@ const TradingDashboard = () => {
   }, [autoMode, marketStatus.open]);
 
   const handleAcceptSignal = async (signal) => {
+    addActivityLog(`✅ Signal accepté - Ouverture position ${signal.direction}`, 'position');
+
     if (!activeAccount) {
       alert('⚠️ Veuillez configurer un compte de trading avant d\'ouvrir une position');
+      addActivityLog('❌ Erreur: Aucun compte configuré', 'error');
       return;
     }
 
     if (credits.remaining <= 0) {
       alert('❌ Vous n\'avez plus de crédits disponibles sur ce marché. Fermez une position ou rechargez vos crédits.');
+      addActivityLog('❌ Crédits insuffisants pour ouvrir la position', 'error');
       return;
     }
+
+    addActivityLog(`💰 Calcul de la taille de position...`, 'info');
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -973,6 +989,11 @@ const TradingDashboard = () => {
         position_size: positionSize
       });
 
+      addActivityLog(`🎉 Position ${signal.direction} ouverte avec succès!`, 'success');
+      addActivityLog(`💼 Entrée: ${entryPrice.toFixed(5)} | SL: ${signal.stop_loss.toFixed(5)}`, 'position');
+      addActivityLog(`🎯 TP1: ${signal.take_profit_1.toFixed(5)} | TP2: ${signal.take_profit_2.toFixed(5)}`, 'position');
+      addActivityLog(`📦 Taille: ${positionSize} lots`, 'info');
+
       setCurrentPosition(createdPosition);
       setSignalState({ isScanning: false, preAlert: null, signal: null });
       setCurrentSignal(null);
@@ -998,11 +1019,13 @@ const TradingDashboard = () => {
       }
 
       console.error('[Position] Formatted error:', errorMessage);
+      addActivityLog(`❌ ${errorMessage}`, 'error');
       alert(errorMessage);
     }
   };
 
   const handleDeclineSignal = async () => {
+    addActivityLog('❌ Signal refusé par l\'utilisateur', 'warning');
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (user && userId) {
@@ -1198,14 +1221,6 @@ const TradingDashboard = () => {
         etaMinutes={etaMinutes || 5}
       />
 
-      <div style={{ margin: '20px' }}>
-        <BotActivityLog
-          isActive={autoMode}
-          currentState={botState}
-          onActivityUpdate={(callback) => setActivityLogCallback(() => callback)}
-        />
-      </div>
-
       {signalState.isScanning && (
         <div className={styles.scanningIndicator}>
           <div className={styles.scanningPulse}></div>
@@ -1313,6 +1328,14 @@ const TradingDashboard = () => {
         gainProtected={trailingStopData?.gainProtected}
         onClose={() => setShowTrailingStopPopup(false)}
       />
+
+      <div style={{ margin: '20px', maxWidth: '100%' }}>
+        <BotActivityLog
+          isActive={autoMode}
+          currentState={botState}
+          onActivityUpdate={(callback) => setActivityLogCallback(() => callback)}
+        />
+      </div>
 
       <div className={styles.statsBar}>
         <div className={styles.statItem}>

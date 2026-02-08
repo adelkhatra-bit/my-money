@@ -135,152 +135,32 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
 
     clearPriceLines();
 
-    if (showAnalysis && supports && supports.length > 0) {
-      supports.forEach((support, idx) => {
-        const line = candleSeriesRef.current.createPriceLine({
-          price: support,
-          color: '#4caf50',
-          lineWidth: 3,
-          lineStyle: 2,
-          axisLabelVisible: true,
-          title: `Support ${idx + 1}`,
-        });
-        priceLines.current.push(line);
-      });
-    }
-
-    if (showAnalysis && resistances && resistances.length > 0) {
-      resistances.forEach((resistance, idx) => {
-        const line = candleSeriesRef.current.createPriceLine({
-          price: resistance,
-          color: '#f44336',
-          lineWidth: 3,
-          lineStyle: 2,
-          axisLabelVisible: true,
-          title: `Résistance ${idx + 1}`,
-        });
-        priceLines.current.push(line);
-      });
-    }
-
-    if (showAnalysis && orderBlocks) {
-      if (orderBlocks.bullish && orderBlocks.bullish.length > 0) {
-        orderBlocks.bullish.forEach((block, index) => {
-          const lineHigh = candleSeriesRef.current.createPriceLine({
-            price: block.high,
-            color: '#00e676',
-            lineWidth: 4,
-            lineStyle: 0,
-            axisLabelVisible: true,
-            title: `Zone Achat Haut ${index + 1}`,
-          });
-          const lineLow = candleSeriesRef.current.createPriceLine({
-            price: block.low,
-            color: '#00e676',
-            lineWidth: 4,
-            lineStyle: 0,
-            axisLabelVisible: true,
-            title: `Zone Achat Bas ${index + 1}`,
-          });
-          priceLines.current.push(lineHigh, lineLow);
-        });
-      }
-
-      if (orderBlocks.bearish && orderBlocks.bearish.length > 0) {
-        orderBlocks.bearish.forEach((block, index) => {
-          const lineHigh = candleSeriesRef.current.createPriceLine({
-            price: block.high,
-            color: '#e91e63',
-            lineWidth: 4,
-            lineStyle: 0,
-            axisLabelVisible: true,
-            title: `Zone Vente Haut ${index + 1}`,
-          });
-          const lineLow = candleSeriesRef.current.createPriceLine({
-            price: block.low,
-            color: '#e91e63',
-            lineWidth: 4,
-            lineStyle: 0,
-            axisLabelVisible: true,
-            title: `Zone Vente Bas ${index + 1}`,
-          });
-          priceLines.current.push(lineHigh, lineLow);
-        });
-      }
-    }
-
-    if (signal && signal.status === 'ACTIVE') {
-      const directionLabel = signal.direction === 'LONG' ? 'Achat' : 'Vente';
-
-      const lineEntryMin = candleSeriesRef.current.createPriceLine({
-        price: signal.entry_min,
-        color: '#ffc107',
-        lineWidth: 3,
-        axisLabelVisible: true,
-        title: `Entrée Min ${directionLabel}`,
-      });
-
-      const lineEntryMax = candleSeriesRef.current.createPriceLine({
-        price: signal.entry_max,
-        color: '#ffc107',
-        lineWidth: 3,
-        axisLabelVisible: true,
-        title: `Entrée Max ${directionLabel}`,
-      });
-
-      const lineSL = candleSeriesRef.current.createPriceLine({
-        price: signal.stop_loss,
-        color: '#e91e63',
-        lineWidth: 4,
-        axisLabelVisible: true,
-        title: 'Stop Loss',
-      });
-
-      const lineTP1 = candleSeriesRef.current.createPriceLine({
-        price: signal.take_profit_1,
-        color: '#00e676',
-        lineWidth: 4,
-        axisLabelVisible: true,
-        title: 'TP1',
-      });
-
-      priceLines.current.push(lineEntryMin, lineEntryMax, lineSL, lineTP1);
-
-      if (signal.take_profit_2) {
-        const lineTP2 = candleSeriesRef.current.createPriceLine({
-          price: signal.take_profit_2,
-          color: '#00e676',
-          lineWidth: 4,
-          axisLabelVisible: true,
-          title: 'TP2',
-        });
-        priceLines.current.push(lineTP2);
-      }
-    }
-
     if (position && position.status === 'OPEN') {
-      const posDirectionLabel = position.direction === 'LONG' ? 'Achat' : 'Vente';
+      const isLong = position.direction === 'LONG';
 
       const lineEntry = candleSeriesRef.current.createPriceLine({
         price: position.entry_price,
-        color: '#2196f3',
-        lineWidth: 4,
+        color: isLong ? '#2196f3' : '#ff9800',
+        lineWidth: 3,
+        lineStyle: 0,
         axisLabelVisible: true,
-        title: `Position ${posDirectionLabel}`,
+        title: `ENTRÉE ${isLong ? '↑' : '↓'}`,
       });
 
       const lineSL = candleSeriesRef.current.createPriceLine({
         price: position.stop_loss,
-        color: '#e91e63',
-        lineWidth: 4,
+        color: '#f44336',
+        lineWidth: 3,
+        lineStyle: 0,
         axisLabelVisible: true,
-        title: 'Stop Loss',
+        title: 'SL',
       });
 
       const lineTP1 = candleSeriesRef.current.createPriceLine({
         price: position.take_profit_1,
-        color: '#00e676',
-        lineWidth: 4,
+        color: '#4caf50',
+        lineWidth: 3,
+        lineStyle: 0,
         axisLabelVisible: true,
         title: 'TP1',
       });
@@ -290,12 +170,132 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
       if (position.take_profit_2) {
         const lineTP2 = candleSeriesRef.current.createPriceLine({
           price: position.take_profit_2,
-          color: '#00e676',
-          lineWidth: 4,
+          color: '#66bb6a',
+          lineWidth: 2,
+          lineStyle: 2,
           axisLabelVisible: true,
           title: 'TP2',
         });
         priceLines.current.push(lineTP2);
+      }
+    }
+    else if (signal && signal.status === 'ACTIVE') {
+      const isLong = signal.direction === 'LONG';
+
+      const lineEntry = candleSeriesRef.current.createPriceLine({
+        price: (signal.entry_min + signal.entry_max) / 2,
+        color: isLong ? '#2196f3' : '#ff9800',
+        lineWidth: 3,
+        lineStyle: 0,
+        axisLabelVisible: true,
+        title: `ZONE ${isLong ? '↑' : '↓'}`,
+      });
+
+      const lineSL = candleSeriesRef.current.createPriceLine({
+        price: signal.stop_loss,
+        color: '#f44336',
+        lineWidth: 3,
+        lineStyle: 0,
+        axisLabelVisible: true,
+        title: 'SL',
+      });
+
+      const lineTP1 = candleSeriesRef.current.createPriceLine({
+        price: signal.take_profit_1,
+        color: '#4caf50',
+        lineWidth: 3,
+        lineStyle: 0,
+        axisLabelVisible: true,
+        title: 'TP1',
+      });
+
+      priceLines.current.push(lineEntry, lineSL, lineTP1);
+
+      if (signal.take_profit_2) {
+        const lineTP2 = candleSeriesRef.current.createPriceLine({
+          price: signal.take_profit_2,
+          color: '#66bb6a',
+          lineWidth: 2,
+          lineStyle: 2,
+          axisLabelVisible: true,
+          title: 'TP2',
+        });
+        priceLines.current.push(lineTP2);
+      }
+    }
+    else if (showAnalysis) {
+      if (supports && supports.length > 0) {
+        const topSupports = supports.slice(0, 2);
+        topSupports.forEach((support, idx) => {
+          const line = candleSeriesRef.current.createPriceLine({
+            price: support,
+            color: '#4caf50',
+            lineWidth: 1,
+            lineStyle: 2,
+            axisLabelVisible: true,
+            title: `S${idx + 1}`,
+          });
+          priceLines.current.push(line);
+        });
+      }
+
+      if (resistances && resistances.length > 0) {
+        const topResistances = resistances.slice(0, 2);
+        topResistances.forEach((resistance, idx) => {
+          const line = candleSeriesRef.current.createPriceLine({
+            price: resistance,
+            color: '#f44336',
+            lineWidth: 1,
+            lineStyle: 2,
+            axisLabelVisible: true,
+            title: `R${idx + 1}`,
+          });
+          priceLines.current.push(line);
+        });
+      }
+
+      if (orderBlocks) {
+        if (orderBlocks.bullish && orderBlocks.bullish.length > 0) {
+          const block = orderBlocks.bullish[0];
+          const lineHigh = candleSeriesRef.current.createPriceLine({
+            price: block.high,
+            color: '#26a69a',
+            lineWidth: 1,
+            lineStyle: 3,
+            axisLabelVisible: false,
+            title: '',
+          });
+          const lineLow = candleSeriesRef.current.createPriceLine({
+            price: block.low,
+            color: '#26a69a',
+            lineWidth: 1,
+            lineStyle: 3,
+            axisLabelVisible: false,
+            title: '',
+          });
+          priceLines.current.push(lineHigh, lineLow);
+        }
+
+        if (orderBlocks.bearish && orderBlocks.bearish.length > 0) {
+          const block = orderBlocks.bearish[0];
+          const lineHigh = candleSeriesRef.current.createPriceLine({
+            price: block.high,
+            color: '#ef5350',
+            lineWidth: 1,
+            lineStyle: 3,
+            axisLabelVisible: false,
+            title: '',
+          });
+          const lineLow = candleSeriesRef.current.createPriceLine({
+            price: block.low,
+            color: '#ef5350',
+            lineWidth: 1,
+            lineStyle: 3,
+            axisLabelVisible: false,
+            title: '',
+          });
+          priceLines.current.push(lineHigh, lineLow);
+        }
       }
     }
   }, [signal, position, supports, resistances, orderBlocks, showAnalysis, clearPriceLines]);

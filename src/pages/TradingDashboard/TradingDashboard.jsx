@@ -42,8 +42,7 @@ const TradingDashboard = () => {
   const [etaMinutes, setEtaMinutes] = useState(null);
   const [supports, setSupports] = useState([]);
   const [resistances, setResistances] = useState([]);
-  const [bullishOB, setBullishOB] = useState([]);
-  const [bearishOB, setBearishOB] = useState([]);
+  const [orderBlocks, setOrderBlocks] = useState({ bullish: [], bearish: [] });
 
   useEffect(() => {
     if (market === 'NASDAQ' || market === 'GOLD') {
@@ -209,8 +208,7 @@ const TradingDashboard = () => {
       if (result.analysis) {
         setSupports(result.analysis.supports || []);
         setResistances(result.analysis.resistances || []);
-        setBullishOB(result.analysis.orderBlocks?.bullish || []);
-        setBearishOB(result.analysis.orderBlocks?.bearish || []);
+        setOrderBlocks(result.analysis.orderBlocks || { bullish: [], bearish: [] });
       }
 
       if (result.signal) {
@@ -535,8 +533,7 @@ const TradingDashboard = () => {
             position={currentPosition}
             supports={credits.remaining > 0 ? supports : []}
             resistances={credits.remaining > 0 ? resistances : []}
-            bullishOB={credits.remaining > 0 ? bullishOB : []}
-            bearishOB={credits.remaining > 0 ? bearishOB : []}
+            orderBlocks={credits.remaining > 0 ? orderBlocks : { bullish: [], bearish: [] }}
             hasCredits={credits.remaining > 0}
             showAnalysis={credits.remaining > 0 && (showAnalysis || signalState.preAlert || signalState.signal)}
           />

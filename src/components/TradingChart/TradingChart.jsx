@@ -95,6 +95,50 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
       });
     }
 
+    if (showAnalysis && orderBlocks) {
+      if (orderBlocks.bullish && orderBlocks.bullish.length > 0) {
+        orderBlocks.bullish.forEach((block, index) => {
+          candleSeries.createPriceLine({
+            price: block.high,
+            color: '#00e676',
+            lineWidth: 3,
+            lineStyle: 0,
+            axisLabelVisible: true,
+            title: `OB Bull High ${index + 1}`,
+          });
+          candleSeries.createPriceLine({
+            price: block.low,
+            color: '#00e676',
+            lineWidth: 3,
+            lineStyle: 0,
+            axisLabelVisible: true,
+            title: `OB Bull Low ${index + 1}`,
+          });
+        });
+      }
+
+      if (orderBlocks.bearish && orderBlocks.bearish.length > 0) {
+        orderBlocks.bearish.forEach((block, index) => {
+          candleSeries.createPriceLine({
+            price: block.high,
+            color: '#e91e63',
+            lineWidth: 3,
+            lineStyle: 0,
+            axisLabelVisible: true,
+            title: `OB Bear High ${index + 1}`,
+          });
+          candleSeries.createPriceLine({
+            price: block.low,
+            color: '#e91e63',
+            lineWidth: 3,
+            lineStyle: 0,
+            axisLabelVisible: true,
+            title: `OB Bear Low ${index + 1}`,
+          });
+        });
+      }
+    }
+
     if (signal && signal.status === 'ACTIVE') {
       candleSeries.createPriceLine({
         price: signal.entry_min,

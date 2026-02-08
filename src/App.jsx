@@ -40,7 +40,10 @@ function App() {
 
   const checkUser = async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (error) {
+        console.error('Supabase error:', error);
+      }
       setUser(session?.user || null);
       if (session?.user) {
         await checkSuperAdmin(session.user.id);

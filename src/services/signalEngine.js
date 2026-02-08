@@ -137,10 +137,10 @@ export const generateSignal = async (market, platform, candles) => {
     entryMax = currentPrice * 1.002;
     stopLoss = currentPrice * 0.985;
 
-    if (resistances.length > 0) {
-      takeProfit1 = Math.max(resistances[0] * 0.995, currentPrice * 1.02);
-      if (resistances.length > 1) {
-        takeProfit2 = Math.max(resistances[1] * 0.995, currentPrice * 1.04);
+    if (resistances.length > 0 && resistances[0] > currentPrice * 1.015) {
+      takeProfit1 = resistances[0] * 0.995;
+      if (resistances.length > 1 && resistances[1] > currentPrice * 1.03) {
+        takeProfit2 = resistances[1] * 0.995;
       } else {
         takeProfit2 = currentPrice * 1.04;
       }
@@ -192,10 +192,10 @@ export const generateSignal = async (market, platform, candles) => {
     entryMax = currentPrice * 1.001;
     stopLoss = currentPrice * 1.015;
 
-    if (supports.length > 0) {
-      takeProfit1 = Math.min(supports[0] * 0.995, currentPrice * 0.98);
-      if (supports.length > 1) {
-        takeProfit2 = Math.min(supports[1] * 0.995, currentPrice * 0.96);
+    if (supports.length > 0 && supports[0] < currentPrice * 0.985) {
+      takeProfit1 = supports[0] * 1.005;
+      if (supports.length > 1 && supports[1] < currentPrice * 0.97) {
+        takeProfit2 = supports[1] * 1.005;
       } else {
         takeProfit2 = currentPrice * 0.96;
       }

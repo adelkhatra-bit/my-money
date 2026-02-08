@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import TradingChart from '../../components/TradingChart/TradingChart';
-import SignalPopup from '../../components/SignalPopup/SignalPopup';
-import PreAlertPopup from '../../components/PreAlertPopup/PreAlertPopup';
+import SignalProcess from '../../components/SignalProcess/SignalProcess';
 import { fetchHistoricalData, connectToMarketData, getCurrentPrice } from '../../services/marketData';
 import { generateSignal } from '../../services/signalEngine';
 import { calculatePositionSize } from '../../services/riskCalculator';
@@ -19,11 +18,10 @@ const TradingDashboard = () => {
   const [candles, setCandles] = useState([]);
   const [currentSignal, setCurrentSignal] = useState(null);
   const [currentPosition, setCurrentPosition] = useState(null);
-  const [showSignalPopup, setShowSignalPopup] = useState(false);
   const [showPreAlert, setShowPreAlert] = useState(false);
-  const [preAlertData, setPreAlertData] = useState(null);
   const [showAnalysis, setShowAnalysis] = useState(false);
   const [riskCalc, setRiskCalc] = useState(null);
+  const [signalState, setSignalState] = useState({ isScanning: false, preAlert: null, signal: null });
   const [stats, setStats] = useState({
     balance: 0,
     pnl: 0,
@@ -110,8 +108,9 @@ const TradingDashboard = () => {
           .maybeSingle();
 
         if (creditData) {
+          const remaining = creditData.total_credits - creditData.used_credits;
           setCredits({
-            remaining: creditData.remaining_credits,
+            remaining: remaining,
             total: creditData.total_credits
           });
         } else {
@@ -181,6 +180,7 @@ const TradingDashboard = () => {
       return;
     }
 
+    setSignalState({ isScanning: true, preAlert: null, signal: null });
     setScanning(true);
     setScanStatus('Analyse en cours...');
 
@@ -192,16 +192,15 @@ const TradingDashboard = () => {
           console.error(`Signal market mismatch: expected ${market}, got ${result.signal.market}`);
           setScanStatus(`Erreur: Signal généré pour ${result.signal.market} au lieu de ${market}`);
           setScanning(false);
+          setSignalState({ isScanning: false, preAlert: null, signal: null });
           return;
         }
 
-        setPreAlertData({
-          market,
-          platform,
-          expectedDirection: result.signal.direction,
-          timeRemaining: 300
+        setSignalState({
+          isScanning: false,
+          preAlert: { market, platform, direction: result.signal.direction },
+          signal: null
         });
-        setShowPreAlert(true);
         setShowAnalysis(true);
         audioAlerts.signalAlert();
         setScanStatus('Opportunité en préparation...');
@@ -212,18 +211,36 @@ const TradingDashboard = () => {
             setRiskCalc(calc);
           }
 
+          const signalWithTimer = {
+            ...result.signal,
+            validUntil: Date.now() + 180000,
+            entryMin: result.signal.entry_min,
+            entryMax: result.signal.entry_max,
+            sl: result.signal.stop_loss,
+            tp1: result.signal.take_profit_1,
+            tp2: result.signal.take_profit_2,
+            lots: calculatePositionSize(activeAccount, result.signal)?.positionSize || 1,
+            risk: activeAccount?.risk_per_trade_percent || 1,
+            confidence: result.signal.confidence || 75
+          };
+
+          setSignalState({
+            isScanning: false,
+            preAlert: null,
+            signal: signalWithTimer
+          });
           setCurrentSignal(result.signal);
-          setShowSignalPopup(true);
-          setShowPreAlert(false);
           audioAlerts.signalAlert();
           setScanStatus('Signal confirmé !');
-        }, 300000);
+        }, 180000);
       } else {
         setScanStatus(result.reason);
+        setSignalState({ isScanning: false, preAlert: null, signal: null });
       }
     } catch (error) {
       console.error('Scan error:', error);
       setScanStatus('Erreur lors de l\'analyse');
+      setSignalState({ isScanning: false, preAlert: null, signal: null });
     } finally {
       setScanning(false);
     }
@@ -237,10 +254,8 @@ const TradingDashboard = () => {
     performScan();
   };
 
-  const handleAcceptSignal = async () => {
-    console.log('Accept signal clicked', { activeAccount, currentSignal, credits });
-
-    if (!activeAccount || !currentSignal) {
+  const handleAcceptSignal = async (signal) => {
+    if (!activeAccount) {
       alert('Veuillez configurer un compte de trading');
       return;
     }
@@ -252,8 +267,6 @@ const TradingDashboard = () => {
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      console.log('Current user:', user);
-
       if (!user) {
         alert('Veuillez vous connecter');
         return;
@@ -265,53 +278,49 @@ const TradingDashboard = () => {
         .eq('user_id', user.id)
         .maybeSingle();
 
-      console.log('User profile:', profile);
-
       if (!profile) {
         alert('Profil introuvable');
         return;
       }
 
-      const entryPrice = (currentSignal.entry_min + currentSignal.entry_max) / 2;
-      const positionSize = riskCalc?.positionSize || 1;
-
-      console.log('Creating position:', {
-        user_id: profile.id,
-        account_id: activeAccount.id,
-        market,
-        platform,
-        direction: currentSignal.direction,
-        entry_price: entryPrice,
-        stop_loss: currentSignal.stop_loss,
-        take_profit_1: currentSignal.take_profit_1,
-        take_profit_2: currentSignal.take_profit_2,
-        position_size: positionSize,
-        status: 'OPEN'
-      });
+      const entryPrice = (signal.entryMin + signal.entryMax) / 2;
+      const positionSize = signal.lots || 1;
 
       const { data: positionData, error: positionError } = await supabase
         .from('positions')
         .insert({
           user_id: profile.id,
           account_id: activeAccount.id,
-          market,
-          platform,
-          direction: currentSignal.direction,
+          market: signal.market,
+          platform: signal.platform,
+          direction: signal.direction,
           entry_price: entryPrice,
-          stop_loss: currentSignal.stop_loss,
-          take_profit_1: currentSignal.take_profit_1,
-          take_profit_2: currentSignal.take_profit_2,
+          stop_loss: signal.sl,
+          take_profit_1: signal.tp1,
+          take_profit_2: signal.tp2,
           position_size: positionSize,
           status: 'OPEN'
         })
         .select();
 
-      if (positionError) {
-        console.error('Position creation error:', positionError);
-        throw positionError;
-      }
+      if (positionError) throw positionError;
 
-      console.log('Position created successfully:', positionData);
+      await supabase
+        .from('signal_history')
+        .insert({
+          user_id: profile.id,
+          market: signal.market,
+          platform: signal.platform,
+          timeframe: timeframe,
+          direction: signal.direction,
+          entry_price: entryPrice,
+          stop_loss: signal.sl,
+          take_profit_1: signal.tp1,
+          take_profit_2: signal.tp2,
+          lots: positionSize,
+          status: 'pris',
+          result: 'en_cours'
+        });
 
       const { data: creditData } = await supabase
         .from('position_credits')
@@ -320,19 +329,11 @@ const TradingDashboard = () => {
         .eq('market', market)
         .maybeSingle();
 
-      console.log('Credit data:', creditData);
-
       if (creditData) {
-        const { error: creditError } = await supabase
+        await supabase
           .from('position_credits')
           .update({ used_credits: creditData.used_credits + 1 })
           .eq('id', creditData.id);
-
-        if (creditError) {
-          console.error('Credit update error:', creditError);
-        } else {
-          console.log('Credits updated successfully');
-        }
 
         setCredits(prev => ({
           ...prev,
@@ -341,28 +342,32 @@ const TradingDashboard = () => {
       }
 
       const newPosition = {
-        direction: currentSignal.direction,
+        direction: signal.direction,
         entry_price: entryPrice,
-        stop_loss: currentSignal.stop_loss,
-        take_profit_1: currentSignal.take_profit_1,
-        take_profit_2: currentSignal.take_profit_2,
+        stop_loss: signal.sl,
+        take_profit_1: signal.tp1,
+        take_profit_2: signal.tp2,
         position_size: positionSize,
         status: 'OPEN'
       };
 
-      console.log('Setting current position:', newPosition);
       setCurrentPosition(newPosition);
-
-      setShowSignalPopup(false);
+      setSignalState({ isScanning: false, preAlert: null, signal: null });
       setCurrentSignal(null);
-
-      console.log('Position accepted successfully, reloading user data...');
-      alert('Position enregistrée avec succès !');
+      audioAlerts.tpAlert();
       await loadUserData();
+      await loadStats(profile.id, activeAccount);
     } catch (error) {
       console.error('Error accepting signal:', error);
       alert('Erreur lors de l\'enregistrement de la position: ' + error.message);
     }
+  };
+
+  const handleDeclineSignal = () => {
+    setSignalState({ isScanning: false, preAlert: null, signal: null });
+    setCurrentSignal(null);
+    setShowAnalysis(false);
+    setScanStatus('Signal refusé');
   };
 
   const handleRejectSignal = () => {
@@ -486,32 +491,24 @@ const TradingDashboard = () => {
             candles={candles}
             signal={currentSignal}
             position={currentPosition}
-            supports={supports}
-            resistances={resistances}
+            supports={credits.remaining > 0 ? supports : []}
+            resistances={credits.remaining > 0 ? resistances : []}
+            bullishOB={credits.remaining > 0 ? bullishOB : []}
+            bearishOB={credits.remaining > 0 ? bearishOB : []}
             hasCredits={credits.remaining > 0}
-            showAnalysis={showAnalysis || credits.remaining > 0}
+            showAnalysis={credits.remaining > 0 && (showAnalysis || signalState.preAlert || signalState.signal)}
           />
         )}
       </div>
 
-      {showPreAlert && preAlertData && (
-        <PreAlertPopup
-          market={preAlertData.market}
-          platform={preAlertData.platform}
-          expectedDirection={preAlertData.expectedDirection}
-          timeRemaining={preAlertData.timeRemaining}
-          onClose={handleClosePreAlert}
-        />
-      )}
-
-      {showSignalPopup && currentSignal && (
-        <SignalPopup
-          signal={currentSignal}
-          riskCalc={riskCalc}
-          onAccept={handleAcceptSignal}
-          onReject={handleRejectSignal}
-        />
-      )}
+      <SignalProcess
+        isScanning={signalState.isScanning}
+        preAlert={signalState.preAlert}
+        signal={signalState.signal}
+        onAcceptSignal={handleAcceptSignal}
+        onDeclineSignal={handleDeclineSignal}
+        userCredits={credits.remaining}
+      />
 
       <div className={styles.statsBar}>
         <div className={styles.statItem}>

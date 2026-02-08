@@ -85,17 +85,17 @@ export const generateSignal = async (market, platform, candles) => {
   const nearResistance = resistances.length > 0 &&
     Math.abs(currentPrice - resistances[resistances.length - 1]) / currentPrice < 0.03;
 
-  if (rsi < 50 && macd.trend === 'bullish') {
+  if (rsi < 55) {
     direction = 'LONG';
     reasons.push(`RSI favorable (${rsi.toFixed(1)})`);
-    confidence += 30;
+    confidence += 40;
 
     if (macd.crossover === 'bullish') {
       reasons.push('Croisement MACD haussier');
-      confidence += 15;
-    } else {
+      confidence += 20;
+    } else if (macd.trend === 'bullish') {
       reasons.push('MACD haussier');
-      confidence += 10;
+      confidence += 15;
     }
 
     if (nearSupport) {
@@ -131,17 +131,17 @@ export const generateSignal = async (market, platform, candles) => {
       takeProfit1 = currentPrice * 1.025;
       takeProfit2 = currentPrice * 1.04;
     }
-  } else if (rsi > 50 && macd.trend === 'bearish') {
+  } else if (rsi > 45) {
     direction = 'SHORT';
     reasons.push(`RSI favorable (${rsi.toFixed(1)})`);
-    confidence += 30;
+    confidence += 40;
 
     if (macd.crossover === 'bearish') {
       reasons.push('Croisement MACD baissier');
-      confidence += 15;
-    } else {
+      confidence += 20;
+    } else if (macd.trend === 'bearish') {
       reasons.push('MACD baissier');
-      confidence += 10;
+      confidence += 15;
     }
 
     if (nearResistance) {
@@ -189,18 +189,18 @@ export const generateSignal = async (market, platform, candles) => {
 
   const riskReward = Math.abs((takeProfit1 - entryMin) / (entryMin - stopLoss));
 
-  if (confidence < 35) {
+  if (confidence < 25) {
     return {
       signal: null,
-      reason: `Confiance insuffisante (${confidence}% < 35%)`,
+      reason: `Confiance insuffisante (${confidence}% < 25%)`,
       analysis
     };
   }
 
-  if (riskReward < 0.8) {
+  if (riskReward < 0.5) {
     return {
       signal: null,
-      reason: `Risk/Reward insuffisant (${riskReward.toFixed(2)} < 0.8)`,
+      reason: `Risk/Reward insuffisant (${riskReward.toFixed(2)} < 0.5)`,
       analysis
     };
   }

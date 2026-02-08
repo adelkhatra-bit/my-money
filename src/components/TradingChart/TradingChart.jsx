@@ -22,7 +22,7 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
         horzLines: { color: '#2b2b2b' },
       },
       width: chartContainerRef.current.clientWidth,
-      height: isFullscreen ? window.innerHeight - 100 : 330,
+      height: isFullscreen ? window.innerHeight - 100 : 280,
       rightPriceScale: {
         borderColor: '#3a3a3a',
       },
@@ -68,6 +68,12 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
     });
 
     candleSeries.setData(candles);
+
+    setTimeout(() => {
+      if (chart && chart.timeScale) {
+        chart.timeScale().fitContent();
+      }
+    }, 100);
 
     if (showAnalysis && supports && supports.length > 0) {
       supports.forEach((support, idx) => {
@@ -230,7 +236,7 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
       if (chart && chartContainerRef.current) {
         chart.applyOptions({
           width: chartContainerRef.current.clientWidth,
-          height: isFullscreen ? window.innerHeight - 100 : 600,
+          height: isFullscreen ? window.innerHeight - 100 : 280,
         });
       }
     };

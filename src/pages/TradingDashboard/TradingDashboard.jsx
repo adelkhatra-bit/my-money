@@ -78,6 +78,26 @@ const TradingDashboard = () => {
   }, [market]);
 
   useEffect(() => {
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem(`bot_active_${market}`, autoMode.toString());
+
+    if (userId && autoMode !== null) {
+      supabase
+        .from('user_settings')
+        .update({ bot_auto_mode: autoMode })
+        .eq('user_id', userId)
+        .then(({ error }) => {
+          if (error) console.error('Error saving bot state:', error);
+        });
+    }
+  }, [autoMode, market, userId]);
+
+  useEffect(() => {
     const newsListener = (isActive) => {
       setNewsSuspension(isActive);
       if (isActive) {
@@ -151,6 +171,13 @@ const TradingDashboard = () => {
         if (settingsData) {
           audioAlerts.setEnabled(settingsData.audio_enabled);
           audioAlerts.setVolume(parseFloat(settingsData.audio_volume));
+
+          const savedBotState = localStorage.getItem(`bot_active_${market}`);
+          if (savedBotState !== null) {
+            setAutoMode(savedBotState === 'true');
+          } else if (settingsData.bot_auto_mode !== null) {
+            setAutoMode(settingsData.bot_auto_mode);
+          }
         }
 
         const { data: accounts } = await supabase
@@ -448,6 +475,15 @@ const TradingDashboard = () => {
         setBotState('pre_alert');
         setScanStatus(`⚠️ PRÉPARE-TOI : Une position ${result.signal.direction === 'LONG' ? 'ACHAT' : 'VENTE'} est en préparation sur ${market}`);
 
+        if ('Notification' in window && Notification.permission === 'granted' && document.hidden) {
+          new Notification('🤖 Signal de Trading Détecté!', {
+            body: `Une position ${result.signal.direction === 'LONG' ? 'ACHAT' : 'VENTE'} est en préparation sur ${market}`,
+            icon: '/logo192.png',
+            tag: 'trading-signal',
+            requireInteraction: true
+          });
+        }
+
         setTimeout(() => {
           if (activeAccount) {
             const calc = calculatePositionSize(activeAccount, result.signal);
@@ -476,6 +512,15 @@ const TradingDashboard = () => {
           setBotState('signal_ready');
           audioAlerts.signalAlert();
           setScanStatus(`✅ POSITION ${result.signal.direction === 'LONG' ? 'ACHAT' : 'VENTE'} CONFIRMÉE - Clique OK pour accepter`);
+
+          if ('Notification' in window && Notification.permission === 'granted' && document.hidden) {
+            new Notification('✅ Signal Confirmé!', {
+              body: `Position ${result.signal.direction === 'LONG' ? 'ACHAT (LONG)' : 'VENTE (SHORT)'} confirmée sur ${market}. Reviens vite pour accepter!`,
+              icon: '/logo192.png',
+              tag: 'trading-signal-confirmed',
+              requireInteraction: true
+            });
+          }
         }, 120000);
       } else {
         setScanStatus(`ℹ️ ${result.reason || 'Aucune opportunité détectée pour le moment'}`);

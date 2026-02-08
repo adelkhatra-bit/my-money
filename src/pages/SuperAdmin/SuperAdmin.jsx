@@ -8,7 +8,8 @@ const SuperAdmin = () => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [creditForm, setCreditForm] = useState({
     market: 'BTC',
-    credits: ''
+    credits: '',
+    action: 'add'
   });
   const [trialRequests, setTrialRequests] = useState([]);
   const [activeTab, setActiveTab] = useState('users');
@@ -42,6 +43,13 @@ const SuperAdmin = () => {
             const wins = positions?.filter(p => p.status === 'TP1_HIT' || p.status === 'TP2_HIT').length || 0;
             const losses = positions?.filter(p => p.status === 'SL_HIT').length || 0;
 
+            const positionsByMarket = {
+              BTC: positions?.filter(p => p.market === 'BTC' && p.status === 'OPEN').length || 0,
+              ETH: positions?.filter(p => p.market === 'ETH' && p.status === 'OPEN').length || 0,
+              NASDAQ: positions?.filter(p => p.market === 'NASDAQ' && p.status === 'OPEN').length || 0,
+              GOLD: positions?.filter(p => p.market === 'GOLD' && p.status === 'OPEN').length || 0
+            };
+
             return {
               ...profile,
               stats: {
@@ -51,7 +59,8 @@ const SuperAdmin = () => {
                 winrate: positions?.length > 0 ? ((wins / positions.length) * 100).toFixed(1) : 0,
                 totalPnL: totalPnL.toFixed(2)
               },
-              credits: credits || []
+              credits: credits || [],
+              positionsByMarket
             };
           })
         );
@@ -140,10 +149,14 @@ const SuperAdmin = () => {
         .maybeSingle();
 
       if (existingCredits) {
+        const newTotal = creditForm.action === 'add'
+          ? existingCredits.total_credits + creditsAmount
+          : creditsAmount;
+
         await supabase
           .from('position_credits')
           .update({
-            total_credits: existingCredits.total_credits + creditsAmount
+            total_credits: newTotal
           })
           .eq('id', existingCredits.id);
       } else {
@@ -157,8 +170,9 @@ const SuperAdmin = () => {
           });
       }
 
-      alert(`${creditsAmount} crédits ${creditForm.market} ajoutés à ${selectedUser.email}`);
-      setCreditForm({ market: 'BTC', credits: '' });
+      const actionText = creditForm.action === 'add' ? 'ajoutés à' : 'définis pour';
+      alert(`${creditsAmount} crédits ${creditForm.market} ${actionText} ${selectedUser.email}`);
+      setCreditForm({ market: 'BTC', credits: '', action: 'add' });
       setSelectedUser(null);
       loadUsers();
     } catch (error) {
@@ -211,9 +225,20 @@ const SuperAdmin = () => {
       {selectedUser && (
         <div className={styles.creditModal}>
           <div className={styles.modalContent}>
-            <h3>Ajouter des crédits à {selectedUser.email}</h3>
+            <h3>Gérer les crédits de {selectedUser.email}</h3>
 
             <form onSubmit={handleAddCredits} className={styles.creditForm}>
+              <div className={styles.formGroup}>
+                <label>Action</label>
+                <select
+                  value={creditForm.action}
+                  onChange={(e) => setCreditForm({ ...creditForm, action: e.target.value })}
+                >
+                  <option value="add">Ajouter des crédits</option>
+                  <option value="set">Définir le total</option>
+                </select>
+              </div>
+
               <div className={styles.formGroup}>
                 <label>Marché</label>
                 <select
@@ -228,7 +253,9 @@ const SuperAdmin = () => {
               </div>
 
               <div className={styles.formGroup}>
-                <label>Nombre de crédits</label>
+                <label>
+                  {creditForm.action === 'add' ? 'Nombre de crédits à ajouter' : 'Nouveau total de crédits'}
+                </label>
                 <input
                   type="number"
                   value={creditForm.credits}
@@ -238,12 +265,18 @@ const SuperAdmin = () => {
                 />
               </div>
 
+              {selectedUser.credits.find(c => c.market === creditForm.market) && (
+                <div className={styles.currentCredits}>
+                  <strong>Actuellement:</strong> {selectedUser.credits.find(c => c.market === creditForm.market)?.remaining_credits || 0} positions restantes
+                </div>
+              )}
+
               <div className={styles.modalActions}>
                 <button type="button" onClick={() => setSelectedUser(null)} className={styles.cancelBtn}>
                   Annuler
                 </button>
                 <button type="submit" className={styles.submitBtn}>
-                  Ajouter
+                  {creditForm.action === 'add' ? 'Ajouter' : 'Définir'}
                 </button>
               </div>
             </form>
@@ -309,7 +342,8 @@ const SuperAdmin = () => {
                 <th>Losses</th>
                 <th>Winrate</th>
                 <th>PnL Total</th>
-                <th>Crédits</th>
+                <th>Positions Ouvertes</th>
+                <th>Crédits Restants</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -330,6 +364,24 @@ const SuperAdmin = () => {
                     ${user.stats.totalPnL}
                   </td>
                   <td>
+                    <div className={styles.positionsList}>
+                      {['BTC', 'ETH', 'NASDAQ', 'GOLD'].map((market) => {
+                        const count = user.positionsByMarket[market];
+                        if (count > 0) {
+                          return (
+                            <div key={market} className={styles.positionBadge}>
+                              {market}: {count}
+                            </div>
+                          );
+                        }
+                        return null;
+                      })}
+                      {Object.values(user.positionsByMarket).every(v => v === 0) && (
+                        <span className={styles.noPositions}>Aucune</span>
+                      )}
+                    </div>
+                  </td>
+                  <td>
                     {user.credits.length > 0 ? (
                       <div className={styles.creditsList}>
                         {user.credits.map((credit) => (
@@ -347,7 +399,7 @@ const SuperAdmin = () => {
                       className={styles.actionBtn}
                       onClick={() => setSelectedUser(user)}
                     >
-                      + Crédits
+                      Gérer
                     </button>
                   </td>
                 </tr>

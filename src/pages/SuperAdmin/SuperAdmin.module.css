@@ -126,6 +126,36 @@ td {
   font-style: italic;
 }
 
+.positionsList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.positionBadge {
+  background: rgba(33, 150, 243, 0.1);
+  color: #2196f3;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.noPositions {
+  color: #666;
+  font-style: italic;
+}
+
+.currentCredits {
+  background: rgba(255, 193, 7, 0.1);
+  border: 1px solid rgba(255, 193, 7, 0.3);
+  color: #ffc107;
+  padding: 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  margin-top: -8px;
+}
+
 .actionBtn {
   background: linear-gradient(135deg, #00e676, #00c853);
   border: none;

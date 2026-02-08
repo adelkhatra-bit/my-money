@@ -43,6 +43,7 @@ const TradingDashboard = () => {
   const [supports, setSupports] = useState([]);
   const [resistances, setResistances] = useState([]);
   const [orderBlocks, setOrderBlocks] = useState({ bullish: [], bearish: [] });
+  const [dismissedSignals, setDismissedSignals] = useState(new Set());
 
   useEffect(() => {
     if (market === 'NASDAQ' || market === 'GOLD') {
@@ -81,6 +82,28 @@ const TradingDashboard = () => {
       return () => clearInterval(scanInterval);
     }
   }, [autoMode, market, platform, candles, marketStatus.open]);
+
+  useEffect(() => {
+    const updatePnL = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (profile) {
+        await updateRealTimePnL(profile.id, activeAccount);
+      }
+    };
+
+    updatePnL();
+    const pnlInterval = setInterval(updatePnL, 5000);
+
+    return () => clearInterval(pnlInterval);
+  }, [activeAccount]);
 
   const loadUserData = async () => {
     try {
@@ -162,6 +185,126 @@ const TradingDashboard = () => {
     }
   };
 
+  const updateRealTimePnL = async (userId, account = null) => {
+    try {
+      const accountToUse = account || activeAccount;
+      if (!accountToUse) return;
+
+      const { data: positions } = await supabase
+        .from('positions')
+        .select('*')
+        .eq('user_id', userId);
+
+      if (!positions) return;
+
+      let hasUpdates = false;
+
+      for (const position of positions) {
+        if (position.status === 'OPEN') {
+          const currentPrice = await getCurrentPrice(position.market, position.platform);
+
+          if (!currentPrice) continue;
+
+          let unrealizedPnl = 0;
+          let newStatus = 'OPEN';
+          let hitPrice = null;
+
+          if (position.direction === 'LONG') {
+            if (currentPrice <= position.stop_loss) {
+              newStatus = 'SL_HIT';
+              hitPrice = position.stop_loss;
+              unrealizedPnl = (position.stop_loss - position.entry_price) * position.position_size * 100000;
+            } else if (currentPrice >= position.take_profit_2 && position.take_profit_2) {
+              newStatus = 'TP2_HIT';
+              hitPrice = position.take_profit_2;
+              unrealizedPnl = (position.take_profit_2 - position.entry_price) * position.position_size * 100000;
+            } else if (currentPrice >= position.take_profit_1) {
+              newStatus = 'TP1_HIT';
+              hitPrice = position.take_profit_1;
+              unrealizedPnl = (position.take_profit_1 - position.entry_price) * position.position_size * 100000;
+            } else {
+              unrealizedPnl = (currentPrice - position.entry_price) * position.position_size * 100000;
+            }
+          } else if (position.direction === 'SHORT') {
+            if (currentPrice >= position.stop_loss) {
+              newStatus = 'SL_HIT';
+              hitPrice = position.stop_loss;
+              unrealizedPnl = (position.entry_price - position.stop_loss) * position.position_size * 100000;
+            } else if (currentPrice <= position.take_profit_2 && position.take_profit_2) {
+              newStatus = 'TP2_HIT';
+              hitPrice = position.take_profit_2;
+              unrealizedPnl = (position.entry_price - position.take_profit_2) * position.position_size * 100000;
+            } else if (currentPrice <= position.take_profit_1) {
+              newStatus = 'TP1_HIT';
+              hitPrice = position.take_profit_1;
+              unrealizedPnl = (position.entry_price - position.take_profit_1) * position.position_size * 100000;
+            } else {
+              unrealizedPnl = (position.entry_price - currentPrice) * position.position_size * 100000;
+            }
+          }
+
+          if (newStatus !== 'OPEN') {
+            hasUpdates = true;
+            const closedAt = new Date().toISOString();
+            await supabase
+              .from('positions')
+              .update({
+                status: newStatus,
+                pnl: unrealizedPnl,
+                closed_at: closedAt,
+                exit_price: hitPrice
+              })
+              .eq('id', position.id);
+
+            if (newStatus === 'TP1_HIT' || newStatus === 'TP2_HIT') {
+              audioAlerts.playTakeProfit();
+            } else if (newStatus === 'SL_HIT') {
+              audioAlerts.playStopLoss();
+            }
+          } else {
+            await supabase
+              .from('positions')
+              .update({ pnl: unrealizedPnl })
+              .eq('id', position.id);
+          }
+        }
+      }
+
+      if (hasUpdates) {
+        await loadStats(userId, accountToUse);
+      }
+
+      const allPositions = await supabase
+        .from('positions')
+        .select('*')
+        .eq('user_id', userId);
+
+      if (allPositions.data) {
+        const closedPositions = allPositions.data.filter(p =>
+          p.status === 'TP1_HIT' || p.status === 'TP2_HIT' || p.status === 'SL_HIT'
+        );
+        const openPositions = allPositions.data.filter(p => p.status === 'OPEN');
+
+        const wins = closedPositions.filter(p => p.status === 'TP1_HIT' || p.status === 'TP2_HIT').length;
+        const losses = closedPositions.filter(p => p.status === 'SL_HIT').length;
+        const realizedPnl = closedPositions.reduce((sum, p) => sum + (p.pnl || 0), 0);
+        const unrealizedPnl = openPositions.reduce((sum, p) => sum + (p.pnl || 0), 0);
+        const totalPnl = realizedPnl + unrealizedPnl;
+
+        setStats({
+          balance: (accountToUse?.capital || 0) + totalPnl,
+          pnl: totalPnl,
+          wins,
+          losses,
+          winrate: closedPositions.length > 0 ? (wins / closedPositions.length) * 100 : 0,
+          totalTrades: closedPositions.length + openPositions.length
+        });
+      }
+    } catch (error) {
+      console.error('Error updating real-time PnL:', error);
+    }
+  };
+
   const checkMarketStatus = () => {
     const status = getMarketStatus(market);
     setMarketStatus(status);
@@ -218,6 +361,14 @@ const TradingDashboard = () => {
           setScanStatus(`❌ Erreur: Signal pour ${result.signal.market} au lieu de ${market}`);
           setScanning(false);
           setSignalState({ isScanning: false, preAlert: null, signal: null });
+          return;
+        }
+
+        if (dismissedSignals.has(result.signal.id)) {
+          console.log('Signal déjà ignoré, skip:', result.signal.id);
+          setScanning(false);
+          setScanStatus('Signal déjà vu - En attente du prochain');
+          setBotState('idle');
           return;
         }
 
@@ -320,6 +471,19 @@ const TradingDashboard = () => {
       const entryPrice = (signal.entry_min + signal.entry_max) / 2;
       const positionSize = riskCalc?.positionSize || 1;
 
+      console.log('[Position] Tentative de création:', {
+        user_id: profile.id,
+        account_id: activeAccount.id,
+        market: signal.market,
+        platform: signal.platform,
+        direction: signal.direction,
+        entry_price: entryPrice,
+        stop_loss: signal.stop_loss,
+        take_profit_1: signal.take_profit_1,
+        take_profit_2: signal.take_profit_2,
+        position_size: positionSize
+      });
+
       const { data: positionData, error: positionError } = await supabase
         .from('positions')
         .insert({
@@ -337,7 +501,12 @@ const TradingDashboard = () => {
         })
         .select();
 
-      if (positionError) throw positionError;
+      if (positionError) {
+        console.error('[Position] Erreur lors de l\'insertion:', positionError);
+        throw positionError;
+      }
+
+      console.log('[Position] Position créée avec succès:', positionData);
 
       await supabase
         .from('signal_history')
@@ -393,8 +562,24 @@ const TradingDashboard = () => {
       await loadUserData();
       await loadStats(profile.id, activeAccount);
     } catch (error) {
-      console.error('Error accepting signal:', error);
-      alert('Erreur lors de l\'enregistrement de la position: ' + error.message);
+      console.error('[Position] Error accepting signal:', error);
+
+      let errorMessage = 'Erreur lors de l\'enregistrement de la position';
+
+      if (error.message) {
+        errorMessage += ': ' + error.message;
+      }
+
+      if (error.code === 'PGRST116') {
+        errorMessage = 'Erreur de permissions - Veuillez réessayer ou contacter le support';
+      } else if (error.code === '23503') {
+        errorMessage = 'Erreur de référence de données - Vérifiez votre compte de trading';
+      } else if (error.code === '23505') {
+        errorMessage = 'Cette position existe déjà';
+      }
+
+      console.error('[Position] Formatted error:', errorMessage);
+      alert(errorMessage);
     }
   };
 
@@ -415,6 +600,17 @@ const TradingDashboard = () => {
 
   const handleClosePreAlert = () => {
     setShowPreAlert(false);
+  };
+
+  const handleDismissSignal = () => {
+    if (signalState.signal && signalState.signal.id) {
+      setDismissedSignals(prev => new Set(prev).add(signalState.signal.id));
+    }
+    setSignalState({ isScanning: false, preAlert: null, signal: null });
+    setCurrentSignal(null);
+    setShowAnalysis(false);
+    setBotState('idle');
+    setScanStatus('Signal ignoré');
   };
 
   return (
@@ -549,6 +745,7 @@ const TradingDashboard = () => {
         signal={signalState.signal}
         onAcceptSignal={handleAcceptSignal}
         onDeclineSignal={handleDeclineSignal}
+        onDismissSignal={handleDismissSignal}
         userCredits={credits.remaining}
       />
 

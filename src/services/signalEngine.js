@@ -9,7 +9,8 @@ import { getCurrentPrice } from './marketData';
 import { isMarketOpen } from './marketHours';
 
 const lastSignalTime = {};
-const COOLDOWN_MS = 5 * 1000;
+const lastSignalData = {};
+const COOLDOWN_MS = 5 * 60 * 1000;
 
 export const generateSignal = async (market, platform, candles) => {
   if (!isMarketOpen(market)) {
@@ -22,6 +23,14 @@ export const generateSignal = async (market, platform, candles) => {
 
   const marketKey = `${market}_${platform}`;
   const now = Date.now();
+
+  if (lastSignalTime[marketKey] && (now - lastSignalTime[marketKey]) < COOLDOWN_MS) {
+    return {
+      signal: null,
+      reason: 'Cooldown actif - Prochain signal possible dans ' + Math.ceil((COOLDOWN_MS - (now - lastSignalTime[marketKey])) / 60000) + ' minutes',
+      analysis: null
+    };
+  }
 
   if (candles.length < 100) {
     return {
@@ -76,9 +85,9 @@ export const generateSignal = async (market, platform, candles) => {
   const nearResistance = resistances.length > 0 &&
     Math.abs(currentPrice - resistances[resistances.length - 1]) / currentPrice < 0.03;
 
-  if (rsi < 70) {
+  if (rsi < 30) {
     direction = 'LONG';
-    reasons.push(`RSI favorable (${rsi.toFixed(1)})`);
+    reasons.push(`RSI survendu (${rsi.toFixed(1)})`);
     confidence += 60;
 
     if (macd.crossover === 'bullish') {
@@ -131,9 +140,9 @@ export const generateSignal = async (market, platform, candles) => {
       takeProfit1 = currentPrice * 1.025;
       takeProfit2 = currentPrice * 1.04;
     }
-  } else if (rsi > 30) {
+  } else if (rsi > 70) {
     direction = 'SHORT';
-    reasons.push(`RSI favorable (${rsi.toFixed(1)})`);
+    reasons.push(`RSI suracheté (${rsi.toFixed(1)})`);
     confidence += 60;
 
     if (macd.crossover === 'bearish') {
@@ -176,9 +185,9 @@ export const generateSignal = async (market, platform, candles) => {
     stopLoss = currentPrice * 1.015;
 
     if (supports.length > 0) {
-      takeProfit1 = supports[0] * 1.01;
+      takeProfit1 = supports[0] * 0.99;
       if (supports.length > 1) {
-        takeProfit2 = supports[1] * 1.01;
+        takeProfit2 = supports[1] * 0.99;
       } else {
         takeProfit2 = currentPrice * 0.96;
       }
@@ -202,9 +211,11 @@ export const generateSignal = async (market, platform, candles) => {
 
   const validityMinutes = 10;
   const validUntil = new Date(now + validityMinutes * 60 * 1000);
+  const signalId = `${marketKey}_${now}_${direction}`;
 
   return {
     signal: {
+      id: signalId,
       market,
       platform,
       timeframe: '5m',

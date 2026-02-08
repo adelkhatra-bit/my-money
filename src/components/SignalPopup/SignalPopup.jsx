@@ -3,7 +3,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import styles from './SignalPopup.module.css';
 
-const SignalPopup = ({ signal, riskCalc, onAccept, onReject }) => {
+const SignalPopup = ({ signal, riskCalc, onAccept, onReject, onDismiss }) => {
   const [timeRemaining, setTimeRemaining] = useState(0);
   const [isExpired, setIsExpired] = useState(false);
 
@@ -156,6 +156,14 @@ const SignalPopup = ({ signal, riskCalc, onAccept, onReject }) => {
         )}
 
         <div className={styles.actions}>
+          {onDismiss && (
+            <button
+              className={styles.dismissBtn}
+              onClick={onDismiss}
+            >
+              C'est bon, j'ai compris
+            </button>
+          )}
           <button
             className={styles.rejectBtn}
             onClick={onReject}

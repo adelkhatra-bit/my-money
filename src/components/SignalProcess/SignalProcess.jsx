@@ -7,6 +7,7 @@ const SignalProcess = ({
   signal,
   onAcceptSignal,
   onDeclineSignal,
+  onDismissSignal,
   userCredits
 }) => {
   const [timeRemaining, setTimeRemaining] = useState(null);
@@ -176,6 +177,15 @@ const SignalProcess = ({
               Refuser
             </button>
           </div>
+
+          {onDismissSignal && (
+            <button
+              className={styles.dismissBtn}
+              onClick={() => onDismissSignal()}
+            >
+              C'est bon, j'ai compris
+            </button>
+          )}
 
           <div className={styles.creditInfo}>
             1 crédit sera débité quand tu acceptes

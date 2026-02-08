@@ -242,6 +242,25 @@
   margin-bottom: 1.5rem;
 }
 
+.dismissBtn {
+  width: 100%;
+  padding: 0.75rem;
+  background: rgba(0, 0, 0, 0.05);
+  color: #64748b;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 6px;
+  font-weight: 500;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-top: 1rem;
+}
+
+.dismissBtn:hover {
+  background: rgba(0, 0, 0, 0.08);
+  color: #475569;
+}
+
 .creditInfo {
   text-align: center;
   color: #64748b;

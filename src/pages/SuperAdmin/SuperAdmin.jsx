@@ -17,6 +17,73 @@ const SuperAdmin = () => {
   useEffect(() => {
     loadUsers();
     loadTrialRequests();
+
+    const trialRequestsSubscription = supabase
+      .channel('trial_requests_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'free_trial_requests'
+        },
+        () => {
+          loadTrialRequests();
+        }
+      )
+      .subscribe();
+
+    const creditsSubscription = supabase
+      .channel('credits_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'position_credits'
+        },
+        () => {
+          loadUsers();
+        }
+      )
+      .subscribe();
+
+    const accountsSubscription = supabase
+      .channel('accounts_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'trading_accounts'
+        },
+        () => {
+          loadUsers();
+        }
+      )
+      .subscribe();
+
+    const positionsSubscription = supabase
+      .channel('positions_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'positions'
+        },
+        () => {
+          loadUsers();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      trialRequestsSubscription.unsubscribe();
+      creditsSubscription.unsubscribe();
+      accountsSubscription.unsubscribe();
+      positionsSubscription.unsubscribe();
+    };
   }, []);
 
   const loadUsers = async () => {
@@ -39,6 +106,11 @@ const SuperAdmin = () => {
               .select('*')
               .eq('user_id', profile.id);
 
+            const { data: tradingAccounts } = await supabase
+              .from('trading_accounts')
+              .select('*')
+              .eq('user_id', profile.id);
+
             const totalPnL = positions?.reduce((sum, p) => sum + (p.pnl || 0), 0) || 0;
             const wins = positions?.filter(p => p.status === 'TP1_HIT' || p.status === 'TP2_HIT').length || 0;
             const losses = positions?.filter(p => p.status === 'SL_HIT').length || 0;
@@ -50,6 +122,11 @@ const SuperAdmin = () => {
               GOLD: positions?.filter(p => p.market === 'GOLD' && p.status === 'OPEN').length || 0
             };
 
+            const creditsWithCalculated = (credits || []).map(c => ({
+              ...c,
+              remaining_credits: c.total_credits - c.used_credits
+            }));
+
             return {
               ...profile,
               stats: {
@@ -59,7 +136,8 @@ const SuperAdmin = () => {
                 winrate: positions?.length > 0 ? ((wins / positions.length) * 100).toFixed(1) : 0,
                 totalPnL: totalPnL.toFixed(2)
               },
-              credits: credits || [],
+              credits: creditsWithCalculated,
+              tradingAccounts: tradingAccounts || [],
               positionsByMarket
             };
           })
@@ -345,6 +423,7 @@ const SuperAdmin = () => {
               <tr>
                 <th>Email</th>
                 <th>Admin</th>
+                <th>Balances</th>
                 <th>Trades</th>
                 <th>Wins</th>
                 <th>Losses</th>
@@ -363,6 +442,19 @@ const SuperAdmin = () => {
                     <span className={user.is_super_admin ? styles.adminBadge : styles.userBadge}>
                       {user.is_super_admin ? 'Admin' : 'User'}
                     </span>
+                  </td>
+                  <td>
+                    {user.tradingAccounts.length > 0 ? (
+                      <div className={styles.balancesList}>
+                        {user.tradingAccounts.map((account) => (
+                          <div key={account.id} className={styles.balanceBadge}>
+                            {account.platform} ({account.market}): {parseFloat(account.capital).toFixed(2)} {account.currency}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className={styles.noBalances}>Aucun compte</span>
+                    )}
                   </td>
                   <td>{user.stats.totalTrades}</td>
                   <td className={styles.positive}>{user.stats.wins}</td>

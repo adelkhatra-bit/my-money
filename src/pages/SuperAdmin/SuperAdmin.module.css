@@ -146,6 +146,26 @@ td {
   font-style: italic;
 }
 
+.balancesList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.balanceBadge {
+  background: rgba(255, 193, 7, 0.1);
+  color: #ffc107;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.noBalances {
+  color: #666;
+  font-style: italic;
+}
+
 .currentCredits {
   background: rgba(255, 193, 7, 0.1);
   border: 1px solid rgba(255, 193, 7, 0.3);

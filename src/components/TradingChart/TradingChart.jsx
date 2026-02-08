@@ -9,7 +9,8 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   useEffect(() => {
-    if (!chartContainerRef.current || candles.length === 0) return;
+    if (!chartContainerRef.current) return;
+    if (candles.length === 0) return;
 
     const chart = createChart(chartContainerRef.current, {
       layout: {

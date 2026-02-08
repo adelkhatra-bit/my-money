@@ -63,7 +63,7 @@ const TradingDashboard = () => {
 
   useEffect(() => {
     loadUserData();
-  }, []);
+  }, [market]);
 
   useEffect(() => {
     if (autoMode && marketStatus.open) {
@@ -476,15 +476,22 @@ const TradingDashboard = () => {
       )}
 
       <div className={styles.chartSection}>
-        <TradingChart
-          candles={candles}
-          signal={currentSignal}
-          position={currentPosition}
-          supports={supports}
-          resistances={resistances}
-          hasCredits={credits.remaining > 0}
-          showAnalysis={showAnalysis || credits.remaining > 0}
-        />
+        {candles.length === 0 ? (
+          <div className={styles.loadingChart}>
+            <div className={styles.loadingSpinner}></div>
+            <p>Chargement des données de marché...</p>
+          </div>
+        ) : (
+          <TradingChart
+            candles={candles}
+            signal={currentSignal}
+            position={currentPosition}
+            supports={supports}
+            resistances={resistances}
+            hasCredits={credits.remaining > 0}
+            showAnalysis={showAnalysis || credits.remaining > 0}
+          />
+        )}
       </div>
 
       {showPreAlert && preAlertData && (

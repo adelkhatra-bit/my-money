@@ -33,7 +33,7 @@ const SignalPopup = ({ signal, riskCalc, onAccept, onReject, onDismiss }) => {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const directionColor = signal.direction === 'LONG' ? '#00e676' : '#e91e63';
+  const directionColor = signal.direction === 'LONG' ? '#00e676' : '#ef4444';
   const progressPercent = (timeRemaining / (10 * 60)) * 100;
 
   return (
@@ -58,7 +58,7 @@ const SignalPopup = ({ signal, riskCalc, onAccept, onReject, onDismiss }) => {
               className={styles.timerProgress}
               style={{
                 width: `${progressPercent}%`,
-                background: isExpired ? '#e91e63' : directionColor
+                background: isExpired ? '#ef4444' : directionColor
               }}
             />
           </div>
@@ -79,7 +79,7 @@ const SignalPopup = ({ signal, riskCalc, onAccept, onReject, onDismiss }) => {
           </div>
           <div className={styles.priceRow}>
             <span className={styles.label}>Stop Loss:</span>
-            <span className={styles.value} style={{ color: '#e91e63' }}>
+            <span className={styles.value} style={{ color: '#ef4444' }}>
               {signal.stop_loss.toFixed(2)}
             </span>
           </div>

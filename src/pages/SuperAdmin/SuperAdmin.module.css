@@ -75,16 +75,18 @@ th {
 }
 
 td {
-  padding: 16px;
+  padding: 10px 16px;
   border-top: 1px solid #2a2a2a;
   color: #ccc;
+  font-size: 13px;
+  line-height: 1.4;
 }
 
 .adminBadge,
 .userBadge {
-  padding: 4px 12px;
-  border-radius: 12px;
-  font-size: 12px;
+  padding: 3px 10px;
+  border-radius: 10px;
+  font-size: 11px;
   font-weight: 600;
 }
 
@@ -109,15 +111,15 @@ td {
 .creditsList {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
 }
 
 .creditBadge {
   background: rgba(0, 230, 118, 0.1);
   color: #00e676;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 12px;
+  padding: 3px 6px;
+  border-radius: 3px;
+  font-size: 11px;
   font-weight: 600;
 }
 
@@ -129,15 +131,15 @@ td {
 .positionsList {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
 }
 
 .positionBadge {
   background: rgba(33, 150, 243, 0.1);
   color: #2196f3;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 12px;
+  padding: 3px 6px;
+  border-radius: 3px;
+  font-size: 11px;
   font-weight: 600;
 }
 
@@ -149,15 +151,15 @@ td {
 .balancesList {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
 }
 
 .balanceBadge {
   background: rgba(255, 193, 7, 0.1);
   color: #ffc107;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 12px;
+  padding: 3px 6px;
+  border-radius: 3px;
+  font-size: 11px;
   font-weight: 600;
 }
 

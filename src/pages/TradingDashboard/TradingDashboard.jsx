@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import TradingChart from '../../components/TradingChart/TradingChart';
 import SignalProcess from '../../components/SignalProcess/SignalProcess';
+import BotStatus from '../../components/BotStatus/BotStatus';
 import { fetchHistoricalData, connectToMarketData, getCurrentPrice } from '../../services/marketData';
 import { generateSignal } from '../../services/signalEngine';
 import { calculatePositionSize } from '../../services/riskCalculator';
@@ -35,6 +36,8 @@ const TradingDashboard = () => {
   const [marketStatus, setMarketStatus] = useState({ open: true, message: '' });
   const [activeAccount, setActiveAccount] = useState(null);
   const [credits, setCredits] = useState({ remaining: 0, total: 0 });
+  const [botState, setBotState] = useState('idle');
+  const [nextScanIn, setNextScanIn] = useState(null);
 
   useEffect(() => {
     if (market === 'NASDAQ' || market === 'GOLD') {
@@ -172,16 +175,19 @@ const TradingDashboard = () => {
   const performScan = async () => {
     if (!marketStatus.open) {
       setScanStatus(`Marché fermé: ${marketStatus.message}`);
+      setBotState('idle');
       return;
     }
 
     if (credits.remaining <= 0) {
       setScanStatus('Crédits épuisés - Rechargez votre compte');
+      setBotState('idle');
       return;
     }
 
     setSignalState({ isScanning: true, preAlert: null, signal: null });
     setScanning(true);
+    setBotState('scanning');
     setScanStatus('Analyse en cours...');
 
     try {
@@ -202,6 +208,7 @@ const TradingDashboard = () => {
           signal: null
         });
         setShowAnalysis(true);
+        setBotState('pre_alert');
         audioAlerts.signalAlert();
         setScanStatus('Opportunité en préparation...');
 
@@ -230,17 +237,20 @@ const TradingDashboard = () => {
             signal: signalWithTimer
           });
           setCurrentSignal(result.signal);
+          setBotState('signal_ready');
           audioAlerts.signalAlert();
           setScanStatus('Signal confirmé !');
         }, 180000);
       } else {
         setScanStatus(result.reason);
         setSignalState({ isScanning: false, preAlert: null, signal: null });
+        setBotState('idle');
       }
     } catch (error) {
       console.error('Scan error:', error);
       setScanStatus('Erreur lors de l\'analyse');
       setSignalState({ isScanning: false, preAlert: null, signal: null });
+      setBotState('idle');
     } finally {
       setScanning(false);
     }
@@ -354,6 +364,7 @@ const TradingDashboard = () => {
       setCurrentPosition(newPosition);
       setSignalState({ isScanning: false, preAlert: null, signal: null });
       setCurrentSignal(null);
+      setBotState('position_locked');
       audioAlerts.tpAlert();
       await loadUserData();
       await loadStats(profile.id, activeAccount);
@@ -367,6 +378,7 @@ const TradingDashboard = () => {
     setSignalState({ isScanning: false, preAlert: null, signal: null });
     setCurrentSignal(null);
     setShowAnalysis(false);
+    setBotState('idle');
     setScanStatus('Signal refusé');
   };
 
@@ -473,6 +485,12 @@ const TradingDashboard = () => {
           Crédits: {credits.remaining} / {credits.total}
         </div>
       </div>
+
+      <BotStatus
+        isActive={autoMode && marketStatus.open}
+        currentState={botState}
+        nextScanIn={nextScanIn}
+      />
 
       {scanStatus && (
         <div className={styles.scanStatus}>

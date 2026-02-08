@@ -138,9 +138,9 @@ export const generateSignal = async (market, platform, candles) => {
     stopLoss = currentPrice * 0.985;
 
     if (resistances.length > 0) {
-      takeProfit1 = resistances[0] * 0.99;
+      takeProfit1 = Math.max(resistances[0] * 0.995, currentPrice * 1.02);
       if (resistances.length > 1) {
-        takeProfit2 = resistances[1] * 0.99;
+        takeProfit2 = Math.max(resistances[1] * 0.995, currentPrice * 1.04);
       } else {
         takeProfit2 = currentPrice * 1.04;
       }
@@ -193,9 +193,9 @@ export const generateSignal = async (market, platform, candles) => {
     stopLoss = currentPrice * 1.015;
 
     if (supports.length > 0) {
-      takeProfit1 = supports[0] * 1.01;
+      takeProfit1 = Math.min(supports[0] * 0.995, currentPrice * 0.98);
       if (supports.length > 1) {
-        takeProfit2 = supports[1] * 1.01;
+        takeProfit2 = Math.min(supports[1] * 0.995, currentPrice * 0.96);
       } else {
         takeProfit2 = currentPrice * 0.96;
       }
@@ -211,6 +211,52 @@ export const generateSignal = async (market, platform, candles) => {
       reason: `Aucune opportunité détectée (RSI: ${rsi.toFixed(1)}, MACD: ${macd.trend}, Tendance: ${trend})`,
       analysis
     };
+  }
+
+  const entryMid = (entryMin + entryMax) / 2;
+
+  if (direction === 'LONG') {
+    if (takeProfit1 <= entryMid) {
+      console.error('VALIDATION ERROR: LONG TP1 must be ABOVE entry', { entryMid, takeProfit1 });
+      return {
+        signal: null,
+        reason: 'Erreur de cohérence: TP LONG doit être au-dessus de l\'entrée',
+        analysis
+      };
+    }
+    if (stopLoss >= entryMid) {
+      console.error('VALIDATION ERROR: LONG SL must be BELOW entry', { entryMid, stopLoss });
+      return {
+        signal: null,
+        reason: 'Erreur de cohérence: SL LONG doit être en-dessous de l\'entrée',
+        analysis
+      };
+    }
+    if (takeProfit2 && takeProfit2 <= entryMid) {
+      console.error('VALIDATION ERROR: LONG TP2 must be ABOVE entry', { entryMid, takeProfit2 });
+      takeProfit2 = null;
+    }
+  } else if (direction === 'SHORT') {
+    if (takeProfit1 >= entryMid) {
+      console.error('VALIDATION ERROR: SHORT TP1 must be BELOW entry', { entryMid, takeProfit1 });
+      return {
+        signal: null,
+        reason: 'Erreur de cohérence: TP SHORT doit être en-dessous de l\'entrée',
+        analysis
+      };
+    }
+    if (stopLoss <= entryMid) {
+      console.error('VALIDATION ERROR: SHORT SL must be ABOVE entry', { entryMid, stopLoss });
+      return {
+        signal: null,
+        reason: 'Erreur de cohérence: SL SHORT doit être au-dessus de l\'entrée',
+        analysis
+      };
+    }
+    if (takeProfit2 && takeProfit2 >= entryMid) {
+      console.error('VALIDATION ERROR: SHORT TP2 must be BELOW entry', { entryMid, takeProfit2 });
+      takeProfit2 = null;
+    }
   }
 
   const riskReward = Math.abs((takeProfit1 - entryMin) / (entryMin - stopLoss));

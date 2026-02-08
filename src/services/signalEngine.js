@@ -267,6 +267,18 @@ export const generateSignal = async (market, platform, candles) => {
   const validUntil = new Date(now + validityMinutes * 60 * 1000);
   const signalId = `${marketKey}_${now}_${direction}`;
 
+  console.log('🔵 SIGNAL GENERATED:', {
+    direction,
+    currentPrice: currentPrice.toFixed(5),
+    entry: entryMid.toFixed(5),
+    stopLoss: stopLoss.toFixed(5),
+    tp1: takeProfit1.toFixed(5),
+    tp2: takeProfit2 ? takeProfit2.toFixed(5) : 'N/A',
+    isValid: direction === 'LONG'
+      ? (takeProfit1 > entryMid && stopLoss < entryMid)
+      : (takeProfit1 < entryMid && stopLoss > entryMid)
+  });
+
   return {
     signal: {
       id: signalId,

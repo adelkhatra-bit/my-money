@@ -183,6 +183,18 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
       const isLong = signal.direction === 'LONG';
       const entryPrice = (signal.entry_min + signal.entry_max) / 2;
 
+      console.log('📊 CHART DRAWING SIGNAL:', {
+        direction: signal.direction,
+        entry: entryPrice.toFixed(5),
+        sl: signal.stop_loss.toFixed(5),
+        tp1: signal.take_profit_1.toFixed(5),
+        tp2: signal.take_profit_2 ? signal.take_profit_2.toFixed(5) : 'N/A',
+        isLong,
+        validation: isLong
+          ? `TP1(${signal.take_profit_1.toFixed(5)}) > Entry(${entryPrice.toFixed(5)}) > SL(${signal.stop_loss.toFixed(5)})`
+          : `SL(${signal.stop_loss.toFixed(5)}) > Entry(${entryPrice.toFixed(5)}) > TP1(${signal.take_profit_1.toFixed(5)})`
+      });
+
       const lineEntry = candleSeriesRef.current.createPriceLine({
         price: entryPrice,
         color: '#2196F3',

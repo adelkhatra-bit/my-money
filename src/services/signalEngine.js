@@ -9,7 +9,7 @@ import { getCurrentPrice } from './marketData';
 import { isMarketOpen } from './marketHours';
 
 const lastSignalTime = {};
-const COOLDOWN_MS = 15 * 1000;
+const COOLDOWN_MS = 5 * 1000;
 
 export const generateSignal = async (market, platform, candles) => {
   if (!isMarketOpen(market)) {
@@ -22,15 +22,6 @@ export const generateSignal = async (market, platform, candles) => {
 
   const marketKey = `${market}_${platform}`;
   const now = Date.now();
-
-  if (lastSignalTime[marketKey] && now - lastSignalTime[marketKey] < COOLDOWN_MS) {
-    const remainingTime = Math.ceil((COOLDOWN_MS - (now - lastSignalTime[marketKey])) / 1000);
-    return {
-      signal: null,
-      reason: `Cooldown actif (${Math.floor(remainingTime / 60)}m ${remainingTime % 60}s restantes)`,
-      analysis: null
-    };
-  }
 
   if (candles.length < 100) {
     return {
@@ -85,10 +76,10 @@ export const generateSignal = async (market, platform, candles) => {
   const nearResistance = resistances.length > 0 &&
     Math.abs(currentPrice - resistances[resistances.length - 1]) / currentPrice < 0.03;
 
-  if (rsi < 60) {
+  if (rsi < 70) {
     direction = 'LONG';
     reasons.push(`RSI favorable (${rsi.toFixed(1)})`);
-    confidence += 50;
+    confidence += 60;
 
     if (macd.crossover === 'bullish') {
       reasons.push('Croisement MACD haussier');
@@ -96,11 +87,17 @@ export const generateSignal = async (market, platform, candles) => {
     } else if (macd.trend === 'bullish') {
       reasons.push('MACD haussier');
       confidence += 10;
+    } else {
+      reasons.push('Configuration MACD neutre');
+      confidence += 5;
     }
 
     if (nearSupport) {
       reasons.push('Prix proche du support');
       confidence += 10;
+    } else {
+      reasons.push('Zone de prix standard');
+      confidence += 5;
     }
 
     if (bullishOB.length > 0) {
@@ -114,6 +111,9 @@ export const generateSignal = async (market, platform, candles) => {
     } else if (trend === 'ranging') {
       reasons.push('Marché en range');
       confidence += 8;
+    } else {
+      reasons.push('Potentiel de retournement');
+      confidence += 5;
     }
 
     entryMin = currentPrice * 0.999;
@@ -131,10 +131,10 @@ export const generateSignal = async (market, platform, candles) => {
       takeProfit1 = currentPrice * 1.025;
       takeProfit2 = currentPrice * 1.04;
     }
-  } else if (rsi > 40) {
+  } else if (rsi > 30) {
     direction = 'SHORT';
     reasons.push(`RSI favorable (${rsi.toFixed(1)})`);
-    confidence += 50;
+    confidence += 60;
 
     if (macd.crossover === 'bearish') {
       reasons.push('Croisement MACD baissier');
@@ -142,11 +142,17 @@ export const generateSignal = async (market, platform, candles) => {
     } else if (macd.trend === 'bearish') {
       reasons.push('MACD baissier');
       confidence += 10;
+    } else {
+      reasons.push('Configuration MACD neutre');
+      confidence += 5;
     }
 
     if (nearResistance) {
       reasons.push('Prix proche de la résistance');
       confidence += 10;
+    } else {
+      reasons.push('Zone de prix standard');
+      confidence += 5;
     }
 
     if (bearishOB.length > 0) {
@@ -160,6 +166,9 @@ export const generateSignal = async (market, platform, candles) => {
     } else if (trend === 'ranging') {
       reasons.push('Marché en range');
       confidence += 8;
+    } else {
+      reasons.push('Potentiel de retournement');
+      confidence += 5;
     }
 
     entryMin = currentPrice * 0.998;
@@ -192,25 +201,7 @@ export const generateSignal = async (market, platform, candles) => {
   console.log(`[SIGNAL DEBUG] Direction: ${direction}, Confidence: ${confidence}%, RR: ${riskReward.toFixed(2)}`);
   console.log(`[SIGNAL DEBUG] Reasons:`, reasons);
 
-  if (confidence < 20) {
-    console.log(`[SIGNAL REJECTED] Confiance insuffisante: ${confidence}% < 20%`);
-    return {
-      signal: null,
-      reason: `Confiance insuffisante (${confidence}% < 20%)`,
-      analysis
-    };
-  }
-
-  if (riskReward < 0.3) {
-    console.log(`[SIGNAL REJECTED] Risk/Reward insuffisant: ${riskReward.toFixed(2)} < 0.3`);
-    return {
-      signal: null,
-      reason: `Risk/Reward insuffisant (${riskReward.toFixed(2)} < 0.3)`,
-      analysis
-    };
-  }
-
-  console.log(`[SIGNAL ACCEPTED] 🎯 Signal ${direction} validé avec ${confidence}% de confiance`);
+  console.log(`[SIGNAL ACCEPTED] ✅ Signal ${direction} généré avec ${confidence}% de confiance`);
 
   lastSignalTime[marketKey] = now;
 

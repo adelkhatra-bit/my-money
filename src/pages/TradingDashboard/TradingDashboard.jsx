@@ -73,9 +73,10 @@ const TradingDashboard = () => {
 
   useEffect(() => {
     if (autoMode && marketStatus.open) {
+      performScan();
       const scanInterval = setInterval(() => {
         performScan();
-      }, 20000);
+      }, 10000);
 
       return () => clearInterval(scanInterval);
     }

@@ -20,43 +20,79 @@ const AccountManagement = () => {
   });
 
   const capitalPresets = [200, 400, 600, 800, 1000, 1500, 2000, 3000, 5000, 10000, 25000, 50000, 100000, 250000, 500000, 700000];
+  const ftmoPresets = [10000, 25000, 50000, 100000, 200000];
 
-  const calculateRiskLimits = (capital) => {
+  const calculateRiskLimits = (capital, platform, market) => {
     const cap = parseFloat(capital);
-    if (!cap || cap < 200) return { daily: '', total: '' };
+    if (!cap || cap < 200) return { daily: '', total: '', risk: '' };
 
-    let dailyPercent, totalPercent;
+    let dailyPercent, totalPercent, riskPercent;
 
-    if (cap < 500) {
+    if ((market === 'NASDAQ' || market === 'GOLD') && (platform === 'ftmo' || platform === 'topstep')) {
+      dailyPercent = 5;
+      totalPercent = 10;
+      riskPercent = 1;
+    } else if (cap < 500) {
       dailyPercent = 3;
       totalPercent = 15;
+      riskPercent = 0.5;
     } else if (cap < 1000) {
       dailyPercent = 3;
       totalPercent = 15;
+      riskPercent = 0.5;
     } else if (cap < 5000) {
       dailyPercent = 4;
       totalPercent = 20;
+      riskPercent = 1;
     } else if (cap < 10000) {
       dailyPercent = 4;
       totalPercent = 20;
+      riskPercent = 1;
     } else {
       dailyPercent = 5;
       totalPercent = 25;
+      riskPercent = 1;
     }
 
     return {
       daily: (cap * dailyPercent / 100).toFixed(2),
-      total: (cap * totalPercent / 100).toFixed(2)
+      total: (cap * totalPercent / 100).toFixed(2),
+      risk: riskPercent.toString()
     };
   };
 
   const handleCapitalChange = (value) => {
-    const limits = calculateRiskLimits(value);
+    const limits = calculateRiskLimits(value, newAccount.platform, newAccount.market);
     setNewAccount({
       ...newAccount,
       capital: value,
       max_daily_loss: limits.daily,
-      max_total_loss: limits.total
+      max_total_loss: limits.total,
+      risk_per_trade_percent: limits.risk
+    });
+  };
+
+  const handleMarketChange = (market) => {
+    const newPlatform = (market === 'NASDAQ' || market === 'GOLD') ? 'ftmo' : 'binance';
+    const limits = calculateRiskLimits(newAccount.capital, newPlatform, market);
+    setNewAccount({
+      ...newAccount,
+      market: market,
+      platform: newPlatform,
+      max_daily_loss: limits.daily,
+      max_total_loss: limits.total,
+      risk_per_trade_percent: limits.risk
+    });
+  };
+
+  const handlePlatformChange = (platform) => {
+    const limits = calculateRiskLimits(newAccount.capital, platform, newAccount.market);
+    setNewAccount({
+      ...newAccount,
+      platform: platform,
+      max_daily_loss: limits.daily,
+      max_total_loss: limits.total,
+      risk_per_trade_percent: limits.risk
     });
   };
 
@@ -533,15 +569,23 @@ const AccountManagement = () => {
               <label>Plateforme *</label>
               <select
                 value={newAccount.platform}
-                onChange={(e) => setNewAccount({ ...newAccount, platform: e.target.value })}
+                onChange={(e) => handlePlatformChange(e.target.value)}
                 required
               >
-                <option value="binance">Binance</option>
-                <option value="bybit">Bybit</option>
-                <option value="coinbase">Coinbase</option>
-                <option value="ftmo">FTMO</option>
-                <option value="topstep">TopStep</option>
-                <option value="apex">Apex</option>
+                {(newAccount.market === 'BTC' || newAccount.market === 'ETH') && (
+                  <>
+                    <option value="binance">Binance</option>
+                    <option value="bybit">Bybit</option>
+                    <option value="coinbase">Coinbase</option>
+                  </>
+                )}
+                {(newAccount.market === 'NASDAQ' || newAccount.market === 'GOLD') && (
+                  <>
+                    <option value="ftmo">FTMO</option>
+                    <option value="topstep">TopStep</option>
+                    <option value="apex">Apex</option>
+                  </>
+                )}
               </select>
             </div>
 
@@ -549,7 +593,7 @@ const AccountManagement = () => {
               <label>Marché *</label>
               <select
                 value={newAccount.market}
-                onChange={(e) => setNewAccount({ ...newAccount, market: e.target.value })}
+                onChange={(e) => handleMarketChange(e.target.value)}
                 required
               >
                 <option value="BTC">BTC</option>
@@ -588,7 +632,10 @@ const AccountManagement = () => {
                   required
                 >
                   <option value="">Sélectionner un montant</option>
-                  {capitalPresets.map((amount) => (
+                  {((newAccount.market === 'NASDAQ' || newAccount.market === 'GOLD') && (newAccount.platform === 'ftmo' || newAccount.platform === 'topstep')
+                    ? ftmoPresets
+                    : capitalPresets
+                  ).map((amount) => (
                     <option key={amount} value={amount}>
                       {amount.toLocaleString()} {newAccount.currency}
                     </option>

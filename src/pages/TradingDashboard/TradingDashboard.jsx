@@ -292,10 +292,31 @@ const TradingDashboard = () => {
     try {
       const accountToUse = account || activeAccount;
 
+      if (!accountToUse) {
+        console.log('⚠️ Aucun compte actif pour loadStats');
+        setStats({
+          balance: 0,
+          pnl: 0,
+          wins: 0,
+          losses: 0,
+          winrate: 0,
+          totalTrades: 0
+        });
+        return;
+      }
+
       const { data: positions } = await supabase
         .from('positions')
         .select('*')
-        .eq('user_id', userId);
+        .eq('user_id', userId)
+        .eq('trading_account_id', accountToUse.id);
+
+      console.log('📊 Stats pour compte:', {
+        accountId: accountToUse.id,
+        accountName: accountToUse.name,
+        capital: accountToUse.capital,
+        totalPositions: positions?.length || 0
+      });
 
       if (positions) {
         const closedPositions = positions.filter(p =>
@@ -310,13 +331,33 @@ const TradingDashboard = () => {
         const openPnl = openPositions.reduce((sum, p) => sum + (p.pnl || 0), 0);
         const totalPnl = closedPnl + openPnl;
 
+        console.log('📈 Statistiques calculées:', {
+          closed: closedPositions.length,
+          open: openPositions.length,
+          wins,
+          losses,
+          closedPnl: closedPnl.toFixed(2),
+          openPnl: openPnl.toFixed(2),
+          totalPnl: totalPnl.toFixed(2),
+          balance: (accountToUse.capital + totalPnl).toFixed(2)
+        });
+
         setStats({
-          balance: (accountToUse?.capital || 0) + totalPnl,
+          balance: accountToUse.capital + totalPnl,
           pnl: totalPnl,
           wins,
           losses,
           winrate: closedPositions.length > 0 ? (wins / closedPositions.length) * 100 : 0,
-          totalTrades: closedPositions.length
+          totalTrades: positions.length
+        });
+      } else {
+        setStats({
+          balance: accountToUse.capital,
+          pnl: 0,
+          wins: 0,
+          losses: 0,
+          winrate: 0,
+          totalTrades: 0
         });
       }
     } catch (error) {
@@ -534,10 +575,16 @@ const TradingDashboard = () => {
         await loadPositionsHistory(userId, accountToUse);
       }
 
+      if (!accountToUse) {
+        console.log('⚠️ Aucun compte actif pour updateRealTimePnL stats');
+        return;
+      }
+
       const allPositions = await supabase
         .from('positions')
         .select('*')
-        .eq('user_id', userId);
+        .eq('user_id', userId)
+        .eq('trading_account_id', accountToUse.id);
 
       if (allPositions.data) {
         const closedPositions = allPositions.data.filter(p =>
@@ -552,12 +599,12 @@ const TradingDashboard = () => {
         const totalPnl = realizedPnl + unrealizedPnl;
 
         setStats({
-          balance: (accountToUse?.capital || 0) + totalPnl,
+          balance: accountToUse.capital + totalPnl,
           pnl: totalPnl,
           wins,
           losses,
           winrate: closedPositions.length > 0 ? (wins / closedPositions.length) * 100 : 0,
-          totalTrades: closedPositions.length + openPositions.length
+          totalTrades: allPositions.data.length
         });
       }
     } catch (error) {
@@ -1059,7 +1106,7 @@ const TradingDashboard = () => {
 
       console.log('[Position] Tentative de création:', {
         user_id: profile.id,
-        account_id: activeAccount.id,
+        trading_account_id: activeAccount.id,
         market: signal.market,
         platform: signal.platform,
         direction: signal.direction,
@@ -1074,7 +1121,7 @@ const TradingDashboard = () => {
         .from('positions')
         .insert({
           user_id: profile.id,
-          account_id: activeAccount.id,
+          trading_account_id: activeAccount.id,
           market: signal.market,
           platform: signal.platform,
           direction: signal.direction,

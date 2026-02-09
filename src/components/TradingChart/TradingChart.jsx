@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { createChart } from 'lightweight-charts';
+import DebugSnapshot from '../DebugSnapshot/DebugSnapshot';
 import styles from './TradingChart.module.css';
 
 const formatPrice = (price, market) => {
@@ -144,28 +145,18 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
     clearPriceLines();
 
     if (position && position.status === 'OPEN') {
-      const correctDirection = position.take_profit_1 > position.entry_price ? 'LONG' : 'SHORT';
-      const isLong = correctDirection === 'LONG';
+      const isLong = position.direction === 'LONG';
 
-      console.log('📊 GRAPHIQUE MIS À JOUR avec position:', {
+      console.log('📊 [TradingChart] LECTURE POSITION (PAS de recalcul):', {
         id: position.id,
         market: position.market,
-        direction: correctDirection,
+        direction: position.direction,
         entry: formatPrice(position.entry_price, position.market),
         sl: formatPrice(position.stop_loss, position.market),
         tp1: formatPrice(position.take_profit_1, position.market),
-        pnl: position.pnl?.toFixed(2) || '0.00'
+        pnl: position.pnl?.toFixed(2) || '0.00',
+        debugSnapshot: position.debugSnapshot
       });
-
-      if (position.direction !== correctDirection) {
-        console.warn('⚠️ DIRECTION POSITION INCORRECTE DÉTECTÉE ET CORRIGÉE', {
-          positionDirection: position.direction,
-          correctDirection,
-          entry: formatPrice(position.entry_price, position.market),
-          tp1: formatPrice(position.take_profit_1, position.market),
-          sl: formatPrice(position.stop_loss, position.market)
-        });
-      }
 
       const lineEntry = candleSeriesRef.current.createPriceLine({
         price: position.entry_price,
@@ -460,6 +451,9 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
         </button>
       </div>
       <div ref={chartContainerRef} className={styles.chartContainer} />
+      {position && position.debugSnapshot && (
+        <DebugSnapshot data={position.debugSnapshot} location="CHART" />
+      )}
     </div>
   );
 };

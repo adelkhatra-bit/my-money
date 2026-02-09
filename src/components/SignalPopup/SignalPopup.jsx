@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { audioAlerts } from '../../services/audioAlerts';
+import DebugSnapshot from '../DebugSnapshot/DebugSnapshot';
 import styles from './SignalPopup.module.css';
 
 const SignalPopup = ({ signal, riskCalc, onAccept, onReject, onDismiss }) => {
@@ -40,19 +41,17 @@ const SignalPopup = ({ signal, riskCalc, onAccept, onReject, onDismiss }) => {
 
   const entryMid = (signal.entry_min + signal.entry_max) / 2;
 
-  const correctDirection = signal.take_profit_1 > entryMid ? 'LONG' : 'SHORT';
-  const isLong = correctDirection === 'LONG';
+  const isLong = signal.direction === 'LONG';
   const directionColor = isLong ? '#00e676' : '#ef4444';
   const progressPercent = (timeRemaining / (10 * 60)) * 100;
 
-  if (signal.direction !== correctDirection) {
-    console.warn('⚠️ [SignalPopup] Direction incorrecte corrigée:', {
-      stored: signal.direction,
-      correct: correctDirection,
-      entry: entryMid.toFixed(2),
-      tp1: signal.take_profit_1.toFixed(2)
-    });
-  }
+  console.log('📊 [SignalPopup] LECTURE SIGNAL (PAS de recalcul):', {
+    direction: signal.direction,
+    entry: entryMid.toFixed(2),
+    tp1: signal.take_profit_1.toFixed(2),
+    sl: signal.stop_loss.toFixed(2),
+    debugSnapshot: signal.debugSnapshot
+  });
 
   return (
     <div className={styles.overlay}>
@@ -157,6 +156,10 @@ const SignalPopup = ({ signal, riskCalc, onAccept, onReject, onDismiss }) => {
               </span>
             </div>
           </div>
+        )}
+
+        {signal.debugSnapshot && (
+          <DebugSnapshot data={signal.debugSnapshot} location="POPUP" />
         )}
 
         <div className={styles.actions}>

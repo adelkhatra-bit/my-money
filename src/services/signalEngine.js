@@ -477,6 +477,30 @@ export const generateSignal = async (market, platform, candles, userAccount = nu
     tpPosition: direction === DIRECTION.SHORT ? 'EN DESSOUS ↓' : 'AU-DESSUS ↑'
   });
 
+  const ruleUsed = avgTP > entryMid
+    ? 'TP_AVG > ENTRY → LONG'
+    : avgTP < entryMid
+      ? 'TP_AVG < ENTRY → SHORT'
+      : 'INCOHÉRENCE';
+
+  const debugSnapshot = {
+    signalId,
+    accountId: userAccount?.id || 'N/A',
+    market,
+    platform,
+    symbol: getSymbolForMarket(market, platform),
+    timeframe: '5m',
+    dataSource: 'deterministic',
+    entry: entryMid.toFixed(2),
+    tp1: takeProfit1.toFixed(2),
+    tp2: takeProfit2 ? takeProfit2.toFixed(2) : 'N/A',
+    direction,
+    sl: stopLoss.toFixed(2),
+    ruleUsed
+  };
+
+  console.log('🔍 DEBUG SNAPSHOT CRÉÉ:', debugSnapshot);
+
   return {
     signal: {
       id: signalId,
@@ -493,7 +517,8 @@ export const generateSignal = async (market, platform, candles, userAccount = nu
       risk_reward: riskReward,
       reasons,
       valid_until: validUntil.toISOString(),
-      status: 'ACTIVE'
+      status: 'ACTIVE',
+      debugSnapshot
     },
     analysis,
     reason: 'Signal généré avec succès'
@@ -525,4 +550,27 @@ const getPlatformRules = (platform, market) => {
   };
 
   return rules[platform]?.[market] || { pointValue: 1, minLotSize: 1, tickSize: 0.01 };
+};
+
+const getSymbolForMarket = (market, platform) => {
+  const symbols = {
+    topstep: {
+      NASDAQ: 'MNQ',
+      GOLD: 'MGC'
+    },
+    ftmo: {
+      NASDAQ: 'NQ',
+      GOLD: 'GC'
+    },
+    binance: {
+      BTC: 'BTCUSDT',
+      ETH: 'ETHUSDT'
+    },
+    bybit: {
+      BTC: 'BTCUSDT',
+      ETH: 'ETHUSDT'
+    }
+  };
+
+  return symbols[platform]?.[market] || market;
 };

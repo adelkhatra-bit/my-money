@@ -26,14 +26,15 @@
   background: linear-gradient(135deg, #1e1e1e 0%, #2a2a2a 100%);
   border-radius: 8px;
   padding: 12px;
-  max-width: 420px;
+  max-width: 380px;
   width: 90%;
-  max-height: 70vh;
+  max-height: 65vh;
   overflow-y: auto;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
   position: relative;
   animation: slideUp 0.4s ease;
   border: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 13px;
 }
 
 @keyframes slideUp {

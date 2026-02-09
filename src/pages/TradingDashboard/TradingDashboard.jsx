@@ -96,10 +96,10 @@ const TradingDashboard = () => {
   };
 
   const loadPositionAndHistory = useCallback(async () => {
-    if (!userId) return;
+    if (!userId || !activeAccount) return;
 
     try {
-      const openPosition = await positionManager.getOpenPosition(userId);
+      const openPosition = await positionService.getOpenPosition(userId, activeAccount.id);
       if (openPosition) {
         setCurrentPosition(openPosition);
 
@@ -111,18 +111,18 @@ const TradingDashboard = () => {
         setLivePnL(0);
       }
 
-      const positionsHistory = await positionManager.getPositionHistory(userId, 20);
+      const positionsHistory = await positionService.getPositionHistory(userId, activeAccount.id, 20);
       setHistory(positionsHistory);
 
-      const userStats = await positionManager.updateUserStats(userId);
-      if (userStats && activeAccount) {
+      const accountStats = await positionService.getAccountStats(userId, activeAccount.id);
+      if (accountStats) {
         setStats({
           balance: parseFloat(activeAccount.capital || 0),
-          pnl: userStats.totalPnL,
-          wins: userStats.wins,
-          losses: userStats.losses,
-          winrate: userStats.winrate,
-          totalTrades: userStats.totalTrades
+          pnl: accountStats.realized_pnl || 0,
+          wins: accountStats.wins || 0,
+          losses: accountStats.losses || 0,
+          winrate: accountStats.winrate || 0,
+          totalTrades: accountStats.total_trades || 0
         });
       }
     } catch (error) {

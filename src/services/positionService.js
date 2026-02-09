@@ -5,8 +5,8 @@ class PositionService {
     try {
       const { data, error } = await supabase
         .rpc('check_user_has_open_position', {
-          p_user_id: userId,
-          p_account_id: accountId
+          target_user_id: userId,
+          target_account_id: accountId
         });
 
       if (error) throw error;
@@ -67,8 +67,8 @@ class PositionService {
     try {
       const { data, error } = await supabase
         .rpc('get_account_stats', {
-          p_user_id: userId,
-          p_account_id: accountId
+          target_user_id: userId,
+          target_account_id: accountId
         });
 
       if (error) throw error;

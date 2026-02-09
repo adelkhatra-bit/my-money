@@ -7,6 +7,8 @@ import PositionMonitor from '../../components/PositionMonitor/PositionMonitor';
 import TrailingStopPopup from '../../components/TrailingStopPopup/TrailingStopPopup';
 import BotActivityLog from '../../components/BotActivityLog/BotActivityLog';
 import ScanOpportunity from '../../components/ScanOpportunity/ScanOpportunity';
+import MarketHealthIndicator from '../../components/MarketHealthIndicator/MarketHealthIndicator';
+import MarketBlockedPopup from '../../components/MarketBlockedPopup/MarketBlockedPopup';
 import { getUnifiedMarketData, getCurrentPrice } from '../../services/marketDataUnified';
 import { generateSignal } from '../../services/signalEngine';
 import { calculatePositionSize } from '../../services/riskCalculator';
@@ -21,6 +23,7 @@ import { positionService } from '../../services/positionService';
 import { userPreferencesService } from '../../services/userPreferences';
 import { validateMarketPlatformCompatibility } from '../../services/marketDataUnified';
 import { getCompatiblePlatforms, getDefaultPlatformForMarket, isPlatformCompatible } from '../../services/platformFilter';
+import tradingGate from '../../services/tradingGate';
 import { supabase } from '../../lib/supabaseClient';
 import styles from './TradingDashboard.module.css';
 
@@ -73,6 +76,9 @@ const TradingDashboard = () => {
   const [livePnL, setLivePnL] = useState(0);
   const [history, setHistory] = useState([]);
   const [compatibilityError, setCompatibilityError] = useState(null);
+  const [marketHealth, setMarketHealth] = useState({ status: 'STABLE', message: '' });
+  const [showMarketBlockedPopup, setShowMarketBlockedPopup] = useState(false);
+  const [marketBlockReason, setMarketBlockReason] = useState('');
 
   const addActivityLog = (message, type = 'info') => {
     if (activityLogCallback) {
@@ -933,6 +939,43 @@ const TradingDashboard = () => {
     addActivityLog('🔍 Calcul des indicateurs techniques (RSI, MACD, EMA...)', 'scan');
 
     try {
+      const currentPrice = candles[candles.length - 1]?.close || 0;
+      const gateCheck = await tradingGate.canOpenPosition(profile.id, activeAccount.id, market, candles, currentPrice);
+
+      console.log('🚦 [Trading Gate]', JSON.stringify({
+        market,
+        platform,
+        symbol: activeAccount.symbol || 'N/A',
+        timeframe,
+        healthStatus: gateCheck.marketHealth?.status || 'UNKNOWN',
+        healthScore: gateCheck.marketHealth?.score || 0,
+        disciplineStatus: gateCheck.checks?.discipline?.allowed ? 'OK' : 'BLOCKED',
+        reason: gateCheck.blockReasons?.length > 0 ? gateCheck.blockReasons[0].reason : 'N/A',
+        decision: gateCheck.allowed ? 'AUTHORIZED' : 'BLOCKED'
+      }));
+
+      setMarketHealth({
+        status: gateCheck.marketHealth?.status || 'STABLE',
+        message: ''
+      });
+
+      if (!gateCheck.allowed) {
+        setScanning(false);
+        setSignalState({ isScanning: false, preAlert: null, signal: null });
+        setBotState('idle');
+
+        const blockReason = gateCheck.blockReasons?.length > 0
+          ? gateCheck.blockReasons.map(r => r.message).join('. ')
+          : 'Conditions de marché non favorables';
+        setMarketBlockReason(blockReason);
+        setShowMarketBlockedPopup(true);
+
+        const statusIcon = gateCheck.marketHealth?.status === 'DANGEROUS' ? '🔴' : '🟡';
+        addActivityLog(`${statusIcon} Scan bloqué - ${blockReason}`, 'warning');
+
+        return;
+      }
+
       const result = await generateSignal(market, platform, candles, activeAccount);
 
       addActivityLog('✅ Analyse technique terminée', 'success');
@@ -1774,6 +1817,21 @@ const TradingDashboard = () => {
 
       <div className={styles.mainContent}>
         <div className={styles.chartSection}>
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '12px',
+          padding: '0 8px'
+        }}>
+          <div style={{ fontSize: '14px', color: 'rgba(255,255,255,0.7)' }}>
+            {market} - {platform}
+          </div>
+          <MarketHealthIndicator
+            status={marketHealth.status}
+            message={marketHealth.message}
+          />
+        </div>
         {candles.length === 0 ? (
           <div className={styles.loadingChart}>
             <div className={styles.loadingSpinner}></div>
@@ -1945,6 +2003,14 @@ const TradingDashboard = () => {
           </span>
         </div>
       </div>
+
+      {showMarketBlockedPopup && (
+        <MarketBlockedPopup
+          status={marketHealth.status}
+          reason={marketBlockReason}
+          onClose={() => setShowMarketBlockedPopup(false)}
+        />
+      )}
     </div>
   );
 };

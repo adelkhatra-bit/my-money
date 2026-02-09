@@ -1,0 +1,45 @@
+.indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.icon {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.text {
+  letter-spacing: 0.5px;
+}
+
+.message {
+  font-size: 11px;
+  font-weight: 400;
+  opacity: 0.8;
+  margin-left: 4px;
+}
+
+.stable {
+  color: #10b981;
+  border-color: rgba(16, 185, 129, 0.2);
+  background: rgba(16, 185, 129, 0.05);
+}
+
+.noisy {
+  color: #f59e0b;
+  border-color: rgba(245, 158, 11, 0.2);
+  background: rgba(245, 158, 11, 0.05);
+}
+
+.dangerous {
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.2);
+  background: rgba(239, 68, 68, 0.05);
+}

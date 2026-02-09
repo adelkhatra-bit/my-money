@@ -145,10 +145,10 @@
 }
 
 .accountsList {
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
   gap: 24px;
 }
 
@@ -315,6 +315,64 @@
   font-weight: 600;
 }
 
+.statsSection {
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 2px solid #2a2a2a;
+}
+
+.statsTitle {
+  color: #00e676;
+  font-size: 16px;
+  margin: 0 0 16px 0;
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+.statCard {
+  background: #2a2a2a;
+  padding: 12px;
+  border-radius: 8px;
+  border: 2px solid #3a3a3a;
+  transition: all 0.2s;
+}
+
+.statCard:hover {
+  border-color: #00e676;
+  transform: translateY(-2px);
+}
+
+.statLabel {
+  color: #999;
+  font-size: 11px;
+  font-weight: 600;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.statValue {
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.statValue.positive {
+  color: #00e676;
+}
+
+.statValue.negative {
+  color: #ff1744;
+}
+
+.statValue.neutral {
+  color: #999;
+}
+
 @media (max-width: 768px) {
   .header {
     flex-direction: column;
@@ -328,5 +386,9 @@
 
   .accountsList {
     grid-template-columns: 1fr;
+  }
+
+  .statsGrid {
+    grid-template-columns: repeat(2, 1fr);
   }
 }

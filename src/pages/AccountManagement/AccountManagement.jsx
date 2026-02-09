@@ -111,12 +111,71 @@ const AccountManagement = () => {
         .eq('user_id', profile.id)
         .order('created_at', { ascending: false });
 
-      setAccounts(accountsData || []);
+      if (accountsData) {
+        const accountsWithStats = await Promise.all(
+          accountsData.map(async (account) => {
+            const stats = await calculateAccountStats(profile.id, account.id);
+            return { ...account, stats };
+          })
+        );
+        setAccounts(accountsWithStats);
+      } else {
+        setAccounts([]);
+      }
     } catch (error) {
       console.error('Error loading accounts:', error);
       alert('Erreur de chargement: ' + error.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const calculateAccountStats = async (userId, accountId) => {
+    try {
+      const { data: positions } = await supabase
+        .from('positions')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('trading_account_id', accountId);
+
+      if (!positions || positions.length === 0) {
+        return {
+          totalPnl: 0,
+          wins: 0,
+          losses: 0,
+          totalTrades: 0,
+          winrate: 0
+        };
+      }
+
+      const closedPositions = positions.filter(p =>
+        p.status === 'TP1_HIT' || p.status === 'TP2_HIT' || p.status === 'SL_HIT'
+      );
+      const openPositions = positions.filter(p => p.status === 'OPEN');
+
+      const wins = closedPositions.filter(p => p.status === 'TP1_HIT' || p.status === 'TP2_HIT').length;
+      const losses = closedPositions.filter(p => p.status === 'SL_HIT').length;
+
+      const closedPnl = closedPositions.reduce((sum, p) => sum + (p.pnl || 0), 0);
+      const openPnl = openPositions.reduce((sum, p) => sum + (p.pnl || 0), 0);
+      const totalPnl = closedPnl + openPnl;
+
+      return {
+        totalPnl,
+        wins,
+        losses,
+        totalTrades: positions.length,
+        winrate: closedPositions.length > 0 ? (wins / closedPositions.length) * 100 : 0
+      };
+    } catch (error) {
+      console.error('Error calculating account stats:', error);
+      return {
+        totalPnl: 0,
+        wins: 0,
+        losses: 0,
+        totalTrades: 0,
+        winrate: 0
+      };
     }
   };
 
@@ -656,7 +715,7 @@ const AccountManagement = () => {
                   <span className={styles.detailValue}>{account.market}</span>
                 </div>
                 <div className={styles.detail}>
-                  <span className={styles.detailLabel}>Capital:</span>
+                  <span className={styles.detailLabel}>Capital Initial:</span>
                   <span className={styles.detailValue}>
                     {account.capital.toFixed(2)} {account.currency || 'USD'}
                   </span>
@@ -682,6 +741,44 @@ const AccountManagement = () => {
                   </div>
                 )}
               </div>
+
+              {account.stats && (
+                <div className={styles.statsSection}>
+                  <h4 className={styles.statsTitle}>📊 Statistiques de Trading</h4>
+                  <div className={styles.statsGrid}>
+                    <div className={styles.statCard}>
+                      <div className={styles.statLabel}>💰 Balance Actuelle</div>
+                      <div className={styles.statValue}>
+                        {(account.capital + account.stats.totalPnl).toFixed(2)} {account.currency || 'USD'}
+                      </div>
+                    </div>
+                    <div className={styles.statCard}>
+                      <div className={styles.statLabel}>📊 PnL Total</div>
+                      <div className={`${styles.statValue} ${account.stats.totalPnl >= 0 ? styles.positive : styles.negative}`}>
+                        {account.stats.totalPnl >= 0 ? '+' : ''}{account.stats.totalPnl.toFixed(2)} {account.currency || 'USD'}
+                      </div>
+                    </div>
+                    <div className={styles.statCard}>
+                      <div className={styles.statLabel}>📈 Total Trades</div>
+                      <div className={styles.statValue}>{account.stats.totalTrades}</div>
+                    </div>
+                    <div className={styles.statCard}>
+                      <div className={styles.statLabel}>✅ Gains</div>
+                      <div className={`${styles.statValue} ${styles.positive}`}>{account.stats.wins}</div>
+                    </div>
+                    <div className={styles.statCard}>
+                      <div className={styles.statLabel}>❌ Pertes</div>
+                      <div className={`${styles.statValue} ${styles.negative}`}>{account.stats.losses}</div>
+                    </div>
+                    <div className={styles.statCard}>
+                      <div className={styles.statLabel}>🎯 Winrate</div>
+                      <div className={`${styles.statValue} ${account.stats.winrate >= 50 ? styles.positive : account.stats.winrate > 0 ? '' : styles.neutral}`}>
+                        {account.stats.winrate.toFixed(1)}%
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           ))
         )}

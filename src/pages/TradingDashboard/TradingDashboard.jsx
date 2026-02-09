@@ -94,7 +94,7 @@ const TradingDashboard = () => {
 
   useEffect(() => {
     loadUserData();
-  }, [market]);
+  }, [market, platform]);
 
   useEffect(() => {
     loadUserData();

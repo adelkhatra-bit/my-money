@@ -2,6 +2,15 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { createChart } from 'lightweight-charts';
 import styles from './TradingChart.module.css';
 
+const formatPrice = (price, market) => {
+  if (market === 'NASDAQ' || market === 'GOLD') {
+    return price.toFixed(2);
+  } else if (market === 'BTC' || market === 'ETH') {
+    return price.toFixed(2);
+  }
+  return price.toFixed(5);
+};
+
 const TradingChart = ({ candles, signal, position, supports, resistances, orderBlocks, hasCredits = false, showAnalysis = false, potentialEntry = null }) => {
   const chartContainerRef = useRef(null);
   const chartRef = useRef(null);
@@ -143,9 +152,9 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
         id: position.id,
         market: position.market,
         direction: correctDirection,
-        entry: position.entry_price.toFixed(5),
-        sl: position.stop_loss.toFixed(5),
-        tp1: position.take_profit_1.toFixed(5),
+        entry: formatPrice(position.entry_price, position.market),
+        sl: formatPrice(position.stop_loss, position.market),
+        tp1: formatPrice(position.take_profit_1, position.market),
         pnl: position.pnl?.toFixed(2) || '0.00'
       });
 
@@ -153,9 +162,9 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
         console.warn('⚠️ DIRECTION POSITION INCORRECTE DÉTECTÉE ET CORRIGÉE', {
           positionDirection: position.direction,
           correctDirection,
-          entry: position.entry_price.toFixed(5),
-          tp1: position.take_profit_1.toFixed(5),
-          sl: position.stop_loss.toFixed(5)
+          entry: formatPrice(position.entry_price, position.market),
+          tp1: formatPrice(position.take_profit_1, position.market),
+          sl: formatPrice(position.stop_loss, position.market)
         });
       }
 
@@ -165,7 +174,7 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
         lineWidth: 3,
         lineStyle: 0,
         axisLabelVisible: true,
-        title: `${isLong ? '🟢 LONG ↑' : '🔴 SHORT ↓'} - ${position.entry_price.toFixed(5)}`,
+        title: `${isLong ? '🟢 LONG ↑' : '🔴 SHORT ↓'} - ${formatPrice(position.entry_price, position.market)}`,
       });
 
       const distanceToSL = isLong
@@ -178,7 +187,7 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
         lineWidth: 4,
         lineStyle: 0,
         axisLabelVisible: true,
-        title: `🛑 STOP LOSS - ${position.stop_loss.toFixed(5)} (-${distanceToSL.toFixed(2)}%)`,
+        title: `🛑 STOP LOSS - ${formatPrice(position.stop_loss, position.market)} (-${distanceToSL.toFixed(2)}%)`,
       });
 
       const gainTP1 = isLong
@@ -191,7 +200,7 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
         lineWidth: 4,
         lineStyle: 0,
         axisLabelVisible: true,
-        title: `🎯 TP1 - ${position.take_profit_1.toFixed(5)} (+${gainTP1.toFixed(2)}%)`,
+        title: `🎯 TP1 - ${formatPrice(position.take_profit_1, position.market)} (+${gainTP1.toFixed(2)}%)`,
       });
 
       priceLines.current.push(lineEntry, lineSL, lineTP1);
@@ -207,7 +216,7 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
           lineWidth: 3,
           lineStyle: 2,
           axisLabelVisible: true,
-          title: `🎯 TP2 - ${position.take_profit_2.toFixed(5)} (+${gainTP2.toFixed(2)}%)`,
+          title: `🎯 TP2 - ${formatPrice(position.take_profit_2, position.market)} (+${gainTP2.toFixed(2)}%)`,
         });
         priceLines.current.push(lineTP2);
       }
@@ -222,22 +231,22 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
         console.warn('⚠️ DIRECTION INCORRECTE DÉTECTÉE ET CORRIGÉE', {
           signalDirection: signal.direction,
           correctDirection,
-          entry: entryPrice.toFixed(5),
-          tp1: signal.take_profit_1.toFixed(5),
-          sl: signal.stop_loss.toFixed(5)
+          entry: formatPrice(entryPrice, signal.market),
+          tp1: formatPrice(signal.take_profit_1, signal.market),
+          sl: formatPrice(signal.stop_loss, signal.market)
         });
       }
 
       console.log('📊 CHART DRAWING SIGNAL:', {
         direction: correctDirection,
-        entry: entryPrice.toFixed(5),
-        sl: signal.stop_loss.toFixed(5),
-        tp1: signal.take_profit_1.toFixed(5),
-        tp2: signal.take_profit_2 ? signal.take_profit_2.toFixed(5) : 'N/A',
+        entry: formatPrice(entryPrice, signal.market),
+        sl: formatPrice(signal.stop_loss, signal.market),
+        tp1: formatPrice(signal.take_profit_1, signal.market),
+        tp2: signal.take_profit_2 ? formatPrice(signal.take_profit_2, signal.market) : 'N/A',
         isLong,
         validation: isLong
-          ? `TP1(${signal.take_profit_1.toFixed(5)}) > Entry(${entryPrice.toFixed(5)}) > SL(${signal.stop_loss.toFixed(5)})`
-          : `SL(${signal.stop_loss.toFixed(5)}) > Entry(${entryPrice.toFixed(5)}) > TP1(${signal.take_profit_1.toFixed(5)})`
+          ? `TP1(${formatPrice(signal.take_profit_1, signal.market)}) > Entry(${formatPrice(entryPrice, signal.market)}) > SL(${formatPrice(signal.stop_loss, signal.market)})`
+          : `SL(${formatPrice(signal.stop_loss, signal.market)}) > Entry(${formatPrice(entryPrice, signal.market)}) > TP1(${formatPrice(signal.take_profit_1, signal.market)})`
       });
 
       const lineEntry = candleSeriesRef.current.createPriceLine({
@@ -246,7 +255,7 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
         lineWidth: 3,
         lineStyle: 0,
         axisLabelVisible: true,
-        title: `${isLong ? '🟢 LONG ↑' : '🔴 SHORT ↓'} - ${entryPrice.toFixed(5)}`,
+        title: `${isLong ? '🟢 LONG ↑' : '🔴 SHORT ↓'} - ${formatPrice(entryPrice, signal.market)}`,
       });
 
       const signalDistanceToSL = isLong
@@ -259,7 +268,7 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
         lineWidth: 4,
         lineStyle: 0,
         axisLabelVisible: true,
-        title: `🛑 STOP LOSS - ${signal.stop_loss.toFixed(5)} (-${signalDistanceToSL.toFixed(2)}%)`,
+        title: `🛑 STOP LOSS - ${formatPrice(signal.stop_loss, signal.market)} (-${signalDistanceToSL.toFixed(2)}%)`,
       });
 
       const signalGainTP1 = isLong
@@ -272,7 +281,7 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
         lineWidth: 4,
         lineStyle: 0,
         axisLabelVisible: true,
-        title: `🎯 TP1 - ${signal.take_profit_1.toFixed(5)} (+${signalGainTP1.toFixed(2)}%)`,
+        title: `🎯 TP1 - ${formatPrice(signal.take_profit_1, signal.market)} (+${signalGainTP1.toFixed(2)}%)`,
       });
 
       priceLines.current.push(lineEntry, lineSL, lineTP1);
@@ -288,7 +297,7 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
           lineWidth: 3,
           lineStyle: 2,
           axisLabelVisible: true,
-          title: `🎯 TP2 - ${signal.take_profit_2.toFixed(5)} (+${signalGainTP2.toFixed(2)}%)`,
+          title: `🎯 TP2 - ${formatPrice(signal.take_profit_2, signal.market)} (+${signalGainTP2.toFixed(2)}%)`,
         });
         priceLines.current.push(lineTP2);
       }
@@ -300,9 +309,9 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
 
       console.log('📍 GRAPHIQUE - ZONE D\'ENTRÉE POTENTIELLE:', {
         direction: correctDirection,
-        entry: entryPrice.toFixed(5),
-        sl: potentialEntry.stop_loss.toFixed(5),
-        tp1: potentialEntry.take_profit_1.toFixed(5)
+        entry: formatPrice(entryPrice, potentialEntry.market),
+        sl: formatPrice(potentialEntry.stop_loss, potentialEntry.market),
+        tp1: formatPrice(potentialEntry.take_profit_1, potentialEntry.market)
       });
 
       const lineEntry = candleSeriesRef.current.createPriceLine({
@@ -311,7 +320,7 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
         lineWidth: 3,
         lineStyle: 2,
         axisLabelVisible: true,
-        title: `${isLong ? '🟢 ZONE ENTRÉE LONG ↑' : '🔴 ZONE ENTRÉE SHORT ↓'} - ${entryPrice.toFixed(5)}`,
+        title: `${isLong ? '🟢 ZONE ENTRÉE LONG ↑' : '🔴 ZONE ENTRÉE SHORT ↓'} - ${formatPrice(entryPrice, potentialEntry.market)}`,
       });
 
       const lineSL = candleSeriesRef.current.createPriceLine({
@@ -320,7 +329,7 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
         lineWidth: 2,
         lineStyle: 2,
         axisLabelVisible: true,
-        title: `🛑 SL - ${potentialEntry.stop_loss.toFixed(5)}`,
+        title: `🛑 SL - ${formatPrice(potentialEntry.stop_loss, potentialEntry.market)}`,
       });
 
       const lineTP1 = candleSeriesRef.current.createPriceLine({
@@ -329,7 +338,7 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
         lineWidth: 2,
         lineStyle: 2,
         axisLabelVisible: true,
-        title: `🎯 TP1 - ${potentialEntry.take_profit_1.toFixed(5)}`,
+        title: `🎯 TP1 - ${formatPrice(potentialEntry.take_profit_1, potentialEntry.market)}`,
       });
 
       priceLines.current.push(lineEntry, lineSL, lineTP1);
@@ -341,7 +350,7 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
           lineWidth: 2,
           lineStyle: 3,
           axisLabelVisible: true,
-          title: `🎯 TP2 - ${potentialEntry.take_profit_2.toFixed(5)}`,
+          title: `🎯 TP2 - ${formatPrice(potentialEntry.take_profit_2, potentialEntry.market)}`,
         });
         priceLines.current.push(lineTP2);
       }

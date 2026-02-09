@@ -72,12 +72,22 @@ class PositionService {
         });
 
       if (error) throw error;
-      return data || {
+
+      if (data && data.length > 0) {
+        const stats = data[0];
+        return {
+          total_trades: parseInt(stats.total_trades) || 0,
+          wins: parseInt(stats.wins) || 0,
+          losses: parseInt(stats.losses) || 0,
+          realized_pnl: parseFloat(stats.total_pnl) || 0,
+          winrate: parseFloat(stats.win_rate) || 0
+        };
+      }
+
+      return {
         total_trades: 0,
         wins: 0,
         losses: 0,
-        total_gains: 0,
-        total_losses: 0,
         realized_pnl: 0,
         winrate: 0
       };
@@ -87,8 +97,6 @@ class PositionService {
         total_trades: 0,
         wins: 0,
         losses: 0,
-        total_gains: 0,
-        total_losses: 0,
         realized_pnl: 0,
         winrate: 0
       };

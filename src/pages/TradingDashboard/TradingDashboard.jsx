@@ -481,16 +481,16 @@ const TradingDashboard = () => {
         totalTrades: accountStats.total_trades,
         wins: accountStats.wins,
         losses: accountStats.losses,
-        winrate: accountStats.winrate
+        winrate: accountStats.winrate.toFixed(1)
       });
 
       setStats({
         balance: currentBalance,
         pnl: realizedPnL,
-        wins: parseInt(accountStats.wins || 0),
-        losses: parseInt(accountStats.losses || 0),
-        winrate: parseFloat(accountStats.winrate || 0),
-        totalTrades: parseInt(accountStats.total_trades || 0)
+        wins: accountStats.wins,
+        losses: accountStats.losses,
+        winrate: accountStats.winrate,
+        totalTrades: accountStats.total_trades
       });
     } catch (error) {
       console.error('Error loading stats:', error);
@@ -652,13 +652,13 @@ const TradingDashboard = () => {
 
           if (newStatus !== 'OPEN') {
             hasUpdates = true;
-            const closedAt = new Date().toISOString();
+            const exitTime = new Date().toISOString();
             await supabase
               .from('positions')
               .update({
                 status: newStatus,
                 pnl: unrealizedPnl,
-                closed_at: closedAt,
+                exit_time: exitTime,
                 exit_price: hitPrice
               })
               .eq('id', position.id);

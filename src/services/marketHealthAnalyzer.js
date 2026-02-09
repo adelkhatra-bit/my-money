@@ -147,12 +147,8 @@ class MarketHealthAnalyzer {
       return { status: HEALTH_STATUS.DANGEROUS, score: 20, reasons };
     }
 
-    if (dangerFactors >= 1 || warningFactors >= 2) {
+    if (warningFactors >= 2) {
       return { status: HEALTH_STATUS.NOISY, score: 50, reasons };
-    }
-
-    if (warningFactors >= 1) {
-      return { status: HEALTH_STATUS.NOISY, score: 65, reasons };
     }
 
     return { status: HEALTH_STATUS.STABLE, score: 90, reasons: [] };

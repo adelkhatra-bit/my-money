@@ -50,6 +50,7 @@ class TradeDiscipline {
       .select('id')
       .eq('user_id', userId)
       .eq('account_id', accountId)
+      .in('status', ['CLOSED', 'STOPPED'])
       .gte('created_at', today.toISOString());
 
     if (error) {

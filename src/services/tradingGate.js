@@ -37,6 +37,24 @@ class TradingGate {
 
     const allowed = blockReasons.length === 0;
 
+    console.log(JSON.stringify({
+      timestamp: new Date().toISOString(),
+      module: 'TRADING_GATE',
+      userId,
+      accountId,
+      market,
+      symbol: this._getSymbolForMarket(market),
+      timeframe: '5m',
+      healthStatus: checks.marketHealth.details?.status || 'UNKNOWN',
+      healthScore: checks.marketHealth.details?.score || 0,
+      disciplineStatus: checks.discipline.allowed ? 'OK' : checks.discipline.reason,
+      newsStatus: checks.news.allowed ? 'OK' : 'BLOCKED',
+      marketHoursStatus: checks.marketHours.allowed ? 'OPEN' : 'CLOSED',
+      decision: allowed ? 'AUTHORIZED' : 'BLOCKED',
+      blockReasons: blockReasons.map(r => r.reason),
+      blockMessages: blockReasons.map(r => r.message)
+    }));
+
     return {
       allowed,
       blockReasons,
@@ -45,6 +63,16 @@ class TradingGate {
       checks,
       nextCheck: new Date(Date.now() + 60000).toISOString()
     };
+  }
+
+  _getSymbolForMarket(market) {
+    const symbols = {
+      'NASDAQ': 'MNQ',
+      'GOLD': 'MGC',
+      'BTC': 'BTCUSD',
+      'ETH': 'ETHUSD'
+    };
+    return symbols[market] || market;
   }
 
   _checkMarketHours(market) {

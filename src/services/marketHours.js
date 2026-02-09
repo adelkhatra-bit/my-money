@@ -47,12 +47,25 @@ export const isMarketOpen = (market) => {
       return false;
     }
 
-    console.log(`[Market Hours] ${market} ouvert - Futures trading 24h (dimanche 18h00 ET - vendredi 17h00 ET)`);
+    console.log(`[Market Hours] ${market} ouvert - NQ/MGC FUTURES (TopStep/Apex) - 23h/24 sauf samedi + pause 17h-18h ET`);
     return true;
   }
 
   console.log(`[Market Hours] ${market} - Marché non reconnu ou fermé`);
   return false;
+};
+
+export const getMarketType = (market) => {
+  if (market === 'NASDAQ') {
+    return 'NQ_FUTURES';
+  }
+  if (market === 'GOLD') {
+    return 'MGC_FUTURES';
+  }
+  if (market === 'BTC' || market === 'ETH') {
+    return 'CRYPTO_24_7';
+  }
+  return 'UNKNOWN';
 };
 
 export const getMarketStatus = (market) => {

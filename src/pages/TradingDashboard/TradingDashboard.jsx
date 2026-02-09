@@ -869,6 +869,8 @@ const TradingDashboard = () => {
       return;
     }
 
+    let userProfileId = null;
+
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
@@ -888,6 +890,8 @@ const TradingDashboard = () => {
         setBotState('idle');
         return;
       }
+
+      userProfileId = profile.id;
 
       const { data: openPositions } = await supabase
         .from('positions')
@@ -916,6 +920,12 @@ const TradingDashboard = () => {
       console.error('Error checking positions:', error);
     }
 
+    if (!userProfileId) {
+      setScanStatus('❌ Erreur de profil utilisateur');
+      setBotState('idle');
+      return;
+    }
+
     if (credits.remaining <= 0) {
       setScanStatus('❌ Crédits épuisés - Rechargez votre compte');
       setBotState('idle');
@@ -940,7 +950,7 @@ const TradingDashboard = () => {
 
     try {
       const currentPrice = candles[candles.length - 1]?.close || 0;
-      const gateCheck = await tradingGate.canOpenPosition(profile.id, activeAccount.id, market, candles, currentPrice);
+      const gateCheck = await tradingGate.canOpenPosition(userProfileId, activeAccount.id, market, candles, currentPrice);
 
       console.log('🚦 [Trading Gate]', JSON.stringify({
         market,

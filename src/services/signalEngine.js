@@ -5,7 +5,7 @@ import {
   detectOrderBlocks,
   detectTrend
 } from './indicators';
-import { getCurrentPrice } from './marketData';
+import { getCurrentPrice } from './marketDataUnified';
 import { isMarketOpen } from './marketHours';
 import {
   enforceDirectionRules,

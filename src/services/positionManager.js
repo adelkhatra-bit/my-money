@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabaseClient';
-import { getCurrentPrice } from './marketData';
+import { getCurrentPrice } from './marketDataUnified';
 import { updatePositionPnL, closePosition } from './accountingService';
 
 class PositionManager {

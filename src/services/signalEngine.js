@@ -228,6 +228,24 @@ export const generateSignal = async (market, platform, candles, userAccount = nu
     };
   }
 
+  if (trend === 'downtrend' && direction === 'LONG') {
+    console.warn('⚠️ FILTRAGE DIRECTIONNEL: Marché en downtrend, LONG rejeté');
+    return {
+      signal: null,
+      reason: 'Marché baissier - Signal LONG filtré (risque trop élevé)',
+      analysis
+    };
+  }
+
+  if (trend === 'uptrend' && direction === 'SHORT') {
+    console.warn('⚠️ FILTRAGE DIRECTIONNEL: Marché en uptrend, SHORT rejeté');
+    return {
+      signal: null,
+      reason: 'Marché haussier - Signal SHORT filtré (risque trop élevé)',
+      analysis
+    };
+  }
+
   if (userAccount && userAccount.capital && userAccount.risk_per_trade_percent) {
     const riskPercent = userAccount.risk_per_trade_percent;
 
@@ -318,7 +336,25 @@ export const generateSignal = async (market, platform, candles, userAccount = nu
     };
   }
 
+  if (confidence < 75) {
+    console.warn(`⚠️ CONFIANCE INSUFFISANTE: ${confidence}% (minimum requis: 75%)`);
+    return {
+      signal: null,
+      reason: `Confiance insuffisante (${confidence}%) - Attente de meilleures conditions`,
+      analysis
+    };
+  }
+
   const riskReward = Math.abs((takeProfit1 - entryMin) / (entryMin - stopLoss));
+
+  if (riskReward < 1.5) {
+    console.warn(`⚠️ RISK/REWARD INSUFFISANT: ${riskReward.toFixed(2)} (minimum requis: 1.5)`);
+    return {
+      signal: null,
+      reason: `Ratio risque/reward trop faible (${riskReward.toFixed(2)})`,
+      analysis
+    };
+  }
 
   lastSignalTime[marketKey] = now;
 
@@ -326,7 +362,7 @@ export const generateSignal = async (market, platform, candles, userAccount = nu
   const validUntil = new Date(now + validityMinutes * 60 * 1000);
   const signalId = `${marketKey}_${now}_${direction}`;
 
-  console.log('✅ SIGNAL VALIDÉ (v2.4.0):', {
+  console.log('✅ SIGNAL VALIDÉ (v3.0.0):', {
     direction,
     currentPrice: currentPrice.toFixed(5),
     entry: entryMid.toFixed(5),

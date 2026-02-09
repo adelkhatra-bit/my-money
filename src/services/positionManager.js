@@ -167,14 +167,36 @@ class PositionManager {
 
   async markTP1Hit(positionId) {
     try {
+      const { data: position } = await supabase
+        .from('positions')
+        .select('*')
+        .eq('id', positionId)
+        .maybeSingle();
+
+      if (!position) {
+        console.error('Position non trouvée pour TP1');
+        return;
+      }
+
+      const entryPrice = parseFloat(position.entry_price);
+      const newSL = entryPrice * (position.direction === 'LONG' ? 1.001 : 0.999);
+
       const { error } = await supabase
         .from('positions')
-        .update({ tp1_hit: true })
+        .update({
+          tp1_hit: true,
+          stop_loss: newSL
+        })
         .eq('id', positionId);
 
       if (error) throw error;
 
-      console.log('✅ TP1 marqué comme atteint');
+      console.log('✅ TP1 atteint - SL déplacé au break-even:', {
+        ancienSL: position.stop_loss,
+        nouveauSL: newSL.toFixed(5),
+        entry: entryPrice.toFixed(5),
+        direction: position.direction
+      });
     } catch (error) {
       console.error('Erreur marquage TP1:', error);
     }

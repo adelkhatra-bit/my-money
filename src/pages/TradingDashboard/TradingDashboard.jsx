@@ -19,6 +19,7 @@ import { calculateTrailingStop, shouldUpdateTrailingStop } from '../../services/
 import { positionManager } from '../../services/positionManager';
 import { positionService } from '../../services/positionService';
 import { userPreferencesService } from '../../services/userPreferences';
+import { validateMarketPlatformCompatibility } from '../../services/marketDataUnified';
 import { supabase } from '../../lib/supabaseClient';
 import styles from './TradingDashboard.module.css';
 
@@ -70,6 +71,7 @@ const TradingDashboard = () => {
   const [livePrice, setLivePrice] = useState(null);
   const [livePnL, setLivePnL] = useState(0);
   const [history, setHistory] = useState([]);
+  const [compatibilityError, setCompatibilityError] = useState(null);
 
   const addActivityLog = (message, type = 'info') => {
     if (activityLogCallback) {
@@ -78,6 +80,13 @@ const TradingDashboard = () => {
   };
 
   const handleMarketChange = async (newMarket) => {
+    const validation = validateMarketPlatformCompatibility(newMarket, platform);
+    if (!validation.valid) {
+      setCompatibilityError(validation);
+      audioAlerts.errorAlert();
+      return;
+    }
+    setCompatibilityError(null);
     setMarket(newMarket);
 
     if (userId) {
@@ -88,6 +97,13 @@ const TradingDashboard = () => {
   };
 
   const handlePlatformChange = async (newPlatform) => {
+    const validation = validateMarketPlatformCompatibility(market, newPlatform);
+    if (!validation.valid) {
+      setCompatibilityError(validation);
+      audioAlerts.errorAlert();
+      return;
+    }
+    setCompatibilityError(null);
     setPlatform(newPlatform);
 
     if (userId) {
@@ -197,16 +213,22 @@ const TradingDashboard = () => {
   }, [userId]);
 
   useEffect(() => {
-    if (market === 'NASDAQ' || market === 'GOLD') {
-      if (platform === 'binance' || platform === 'bybit' || platform === 'okx' || platform === 'coinbase') {
+    const validation = validateMarketPlatformCompatibility(market, platform);
+    if (!validation.valid) {
+      setCompatibilityError(validation);
+      console.error('[Trading Dashboard] Incompatibilité détectée:', validation);
+
+      if (market === 'NASDAQ' || market === 'GOLD') {
         setPlatform('ftmo');
-      }
-    } else if (market === 'BTC' || market === 'ETH') {
-      if (platform === 'ftmo' || platform === 'topstep' || platform === 'apex') {
+        setCompatibilityError(null);
+      } else if (market === 'BTC' || market === 'ETH') {
         setPlatform('binance');
+        setCompatibilityError(null);
       }
+    } else {
+      setCompatibilityError(null);
     }
-  }, [market]);
+  }, [market, platform]);
 
   useEffect(() => {
     loadHistoricalData();
@@ -1509,6 +1531,25 @@ const TradingDashboard = () => {
 
   return (
     <div className={styles.dashboard}>
+      {compatibilityError && (
+        <div className={styles.errorBanner} style={{
+          background: 'linear-gradient(135deg, #ff1744 0%, #c62828 100%)',
+          color: '#fff',
+          padding: '20px',
+          margin: '10px 0',
+          borderRadius: '12px',
+          border: '2px solid #ff5252',
+          textAlign: 'center',
+          fontSize: '16px',
+          fontWeight: 'bold',
+          boxShadow: '0 8px 16px rgba(255, 23, 68, 0.3)'
+        }}>
+          <div style={{ fontSize: '24px', marginBottom: '10px' }}>⛔ INCOMPATIBILITÉ MARCHÉ / PLATEFORME</div>
+          <div style={{ fontSize: '18px', marginBottom: '8px' }}>{compatibilityError.error}</div>
+          <div style={{ fontSize: '14px', opacity: 0.9 }}>{compatibilityError.message}</div>
+        </div>
+      )}
+
       {!marketStatus.open && (
         <div className={styles.marketClosedBanner}>
           ⚠️ Marché {market} fermé - {marketStatus.message}
@@ -1554,7 +1595,19 @@ const TradingDashboard = () => {
       <div className={styles.header}>
         <div className={styles.titleRow}>
           <h1>AI Trading Platform</h1>
-          <div className={styles.paperTradingBadge}>PAPER TRADING MODE</div>
+          <div className={styles.paperTradingBadge} style={{
+            background: 'linear-gradient(135deg, #ff9800 0%, #f57c00 100%)',
+            color: '#fff',
+            padding: '8px 16px',
+            borderRadius: '8px',
+            fontSize: '14px',
+            fontWeight: 'bold',
+            border: '2px solid #ffb74d',
+            boxShadow: '0 4px 12px rgba(255, 152, 0, 0.4)',
+            animation: 'pulse 2s infinite'
+          }}>
+            📊 SIMULATION - Données Déterministes (Paper Trading)
+          </div>
         </div>
 
         <div className={styles.controls}>

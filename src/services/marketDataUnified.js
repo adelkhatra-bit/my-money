@@ -1,7 +1,43 @@
 const baseTimeframe = '1m';
 let dataCache = {};
 
+export function validateMarketPlatformCompatibility(market, platform) {
+  const cryptoMarkets = ['BTC', 'ETH'];
+  const cryptoPlatforms = ['binance', 'bybit', 'okx', 'coinbase'];
+  const indicesMarkets = ['NASDAQ', 'GOLD', 'SP500'];
+  const indicesPlatforms = ['topstep', 'ftmo', 'apex'];
+
+  const isCryptoMarket = cryptoMarkets.includes(market);
+  const isCryptoPlatform = cryptoPlatforms.includes(platform.toLowerCase());
+  const isIndicesMarket = indicesMarkets.includes(market);
+  const isIndicesPlatform = indicesPlatforms.includes(platform.toLowerCase());
+
+  if (isCryptoMarket && isIndicesPlatform) {
+    return {
+      valid: false,
+      error: `❌ INCOMPATIBILITÉ: ${market} n'est pas disponible sur ${platform}`,
+      message: `${market} est un actif crypto. Veuillez sélectionner une plateforme crypto (Binance, Bybit, OKX, Coinbase).`
+    };
+  }
+
+  if (isIndicesMarket && isCryptoPlatform) {
+    return {
+      valid: false,
+      error: `❌ INCOMPATIBILITÉ: ${market} n'est pas disponible sur ${platform}`,
+      message: `${market} est un indice/matière première. Veuillez sélectionner TopStep, FTMO ou Apex.`
+    };
+  }
+
+  return { valid: true };
+}
+
 export function getSymbolMapping(market, platform) {
+  const validation = validateMarketPlatformCompatibility(market, platform);
+  if (!validation.valid) {
+    console.error('[Market Data] Incompatibilité:', validation.error);
+    throw new Error(validation.error);
+  }
+
   const mappings = {
     topstep: {
       NASDAQ: 'MNQ',

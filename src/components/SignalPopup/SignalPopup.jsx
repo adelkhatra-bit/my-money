@@ -91,68 +91,27 @@ const SignalPopup = ({ signal, riskCalc, onAccept, onReject, onDismiss }) => {
         )}
 
         <div className={styles.priceInfo}>
-          <div className={styles.schemaTitle}>📊 SCHÉMA DE LA POSITION</div>
-          <div className={styles.visualStructure}>
-            {isLong ? (
-              <div className={styles.structureBox}>
-                <div className={styles.structureLine} style={{ background: 'linear-gradient(90deg, #00e676, #00c853)' }}>
-                  ⬆️ TP2: {signal.take_profit_2 ? signal.take_profit_2.toFixed(2) : 'N/A'} 💰
-                </div>
-                <div className={styles.structureLine} style={{ background: 'linear-gradient(90deg, #00e676, #00b04a)' }}>
-                  ⬆️ TP1: {signal.take_profit_1.toFixed(2)} 💰
-                </div>
-                <div className={styles.structureLine} style={{ background: 'linear-gradient(90deg, #2196F3, #1976D2)', fontSize: '16px', fontWeight: 'bold' }}>
-                  ▶️ ENTRÉE: {entryMid.toFixed(2)}
-                </div>
-                <div className={styles.structureLine} style={{ background: 'linear-gradient(90deg, #ef4444, #d32f2f)' }}>
-                  ⬇️ STOP LOSS: {signal.stop_loss.toFixed(2)} 🛑
-                </div>
-                <div className={styles.structureLabel}>
-                  📈 POSITION LONG - On achète et on vise le HAUT ↑↑↑
-                </div>
-              </div>
-            ) : (
-              <div className={styles.structureBox}>
-                <div className={styles.structureLine} style={{ background: 'linear-gradient(90deg, #ef4444, #d32f2f)' }}>
-                  ⬆️ STOP LOSS: {signal.stop_loss.toFixed(2)} 🛑
-                </div>
-                <div className={styles.structureLine} style={{ background: 'linear-gradient(90deg, #FF5722, #E64A19)', fontSize: '16px', fontWeight: 'bold' }}>
-                  ▶️ ENTRÉE: {entryMid.toFixed(2)}
-                </div>
-                <div className={styles.structureLine} style={{ background: 'linear-gradient(90deg, #00e676, #00b04a)' }}>
-                  ⬇️ TP1: {signal.take_profit_1.toFixed(2)} 💰
-                </div>
-                <div className={styles.structureLine} style={{ background: 'linear-gradient(90deg, #00e676, #00c853)' }}>
-                  ⬇️ TP2: {signal.take_profit_2 ? signal.take_profit_2.toFixed(2) : 'N/A'} 💰
-                </div>
-                <div className={styles.structureLabel}>
-                  📉 POSITION SHORT - On vend et on vise le BAS ↓↓↓
-                </div>
-              </div>
-            )}
-          </div>
-
           <div className={styles.priceRow}>
-            <span className={styles.label}>Zone d'entrée:</span>
+            <span className={styles.label}>Entrée:</span>
             <span className={styles.value}>
-              {signal.entry_min.toFixed(2)} - {signal.entry_max.toFixed(2)}
+              {entryMid.toFixed(2)}
             </span>
           </div>
           <div className={styles.priceRow}>
-            <span className={styles.label}>Stop Loss {isLong ? '(en dessous ↓)' : '(au-dessus ↑)'}:</span>
+            <span className={styles.label}>Stop Loss:</span>
             <span className={styles.value} style={{ color: '#ef4444' }}>
               {signal.stop_loss.toFixed(2)}
             </span>
           </div>
           <div className={styles.priceRow}>
-            <span className={styles.label}>Take Profit 1 {isLong ? '(au-dessus ↑)' : '(en dessous ↓)'}:</span>
+            <span className={styles.label}>Take Profit 1:</span>
             <span className={styles.value} style={{ color: '#00e676' }}>
               {signal.take_profit_1.toFixed(2)}
             </span>
           </div>
           {signal.take_profit_2 && (
             <div className={styles.priceRow}>
-              <span className={styles.label}>Take Profit 2 {isLong ? '(au-dessus ↑)' : '(en dessous ↓)'}:</span>
+              <span className={styles.label}>Take Profit 2:</span>
               <span className={styles.value} style={{ color: '#00e676' }}>
                 {signal.take_profit_2.toFixed(2)}
               </span>
@@ -163,56 +122,15 @@ const SignalPopup = ({ signal, riskCalc, onAccept, onReject, onDismiss }) => {
         {riskCalc && (
           <div className={styles.riskInfo}>
             <div className={styles.riskRow}>
-              <span className={styles.label}>Taille position:</span>
-              <span className={styles.value}>{riskCalc.positionSize.toFixed(3)} lots</span>
+              <span className={styles.label}>Position:</span>
+              <span className={styles.value}>{riskCalc.positionSize.toFixed(2)} lots</span>
             </div>
             <div className={styles.riskRow}>
               <span className={styles.label}>Risque:</span>
               <span className={styles.value}>
-                ${riskCalc.riskAmount.toFixed(2)} ({riskCalc.riskPercent.toFixed(2)}%)
+                ${riskCalc.riskAmount.toFixed(2)}
               </span>
             </div>
-            <div className={styles.riskRow}>
-              <span className={styles.label}>Profit potentiel (TP1):</span>
-              <span className={styles.value} style={{ color: '#00e676' }}>
-                ${riskCalc.potentialProfit1.toFixed(2)}
-              </span>
-            </div>
-            <div className={styles.riskRow}>
-              <span className={styles.label}>Risk/Reward:</span>
-              <span className={styles.value}>
-                {signal.risk_reward.toFixed(2)}:1
-              </span>
-            </div>
-          </div>
-        )}
-
-        <div className={styles.confidence}>
-          <div className={styles.confidenceLabel}>Confiance: {signal.confidence}%</div>
-          <div className={styles.confidenceBar}>
-            <div
-              className={styles.confidenceProgress}
-              style={{ width: `${signal.confidence}%` }}
-            />
-          </div>
-        </div>
-
-        <div className={styles.reasons}>
-          <div className={styles.reasonsTitle}>Pourquoi cette position:</div>
-          <ul className={styles.reasonsList}>
-            {signal.reasons.map((reason, index) => (
-              <li key={index}>{reason}</li>
-            ))}
-          </ul>
-        </div>
-
-        {riskCalc && riskCalc.warnings.length > 0 && (
-          <div className={styles.warnings}>
-            {riskCalc.warnings.map((warning, index) => (
-              <div key={index} className={styles.warning}>
-                {warning}
-              </div>
-            ))}
           </div>
         )}
 

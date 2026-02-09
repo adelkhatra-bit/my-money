@@ -53,7 +53,7 @@
 .navButton {
   color: white;
   text-decoration: none;
-  padding: 0.25rem 0.5rem;
+  padding: 0.25rem 0.45rem;
   border-radius: 4px;
   transition: all 0.2s ease;
   display: flex;
@@ -63,7 +63,7 @@
   border: 1px solid transparent;
   font-weight: 500;
   font-size: 0.7rem;
-  min-height: 26px;
+  min-height: 24px;
   white-space: nowrap;
 }
 
@@ -107,7 +107,7 @@
   background: rgba(239, 68, 68, 0.9);
   color: white;
   border: none;
-  padding: 0.25rem 0.5rem;
+  padding: 0.25rem 0.45rem;
   border-radius: 4px;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -116,7 +116,7 @@
   gap: 0.2rem;
   font-weight: 500;
   font-size: 0.7rem;
-  min-height: 26px;
+  min-height: 24px;
   white-space: nowrap;
 }
 

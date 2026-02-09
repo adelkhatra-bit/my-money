@@ -95,6 +95,16 @@ const TradingDashboard = () => {
     }
   };
 
+  const handleTimeframeChange = async (newTimeframe) => {
+    setTimeframe(newTimeframe);
+
+    if (userId) {
+      await userPreferencesService.updateLastSelection(userId, market, platform, newTimeframe, activeAccount?.id);
+      console.log('💾 Timeframe sauvegardé:', newTimeframe);
+    }
+  };
+
+
   const loadPositionAndHistory = useCallback(async () => {
     if (!userId || !activeAccount) return;
 
@@ -1559,7 +1569,7 @@ const TradingDashboard = () => {
 
           <div className={styles.controlGroup}>
             <label>Timeframe:</label>
-            <select value={timeframe} onChange={(e) => setTimeframe(e.target.value)}>
+            <select value={timeframe} onChange={(e) => handleTimeframeChange(e.target.value)}>
               <option value="1m">1m</option>
               <option value="5m">5m</option>
               <option value="15m">15m</option>
@@ -1711,6 +1721,11 @@ const TradingDashboard = () => {
           currentPrice={livePrice}
           pnl={livePnL}
           history={history}
+        />
+
+        <PositionHistory
+          history={history}
+          market={market}
         />
       </div>
 

@@ -3,13 +3,18 @@ import { supabase } from '../lib/supabaseClient';
 class UserPreferencesService {
   async getPreferences(userId) {
     try {
-      const { data, error } = await supabase
-        .from('user_preferences')
-        .select(`
-          *,
-          trading_accounts(*)
-        `)
+      const { data: profileData } = await supabase
+        .from('user_profiles')
+        .select('id')
         .eq('user_id', userId)
+        .maybeSingle();
+
+      if (!profileData) return null;
+
+      const { data, error } = await supabase
+        .from('user_settings')
+        .select('*')
+        .eq('user_id', profileData.id)
         .maybeSingle();
 
       if (error) throw error;
@@ -22,17 +27,25 @@ class UserPreferencesService {
 
   async savePreferences(userId, preferences) {
     try {
+      const { data: profileData } = await supabase
+        .from('user_profiles')
+        .select('id')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (!profileData) throw new Error('Profile not found');
+
       const { data, error } = await supabase
-        .from('user_preferences')
+        .from('user_settings')
         .upsert({
-          user_id: userId,
+          user_id: profileData.id,
           ...preferences,
           updated_at: new Date().toISOString()
         }, {
           onConflict: 'user_id'
         })
         .select()
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
 
@@ -40,7 +53,7 @@ class UserPreferencesService {
         market: preferences.last_market,
         platform: preferences.last_platform,
         timeframe: preferences.last_timeframe,
-        account: preferences.active_account_id
+        accountId: preferences.last_account_id
       });
 
       return data;
@@ -52,18 +65,22 @@ class UserPreferencesService {
 
   async setActiveAccount(userId, accountId, market, platform) {
     return this.savePreferences(userId, {
-      active_account_id: accountId,
+      last_account_id: accountId,
       last_market: market,
       last_platform: platform
     });
   }
 
-  async updateLastSelection(userId, market, platform, timeframe) {
-    return this.savePreferences(userId, {
+  async updateLastSelection(userId, market, platform, timeframe, accountId = null) {
+    const prefs = {
       last_market: market,
       last_platform: platform,
       last_timeframe: timeframe
-    });
+    };
+    if (accountId) {
+      prefs.last_account_id = accountId;
+    }
+    return this.savePreferences(userId, prefs);
   }
 }
 

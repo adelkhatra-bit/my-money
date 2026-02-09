@@ -110,6 +110,26 @@ class AudioAlertService {
   getVolume() {
     return this.volume;
   }
+
+  playAlert(alertType) {
+    switch(alertType) {
+      case 'signal':
+        this.signalAlert();
+        break;
+      case 'pre_alert':
+      case 'warning':
+        this.warningAlert();
+        break;
+      case 'take_profit':
+        this.takeProfitAlert();
+        break;
+      case 'stop_loss':
+        this.stopLossAlert();
+        break;
+      default:
+        this.signalAlert();
+    }
+  }
 }
 
 export const audioAlerts = new AudioAlertService();

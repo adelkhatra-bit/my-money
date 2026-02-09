@@ -23,9 +23,9 @@
 
 .popup {
   background: #1a1a1a;
-  border-radius: 12px;
+  border-radius: 10px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-  max-width: 340px;
+  max-width: 280px;
   width: 90%;
   max-height: 75vh;
   overflow-y: auto;
@@ -44,55 +44,55 @@
 }
 
 .header {
-  padding: 14px;
-  border-bottom: 3px solid;
+  padding: 10px;
+  border-bottom: 2px solid;
   text-align: center;
 }
 
 .header h2 {
-  margin: 0 0 4px 0;
-  font-size: 20px;
+  margin: 0 0 3px 0;
+  font-size: 15px;
   font-weight: 700;
-  letter-spacing: 1px;
+  letter-spacing: 0.5px;
 }
 
 .market {
   color: #999;
-  font-size: 12px;
+  font-size: 10px;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 0.5px;
 }
 
 .directionExplanation {
-  margin-top: 6px;
-  padding: 5px 10px;
+  margin-top: 5px;
+  padding: 4px 8px;
   background: rgba(255, 255, 255, 0.05);
-  border-radius: 6px;
-  font-size: 11px;
+  border-radius: 5px;
+  font-size: 9px;
   color: #ccc;
   font-weight: 500;
 }
 
 .timer {
-  padding: 12px 14px;
+  padding: 8px 10px;
   background: rgba(255, 255, 255, 0.05);
   text-align: center;
 }
 
 .timerLabel {
   color: #999;
-  font-size: 11px;
+  font-size: 9px;
   text-transform: uppercase;
-  letter-spacing: 1px;
-  margin-bottom: 6px;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
 }
 
 .timerValue {
-  font-size: 28px;
+  font-size: 20px;
   font-weight: 700;
   color: #00e676;
   font-family: 'Courier New', monospace;
-  margin-bottom: 8px;
+  margin-bottom: 5px;
 }
 
 .timerValue.expired {
@@ -100,9 +100,9 @@
 }
 
 .timerBar {
-  height: 6px;
+  height: 4px;
   background: rgba(255, 255, 255, 0.1);
-  border-radius: 3px;
+  border-radius: 2px;
   overflow: hidden;
 }
 
@@ -112,18 +112,18 @@
 }
 
 .expiredWarning {
-  padding: 10px 14px;
+  padding: 8px 10px;
   background: rgba(239, 68, 68, 0.2);
   color: #ef4444;
   text-align: center;
   font-weight: 600;
-  font-size: 12px;
+  font-size: 10px;
   border-bottom: 1px solid rgba(239, 68, 68, 0.3);
 }
 
 .priceInfo,
 .riskInfo {
-  padding: 12px 14px;
+  padding: 8px 10px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
@@ -222,17 +222,17 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 6px 0;
+  padding: 4px 0;
 }
 
 .label {
   color: #999;
-  font-size: 13px;
+  font-size: 11px;
 }
 
 .value {
   color: #fff;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 600;
 }
 
@@ -296,25 +296,25 @@
 }
 
 .actions {
-  padding: 12px;
+  padding: 8px;
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 6px;
 }
 
 .dismissBtn {
   flex: 1 1 100%;
-  padding: 10px 12px;
+  padding: 7px 10px;
   background: rgba(255, 255, 255, 0.08);
   color: #aaa;
   border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 6px;
-  font-size: 12px;
+  border-radius: 5px;
+  font-size: 10px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
   text-transform: none;
-  min-height: 36px;
+  min-height: 30px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -329,16 +329,16 @@
 .acceptBtn,
 .rejectBtn {
   flex: 1;
-  padding: 12px 14px;
+  padding: 9px 10px;
   border: none;
-  border-radius: 6px;
-  font-size: 13px;
+  border-radius: 5px;
+  font-size: 11px;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.2s;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  min-height: 42px;
+  letter-spacing: 0.3px;
+  min-height: 34px;
   display: flex;
   align-items: center;
   justify-content: center;

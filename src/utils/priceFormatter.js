@@ -1,5 +1,17 @@
-export const formatPrice = (price, decimals = 2) => {
+const MARKET_DECIMALS = {
+  NASDAQ: 2,
+  GOLD: 2,
+  BTC: 2,
+  ETH: 2,
+};
+
+export const getMarketDecimals = (market) => {
+  return MARKET_DECIMALS[market] || 2;
+};
+
+export const formatPrice = (price, market = null) => {
   if (!price || isNaN(price)) return 0;
+  const decimals = market ? getMarketDecimals(market) : 2;
   return parseFloat(Number(price).toFixed(decimals));
 };
 
@@ -13,8 +25,9 @@ export const formatPercentage = (percentage, decimals = 2) => {
   return parseFloat(Number(percentage).toFixed(decimals));
 };
 
-export const displayPrice = (price, decimals = 2) => {
-  const formatted = formatPrice(price, decimals);
+export const displayPrice = (price, market = null) => {
+  const decimals = market ? getMarketDecimals(market) : 2;
+  const formatted = formatPrice(price, market);
   return formatted.toFixed(decimals);
 };
 

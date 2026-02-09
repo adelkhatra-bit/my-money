@@ -255,6 +255,24 @@ export const generateSignal = async (market, platform, candles, userAccount = nu
     };
   }
 
+  if (direction === DIRECTION.SHORT) {
+    stopLoss = entryMid * 1.015;
+    console.log('🔴 SL SHORT CALCULÉ (AU-DESSUS de entry):', {
+      entry: entryMid.toFixed(2),
+      sl: stopLoss.toFixed(2),
+      distance: ((stopLoss - entryMid) / entryMid * 100).toFixed(2) + '%',
+      validation: `SL(${stopLoss.toFixed(2)}) > Entry(${entryMid.toFixed(2)}) ✓`
+    });
+  } else {
+    stopLoss = entryMid * 0.985;
+    console.log('🟢 SL LONG CALCULÉ (EN DESSOUS de entry):', {
+      entry: entryMid.toFixed(2),
+      sl: stopLoss.toFixed(2),
+      distance: ((entryMid - stopLoss) / entryMid * 100).toFixed(2) + '%',
+      validation: `Entry(${entryMid.toFixed(2)}) > SL(${stopLoss.toFixed(2)}) ✓`
+    });
+  }
+
   if (userAccount && userAccount.capital && userAccount.risk_per_trade_percent) {
     const capital = parseFloat(userAccount.capital);
     const riskPercent = parseFloat(userAccount.risk_per_trade_percent);
@@ -263,34 +281,19 @@ export const generateSignal = async (market, platform, candles, userAccount = nu
     const rules = getPlatformRules(platform, market);
     const pointValue = rules.pointValue || 1;
     const tickSize = rules.tickSize || 0.01;
-
     const defaultLotSize = rules.minLotSize || 1;
-    const slDistance = (maxRiskAmount / (pointValue * defaultLotSize)) * tickSize;
+    const slDistance = Math.abs(stopLoss - entryMid);
 
-    if (direction === DIRECTION.SHORT) {
-      stopLoss = entryMid + slDistance;
-    } else {
-      stopLoss = entryMid - slDistance;
-    }
+    const calculatedRisk = slDistance * pointValue * defaultLotSize;
 
-    console.log('💰 SL CALCULÉ DEPUIS PROFIL (RISQUE ABSOLU):', {
+    console.log('💰 VALIDATION RISQUE PROFIL:', {
       capital: capital.toFixed(2),
-      riskPercent: riskPercent.toFixed(3) + '%',
+      riskPercentConfigured: riskPercent.toFixed(2) + '%',
       maxRiskAmount: maxRiskAmount.toFixed(2),
+      calculatedRisk: calculatedRisk.toFixed(2),
       slDistance: slDistance.toFixed(2),
-      entryMid: entryMid.toFixed(2),
-      slPrice: stopLoss.toFixed(2),
-      direction,
-      placement: direction === DIRECTION.SHORT ? 'AU-DESSUS entry ↑' : 'EN DESSOUS entry ↓',
-      formula: `Risque max = ${maxRiskAmount.toFixed(2)}$ (${riskPercent}% de ${capital}$)`
+      status: calculatedRisk <= maxRiskAmount ? '✓ OK' : '⚠️ DÉPASSE'
     });
-  } else {
-    console.warn('⚠️ PROFIL NON TROUVÉ - SL par défaut utilisé (1.5% du prix)');
-    if (direction === DIRECTION.SHORT) {
-      stopLoss = entryMid * 1.015;
-    } else {
-      stopLoss = entryMid * 0.985;
-    }
   }
 
   if (direction === DIRECTION.LONG && takeProfit2 && takeProfit2 <= entryMid) {
@@ -312,6 +315,39 @@ export const generateSignal = async (market, platform, candles, userAccount = nu
     confidence += 5;
   }
 
+  console.log('🔍 VALIDATION FINALE - VÉRIFICATION COHÉRENCE:', {
+    entry: entryMid.toFixed(2),
+    tp1: takeProfit1.toFixed(2),
+    tp2: takeProfit2 ? takeProfit2.toFixed(2) : 'N/A',
+    sl: stopLoss.toFixed(2),
+    direction,
+    avgTP: ((takeProfit1 + (takeProfit2 || takeProfit1)) / 2).toFixed(2)
+  });
+
+  const finalAvgTP = (takeProfit1 + (takeProfit2 || takeProfit1)) / 2;
+
+  if (finalAvgTP > entryMid && direction !== DIRECTION.LONG) {
+    console.error('🚨 INCOHÉRENCE: TP > Entry mais direction n\'est pas LONG');
+    direction = DIRECTION.LONG;
+    stopLoss = entryMid * 0.985;
+  }
+
+  if (finalAvgTP < entryMid && direction !== DIRECTION.SHORT) {
+    console.error('🚨 INCOHÉRENCE: TP < Entry mais direction n\'est pas SHORT');
+    direction = DIRECTION.SHORT;
+    stopLoss = entryMid * 1.015;
+  }
+
+  if (direction === DIRECTION.LONG && stopLoss >= entryMid) {
+    console.error('🚨 ERREUR CRITIQUE: LONG avec SL au-dessus de entry - CORRECTION');
+    stopLoss = entryMid * 0.985;
+  }
+
+  if (direction === DIRECTION.SHORT && stopLoss <= entryMid) {
+    console.error('🚨 ERREUR CRITIQUE: SHORT avec SL en dessous de entry - CORRECTION');
+    stopLoss = entryMid * 1.015;
+  }
+
   let signalData = {
     entry: entryMid,
     tp1: takeProfit1,
@@ -321,25 +357,24 @@ export const generateSignal = async (market, platform, candles, userAccount = nu
   };
 
   try {
-    const enforcedSignal = enforceDirectionRules(signalData);
+    validateSignalCoherence(signalData);
 
-    if (enforcedSignal.corrected) {
-      console.warn('⚠️ SIGNAL CORRIGÉ AUTOMATIQUEMENT:', {
-        originalSL: stopLoss.toFixed(5),
-        correctedSL: enforcedSignal.stopLoss.toFixed(5),
-        direction: enforcedSignal.direction
-      });
-      stopLoss = enforcedSignal.stopLoss;
-      direction = enforcedSignal.direction;
-    }
-
-    validateSignalCoherence(enforcedSignal);
+    console.log('✅ SIGNAL VALIDÉ - COHÉRENCE CONFIRMÉE:', {
+      direction,
+      entry: entryMid.toFixed(2),
+      sl: stopLoss.toFixed(2),
+      tp1: takeProfit1.toFixed(2),
+      tp2: takeProfit2 ? takeProfit2.toFixed(2) : 'N/A',
+      check: direction === DIRECTION.SHORT
+        ? `SL(${stopLoss.toFixed(2)}) > Entry(${entryMid.toFixed(2)}) > TP(${takeProfit1.toFixed(2)})`
+        : `TP(${takeProfit1.toFixed(2)}) > Entry(${entryMid.toFixed(2)}) > SL(${stopLoss.toFixed(2)})`
+    });
 
   } catch (error) {
     console.error('🚨 VALIDATION STRICTE ÉCHOUÉE:', error.message);
     return {
       signal: null,
-      reason: `Validation échouée: ${error.message}`,
+      reason: `Signal incohérent: ${error.message}`,
       analysis
     };
   }

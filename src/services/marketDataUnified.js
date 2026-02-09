@@ -194,7 +194,7 @@ function generateDeterministicData(symbol, count = 500) {
   let currentPrice = basePrice;
 
   for (let i = count - 1; i >= 0; i--) {
-    const time = new Date(now - i * 60 * 1000).toISOString();
+    const time = new Date(now - i * 60 * 1000).toISOString().split('T')[0];
     const changePercent = (Math.random() - 0.5) * 0.003;
     const volatility = basePrice * 0.001;
 

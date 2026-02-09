@@ -158,3 +158,15 @@ export const detectTrend = (candles) => {
 
   return 'range';
 };
+
+export const calculateIndicators = (candles, rsiPeriod = 14, macdFast = 12, macdSlow = 26, macdSignal = 9) => {
+  const closes = candles.map(c => c.close);
+  const rsi = calculateRSI(closes, rsiPeriod);
+  const macdData = calculateMACD(closes);
+
+  return {
+    rsi: Array.isArray(rsi) ? rsi : [rsi],
+    macd: macdData.macd || [],
+    macdSignal: macdData.signal || []
+  };
+};

@@ -12,6 +12,7 @@ import {
   validateSignalCoherence,
   DIRECTION
 } from './directionValidator';
+import tradingGate from './tradingGate.js';
 
 const lastSignalTime = {};
 const lastSignalData = {};
@@ -75,6 +76,59 @@ export const generateSignal = async (market, platform, candles, userAccount = nu
     };
   }
 
+  if (candles.length < 100) {
+    return {
+      signal: null,
+      reason: 'Données insuffisantes',
+      analysis: null
+    };
+  }
+
+  const currentPrice = candles[candles.length - 1].close;
+  const userId = userAccount?.user_id || userAccount?.id;
+  const accountId = userAccount?.id;
+
+  if (userId && accountId) {
+    const gateResult = await tradingGate.canOpenPosition(
+      userId,
+      accountId,
+      market,
+      candles,
+      currentPrice
+    );
+
+    if (!gateResult.allowed) {
+      const summary = tradingGate.getStatusSummary(gateResult);
+      const blockReason = gateResult.blockReasons[0];
+
+      console.log('🚫 TRADING GATE - SIGNAL BLOQUÉ:', {
+        market,
+        platform,
+        status: summary.status,
+        reason: blockReason.reason,
+        module: blockReason.module,
+        message: blockReason.message
+      });
+
+      return {
+        signal: null,
+        reason: blockReason.message,
+        analysis: {
+          gateStatus: summary,
+          blockReasons: gateResult.blockReasons,
+          marketHealth: gateResult.marketHealth
+        }
+      };
+    }
+
+    console.log('✅ TRADING GATE - AUTORISATION ACCORDÉE:', {
+      market,
+      platform,
+      marketHealthScore: gateResult.marketHealth?.score,
+      marketHealthStatus: gateResult.marketHealth?.status
+    });
+  }
+
   const marketKey = `${market}_${platform}`;
   const now = Date.now();
 
@@ -86,18 +140,9 @@ export const generateSignal = async (market, platform, candles, userAccount = nu
     };
   }
 
-  if (candles.length < 100) {
-    return {
-      signal: null,
-      reason: 'Données insuffisantes',
-      analysis: null
-    };
-  }
-
   const closes = candles.map(c => c.close);
   const highs = candles.map(c => c.high);
   const lows = candles.map(c => c.low);
-  const currentPrice = closes[closes.length - 1];
   const currentCandle = candles[candles.length - 1];
 
   const rsi = calculateRSI(closes);

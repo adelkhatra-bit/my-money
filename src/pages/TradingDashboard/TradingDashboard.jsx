@@ -1166,7 +1166,27 @@ const TradingDashboard = () => {
     }
   };
 
-  const handleConfirmOpportunity = () => {
+  const handleConfirmOpportunity = async () => {
+    if (currentPosition && currentPosition.status === 'OPEN') {
+      audioAlerts.play('error');
+      addActivityLog('❌ ERREUR: Position déjà ouverte - Fermez-la avant d\'en ouvrir une nouvelle', 'error');
+      alert('⚠️ UNE POSITION EST DÉJÀ OUVERTE\n\nVous devez fermer votre position actuelle avant d\'en ouvrir une nouvelle.\n\nRègle: 1 seule position à la fois.');
+      setScanOpportunity(null);
+      return;
+    }
+
+    if (userId && activeAccount) {
+      const existingPosition = await positionService.getOpenPosition(userId, activeAccount.id);
+      if (existingPosition) {
+        audioAlerts.play('error');
+        addActivityLog('❌ ERREUR: Position active détectée dans la base de données', 'error');
+        alert('⚠️ UNE POSITION EST DÉJÀ OUVERTE\n\nUne position active a été trouvée dans la base de données.\n\nRègle: 1 seule position à la fois.');
+        setScanOpportunity(null);
+        setCurrentPosition(existingPosition);
+        return;
+      }
+    }
+
     if (scanOpportunity) {
       audioAlerts.play('signal');
       addActivityLog('✅ Opportunité confirmée - Ouverture en cours', 'success');

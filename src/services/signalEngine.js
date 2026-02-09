@@ -275,25 +275,36 @@ export const generateSignal = async (market, platform, candles, userAccount = nu
   }
 
   if (userAccount && userAccount.capital && userAccount.risk_per_trade_percent) {
-    const slPercent = parseFloat(userAccount.risk_per_trade_percent);
+    const capital = parseFloat(userAccount.capital);
+    const riskPercent = parseFloat(userAccount.risk_per_trade_percent);
+    const maxRiskAmount = capital * (riskPercent / 100);
+
+    const rules = getPlatformRules(platform, market);
+    const pointValue = rules.pointValue || 1;
+    const tickSize = rules.tickSize || 0.01;
+
+    const defaultLotSize = rules.minLotSize || 1;
+    const slDistance = (maxRiskAmount / (pointValue * defaultLotSize)) * tickSize;
 
     if (direction === 'SHORT') {
-      stopLoss = entryMid * (1 + slPercent / 100);
+      stopLoss = entryMid + slDistance;
     } else {
-      stopLoss = entryMid * (1 - slPercent / 100);
+      stopLoss = entryMid - slDistance;
     }
 
-    console.log('💰 SL CALCULÉ DEPUIS PROFIL:', {
-      capital: userAccount.capital,
-      currency: userAccount.currency || 'USD',
-      slPercent: slPercent.toFixed(3),
-      slPrice: stopLoss.toFixed(5),
+    console.log('💰 SL CALCULÉ DEPUIS PROFIL (RISQUE ABSOLU):', {
+      capital: capital.toFixed(2),
+      riskPercent: riskPercent.toFixed(3) + '%',
+      maxRiskAmount: maxRiskAmount.toFixed(2),
+      slDistance: slDistance.toFixed(2),
+      entryMid: entryMid.toFixed(2),
+      slPrice: stopLoss.toFixed(2),
       direction,
-      placement: direction === 'SHORT' ? 'AU-DESSUS entry' : 'EN DESSOUS entry',
-      formula: `SL = ${slPercent}% de l'entry`
+      placement: direction === 'SHORT' ? 'AU-DESSUS entry ↑' : 'EN DESSOUS entry ↓',
+      formula: `Risque max = ${maxRiskAmount.toFixed(2)}$ (${riskPercent}% de ${capital}$)`
     });
   } else {
-    console.warn('⚠️ PROFIL NON TROUVÉ - SL par défaut utilisé');
+    console.warn('⚠️ PROFIL NON TROUVÉ - SL par défaut utilisé (1.5% du prix)');
     if (direction === 'SHORT') {
       stopLoss = entryMid * 1.015;
     } else {

@@ -62,6 +62,7 @@ const TradingDashboard = () => {
   const [potentialEntry, setPotentialEntry] = useState(null);
   const [showActivityLog, setShowActivityLog] = useState(false);
   const [scanOpportunity, setScanOpportunity] = useState(null);
+  const [isLoadingAccount, setIsLoadingAccount] = useState(true);
 
   const addActivityLog = (message, type = 'info') => {
     if (activityLogCallback) {
@@ -174,8 +175,12 @@ const TradingDashboard = () => {
 
   const loadUserData = async () => {
     try {
+      setIsLoadingAccount(true);
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        setIsLoadingAccount(false);
+        return;
+      }
 
       const { data: profile } = await supabase
         .from('user_profiles')
@@ -243,6 +248,8 @@ const TradingDashboard = () => {
       }
     } catch (error) {
       console.error('Error loading user data:', error);
+    } finally {
+      setIsLoadingAccount(false);
     }
   };
 
@@ -375,17 +382,18 @@ const TradingDashboard = () => {
       const { data: positions } = await supabase
         .from('positions')
         .select('*')
-        .eq('user_id', userId);
+        .eq('user_id', userId)
+        .eq('trading_account_id', accountToUse.id);
 
       if (!positions) return;
 
       const openPositions = positions.filter(p => p.status === 'OPEN');
       if (openPositions.length > 0) {
-        console.log('🔄 SUIVI TEMPS RÉEL:', {
-          totalPositions: openPositions.length,
-          comptes: [...new Set(openPositions.map(p => p.trading_account_id))],
-          markets: [...new Set(openPositions.map(p => p.market))],
-          currentAccount: accountToUse?.id
+        console.log('🔄 SUIVI TEMPS RÉEL pour compte actif:', {
+          accountId: accountToUse.id,
+          market: accountToUse.market,
+          platform: accountToUse.platform,
+          totalPositions: openPositions.length
         });
       }
 
@@ -1350,7 +1358,7 @@ const TradingDashboard = () => {
         </div>
       )}
 
-      {!activeAccount && (
+      {!isLoadingAccount && !activeAccount && (
         <div className={styles.warningBanner}>
           Aucun compte de trading actif configuré. <a href="/accounts">Créez un compte</a> pour commencer à recevoir des signaux.
         </div>

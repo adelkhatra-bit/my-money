@@ -134,34 +134,42 @@ export async function getUnifiedMarketData(market, platform, timeframe) {
   const symbol = getSymbolMapping(market, platform);
   const cacheKey = `${platform}_${market}_${symbol}`;
 
-  console.log(`📊 Fetching unified market data:`, {
+  console.log(`📊 [Market Data] Fetching unified market data:`, {
     market,
     platform,
     symbol,
     requestedTimeframe: timeframe,
-    baseTimeframe
+    baseTimeframe,
+    dataSource: 'deterministic'
   });
 
   let candles1m = dataCache[cacheKey];
 
   if (!candles1m || candles1m.length === 0) {
-    console.log(`🔄 No cache found, generating deterministic data for ${symbol}`);
+    console.log(`🔄 [Market Data] No cache found, generating deterministic baseline (1m) for ${symbol}`);
     candles1m = generateDeterministicData(symbol, 500);
     dataCache[cacheKey] = candles1m;
+    console.log(`✅ [Market Data] Baseline generated: ${candles1m.length} candles, lastPrice: ${candles1m[candles1m.length - 1]?.close.toFixed(2)}`);
   }
 
+  const lastPrice1m = candles1m[candles1m.length - 1]?.close;
+
   if (timeframe === '1m') {
-    console.log(`✅ Returning ${candles1m.length} candles (1m base)`);
+    console.log(`✅ [Market Data] Returning ${candles1m.length} candles (1m base), lastPrice: ${lastPrice1m.toFixed(2)}`);
     return candles1m;
   }
 
   const aggregated = aggregateCandles(candles1m, timeframe);
+  const lastPriceAggregated = aggregated[aggregated.length - 1]?.close;
+  const priceMatch = Math.abs(lastPrice1m - lastPriceAggregated) < 0.01;
 
-  console.log(`✅ Aggregated to ${timeframe}: ${aggregated.length} candles from ${candles1m.length} 1m candles`);
-  console.log(`📈 Price consistency check:`, {
-    currentPrice1m: candles1m[candles1m.length - 1]?.close.toFixed(2),
-    currentPriceAggregated: aggregated[aggregated.length - 1]?.close.toFixed(2),
-    match: Math.abs(candles1m[candles1m.length - 1]?.close - aggregated[aggregated.length - 1]?.close) < 0.01
+  console.log(`✅ [Market Data] Aggregated to ${timeframe}: ${aggregated.length} candles from ${candles1m.length} 1m candles`);
+  console.log(`📈 [PRIX COHÉRENT] ${priceMatch ? '✅' : '❌'} Prix identique sur tous timeframes:`, {
+    baseline1m: lastPrice1m.toFixed(2),
+    aggregated: lastPriceAggregated.toFixed(2),
+    difference: Math.abs(lastPrice1m - lastPriceAggregated).toFixed(4),
+    match: priceMatch,
+    rule: 'Timeframe change = granularité SEULEMENT, pas le prix'
   });
 
   return aggregated;

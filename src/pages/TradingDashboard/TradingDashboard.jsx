@@ -8,6 +8,7 @@ import TrailingStopPopup from '../../components/TrailingStopPopup/TrailingStopPo
 import BotActivityLog from '../../components/BotActivityLog/BotActivityLog';
 import ScanOpportunity from '../../components/ScanOpportunity/ScanOpportunity';
 import { fetchHistoricalData, connectToMarketData, getCurrentPrice } from '../../services/marketData';
+import { getUnifiedMarketData } from '../../services/marketDataUnified';
 import { generateSignal } from '../../services/signalEngine';
 import { calculatePositionSize } from '../../services/riskCalculator';
 import { audioAlerts } from '../../services/audioAlerts';
@@ -20,6 +21,7 @@ import { positionManager } from '../../services/positionManager';
 import { positionService } from '../../services/positionService';
 import { userPreferencesService } from '../../services/userPreferences';
 import { validateMarketPlatformCompatibility } from '../../services/marketDataUnified';
+import { getCompatiblePlatforms, getDefaultPlatformForMarket, isPlatformCompatible } from '../../services/platformFilter';
 import { supabase } from '../../lib/supabaseClient';
 import styles from './TradingDashboard.module.css';
 
@@ -80,20 +82,42 @@ const TradingDashboard = () => {
   };
 
   const handleMarketChange = async (newMarket) => {
-    const validation = validateMarketPlatformCompatibility(newMarket, platform);
-    if (!validation.valid) {
-      setCompatibilityError(validation);
-      audioAlerts.errorAlert();
+    console.log('🔄 [Market Change] Changement de marché:', { from: market, to: newMarket, currentPlatform: platform });
+
+    if (!isPlatformCompatible(newMarket, platform)) {
+      const defaultPlatform = getDefaultPlatformForMarket(newMarket);
+      console.log('⚠️ [Market Change] Plateforme incompatible détectée, auto-switch:', {
+        market: newMarket,
+        oldPlatform: platform,
+        newPlatform: defaultPlatform,
+        reason: 'Incompatibilité marché/plateforme'
+      });
+
+      setPlatform(defaultPlatform);
+      setMarket(newMarket);
+      setCompatibilityError(null);
+
+      if (userId) {
+        await userPreferencesService.updateLastSelection(userId, newMarket, defaultPlatform, timeframe);
+        console.log('✅ [Market Change] Marché + Plateforme sauvegardés:', { market: newMarket, platform: defaultPlatform });
+      }
+
+      const compatiblePlatforms = getCompatiblePlatforms(newMarket).map(p => p.value);
+      console.log('📊 [Market Change] Plateformes compatibles pour', newMarket, ':', compatiblePlatforms);
       return;
     }
+
     setCompatibilityError(null);
     setMarket(newMarket);
 
     if (userId) {
-      console.log('💾 Sauvegarde préférences:', { userProfileId: userId, newMarket, platform, timeframe });
+      console.log('💾 [Market Change] Sauvegarde préférences:', { userProfileId: userId, newMarket, platform, timeframe });
       await userPreferencesService.updateLastSelection(userId, newMarket, platform, timeframe);
-      console.log('✅ Marché sauvegardé:', newMarket);
+      console.log('✅ [Market Change] Marché sauvegardé:', newMarket);
     }
+
+    const compatiblePlatforms = getCompatiblePlatforms(newMarket).map(p => p.value);
+    console.log('📊 [Market Change] Plateformes compatibles:', compatiblePlatforms);
   };
 
   const handlePlatformChange = async (newPlatform) => {
@@ -113,11 +137,19 @@ const TradingDashboard = () => {
   };
 
   const handleTimeframeChange = async (newTimeframe) => {
+    console.log('⏱️ [Timeframe Change] Changement de timeframe:', {
+      from: timeframe,
+      to: newTimeframe,
+      market,
+      platform,
+      note: 'Le prix doit rester identique, seule la granularité change'
+    });
+
     setTimeframe(newTimeframe);
 
     if (userId) {
       await userPreferencesService.updateLastSelection(userId, market, platform, newTimeframe, activeAccount?.id);
-      console.log('💾 Timeframe sauvegardé:', newTimeframe);
+      console.log('💾 [Timeframe Change] Timeframe sauvegardé:', newTimeframe);
     }
   };
 
@@ -784,12 +816,26 @@ const TradingDashboard = () => {
   };
 
   const loadHistoricalData = async () => {
+    console.log('📥 [Load Data] Chargement données historiques:', { market, platform, timeframe });
     setScanStatus('Chargement des données...');
-    const data = await fetchHistoricalData(market, platform, timeframe, 500);
-    if (data && data.length > 0) {
-      setCandles(data);
-      setScanStatus('');
-    } else {
+
+    try {
+      const data = await getUnifiedMarketData(market, platform, timeframe);
+      if (data && data.length > 0) {
+        setCandles(data);
+        setScanStatus('');
+        console.log('✅ [Load Data] Données chargées avec succès:', {
+          candleCount: data.length,
+          lastPrice: data[data.length - 1]?.close.toFixed(2),
+          timeframe,
+          dataSource: 'deterministic'
+        });
+      } else {
+        setScanStatus('Erreur de chargement des données');
+        console.error('❌ [Load Data] Aucune donnée retournée');
+      }
+    } catch (error) {
+      console.error('❌ [Load Data] Erreur lors du chargement:', error);
       setScanStatus('Erreur de chargement des données');
     }
   };
@@ -1641,20 +1687,9 @@ const TradingDashboard = () => {
           <div className={styles.controlGroup}>
             <label>Plateforme:</label>
             <select value={platform} onChange={(e) => handlePlatformChange(e.target.value)}>
-              {(market === 'BTC' || market === 'ETH') && (
-                <>
-                  <option value="binance">Binance</option>
-                  <option value="bybit">Bybit</option>
-                  <option value="okx">OKX</option>
-                  <option value="coinbase">Coinbase</option>
-                </>
-              )}
-              {(market === 'NASDAQ' || market === 'GOLD') && (
-                <>
-                  <option value="ftmo">FTMO</option>
-                  <option value="topstep">TopStep</option>
-                </>
-              )}
+              {getCompatiblePlatforms(market).map(p => (
+                <option key={p.value} value={p.value}>{p.label}</option>
+              ))}
             </select>
           </div>
 

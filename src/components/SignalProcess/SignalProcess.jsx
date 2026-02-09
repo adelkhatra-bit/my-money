@@ -62,11 +62,25 @@ const SignalProcess = ({
   }
 
   if (preAlert && !userReady) {
-    const isLong = preAlert.direction === 'LONG';
     const entryMid = preAlert.entry_min && preAlert.entry_max
       ? (preAlert.entry_min + preAlert.entry_max) / 2
       : null;
+
+    const correctDirection = preAlert.take_profit_1 && entryMid
+      ? (preAlert.take_profit_1 > entryMid ? 'LONG' : 'SHORT')
+      : preAlert.direction;
+    const isLong = correctDirection === 'LONG';
     const directionColor = isLong ? '#00e676' : '#ef4444';
+
+    if (preAlert.direction !== correctDirection && preAlert.take_profit_1 && entryMid) {
+      console.warn('⚠️ [SignalProcess/PreAlert] Direction incorrecte corrigée:', {
+        stored: preAlert.direction,
+        correct: correctDirection,
+        entry: entryMid.toFixed(5),
+        tp1: preAlert.take_profit_1.toFixed(5),
+        comparison: preAlert.take_profit_1 > entryMid ? 'TP > Entry → LONG' : 'TP < Entry → SHORT'
+      });
+    }
 
     return (
       <div className={styles.preAlertOverlay}>

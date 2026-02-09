@@ -16,8 +16,20 @@ const ScanOpportunity = ({ opportunity, onConfirm, onDismiss }) => {
     currentPrice
   } = opportunity;
 
-  const isLong = direction === 'LONG';
   const entryZone = (entry_min + entry_max) / 2;
+
+  const correctDirection = take_profit_1 > entryZone ? 'LONG' : 'SHORT';
+  const isLong = correctDirection === 'LONG';
+
+  if (direction !== correctDirection) {
+    console.warn('⚠️ [ScanOpportunity] Direction incorrecte corrigée:', {
+      stored: direction,
+      correct: correctDirection,
+      entry: entryZone.toFixed(5),
+      tp1: take_profit_1.toFixed(5),
+      comparison: take_profit_1 > entryZone ? 'TP > Entry → LONG' : 'TP < Entry → SHORT'
+    });
+  }
 
   const riskReward = Math.abs((take_profit_1 - entryZone) / (entryZone - stop_loss)).toFixed(2);
   const distanceToEntry = currentPrice ? Math.abs(((currentPrice - entryZone) / entryZone) * 100).toFixed(2) : '0.00';

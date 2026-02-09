@@ -53,7 +53,7 @@ const TrailingStopPopup = ({ show, direction, oldSL, newSL, currentPrice, reason
         </div>
 
         <button className={styles.closeBtn} onClick={onClose}>
-          OK, Compris
+          J'ai compris
         </button>
       </div>
     </div>

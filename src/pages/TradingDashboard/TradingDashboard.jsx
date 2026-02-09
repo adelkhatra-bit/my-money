@@ -3,6 +3,7 @@ import TradingChart from '../../components/TradingChart/TradingChart';
 import SignalProcess from '../../components/SignalProcess/SignalProcess';
 import BotStatus from '../../components/BotStatus/BotStatus';
 import PositionHistory from '../../components/PositionHistory/PositionHistory';
+import PositionMonitor from '../../components/PositionMonitor/PositionMonitor';
 import TrailingStopPopup from '../../components/TrailingStopPopup/TrailingStopPopup';
 import BotActivityLog from '../../components/BotActivityLog/BotActivityLog';
 import ScanOpportunity from '../../components/ScanOpportunity/ScanOpportunity';
@@ -15,6 +16,7 @@ import { logAction } from '../../services/actionHistory';
 import { botService } from '../../services/botService';
 import { newsDetection } from '../../services/newsDetection';
 import { calculateTrailingStop, shouldUpdateTrailingStop } from '../../services/trailingStop';
+import { positionManager } from '../../services/positionManager';
 import { supabase } from '../../lib/supabaseClient';
 import styles from './TradingDashboard.module.css';
 
@@ -63,12 +65,100 @@ const TradingDashboard = () => {
   const [showActivityLog, setShowActivityLog] = useState(false);
   const [scanOpportunity, setScanOpportunity] = useState(null);
   const [isLoadingAccount, setIsLoadingAccount] = useState(true);
+  const [livePrice, setLivePrice] = useState(null);
+  const [livePnL, setLivePnL] = useState(0);
+  const [history, setHistory] = useState([]);
 
   const addActivityLog = (message, type = 'info') => {
     if (activityLogCallback) {
       activityLogCallback({ message, type });
     }
   };
+
+  const loadPositionAndHistory = useCallback(async () => {
+    if (!userId) return;
+
+    try {
+      const openPosition = await positionManager.getOpenPosition(userId);
+      if (openPosition) {
+        setCurrentPosition(openPosition);
+
+        console.log('🔄 Position ouverte détectée, démarrage surveillance');
+        positionManager.monitorPosition(userId, openPosition.id);
+      } else {
+        setCurrentPosition(null);
+        setLivePrice(null);
+        setLivePnL(0);
+      }
+
+      const positionsHistory = await positionManager.getPositionHistory(userId, 20);
+      setHistory(positionsHistory);
+
+      const userStats = await positionManager.updateUserStats(userId);
+      if (userStats && activeAccount) {
+        setStats({
+          balance: parseFloat(activeAccount.capital || 0),
+          pnl: userStats.totalPnL,
+          wins: userStats.wins,
+          losses: userStats.losses,
+          winrate: userStats.winrate,
+          totalTrades: userStats.totalTrades
+        });
+      }
+    } catch (error) {
+      console.error('Erreur chargement position/historique:', error);
+    }
+  }, [userId, activeAccount]);
+
+  useEffect(() => {
+    if (userId) {
+      loadPositionAndHistory();
+
+      positionManager.setCallback('onPriceUpdate', ({ position, currentPrice, pnl }) => {
+        setLivePrice(currentPrice);
+        setLivePnL(pnl);
+        setCurrentPosition(position);
+      });
+
+      positionManager.setCallback('onTP1Hit', (position, currentPrice, pnl) => {
+        console.log('🎯 TP1 ATTEINT!', { currentPrice, pnl });
+        setShowTrailingStopPopup(true);
+        setTrailingStopData({
+          direction: position.direction,
+          oldSL: position.stop_loss,
+          newSL: position.entry_price,
+          currentPrice,
+          reason: 'TP1 atteint',
+          gainProtected: pnl.toFixed(2)
+        });
+        audioAlerts.playAlert('signal');
+        addActivityLog(`🎯 TP1 atteint! Protégez vos gains en déplaçant le SL au break-even`, 'success');
+      });
+
+      positionManager.setCallback('onTP2Hit', async (position, currentPrice, pnl) => {
+        console.log('✅ TP2 ATTEINT! Position clôturée', { currentPrice, pnl });
+        audioAlerts.playAlert('signal');
+        addActivityLog(`✅ TP2 atteint! Position fermée avec +${pnl.toFixed(2)} USD`, 'success');
+        await loadPositionAndHistory();
+      });
+
+      positionManager.setCallback('onSLHit', async (position, currentPrice, pnl) => {
+        console.log('❌ SL ATTEINT! Position clôturée', { currentPrice, pnl });
+        audioAlerts.playAlert('pre_alert');
+        addActivityLog(`❌ SL atteint! Position fermée avec ${pnl.toFixed(2)} USD`, 'error');
+        await loadPositionAndHistory();
+      });
+
+      positionManager.setCallback('onPositionClosed', async () => {
+        await loadPositionAndHistory();
+      });
+    }
+
+    return () => {
+      positionManager.stopMonitoring();
+      positionManager.clearCallbacks();
+    };
+  }, [userId]);
 
   useEffect(() => {
     if (market === 'NASDAQ' || market === 'GOLD') {
@@ -269,7 +359,7 @@ const TradingDashboard = () => {
         .select('*')
         .eq('user_id', userId)
         .eq('market', market)
-        .eq('trading_account_id', accountToUse.id)
+        .eq('account_id', accountToUse.id)
         .order('created_at', { ascending: false })
         .limit(20);
 
@@ -281,7 +371,7 @@ const TradingDashboard = () => {
           console.log('📊 Position OUVERTE chargée pour le graphique:', {
             id: openPosition.id,
             market: openPosition.market,
-            account: openPosition.trading_account_id,
+            account: openPosition.account_id,
             entry: openPosition.entry_price,
             sl: openPosition.stop_loss,
             tp1: openPosition.take_profit_1
@@ -318,7 +408,7 @@ const TradingDashboard = () => {
         .from('positions')
         .select('*')
         .eq('user_id', userId)
-        .eq('trading_account_id', accountToUse.id);
+        .eq('account_id', accountToUse.id);
 
       console.log('📊 Stats pour compte:', {
         accountId: accountToUse.id,
@@ -383,7 +473,7 @@ const TradingDashboard = () => {
         .from('positions')
         .select('*')
         .eq('user_id', userId)
-        .eq('trading_account_id', accountToUse.id);
+        .eq('account_id', accountToUse.id);
 
       if (!positions) return;
 
@@ -465,7 +555,7 @@ const TradingDashboard = () => {
                   positionId: position.id,
                   market: position.market,
                   platform: position.platform,
-                  account: position.trading_account_id,
+                  account: position.account_id,
                   ancien: currentPosition.stop_loss,
                   nouveau: newSL
                 });
@@ -594,7 +684,7 @@ const TradingDashboard = () => {
         .from('positions')
         .select('*')
         .eq('user_id', userId)
-        .eq('trading_account_id', accountToUse.id);
+        .eq('account_id', accountToUse.id);
 
       if (allPositions.data) {
         const closedPositions = allPositions.data.filter(p =>
@@ -700,7 +790,7 @@ const TradingDashboard = () => {
         .from('positions')
         .select('*')
         .eq('user_id', profile.id)
-        .eq('trading_account_id', activeAccount.id)
+        .eq('account_id', activeAccount.id)
         .eq('market', market)
         .eq('status', 'OPEN');
 
@@ -906,7 +996,13 @@ const TradingDashboard = () => {
     }
   };
 
-  const handleManualScan = () => {
+  const handleManualScan = async () => {
+    if (currentPosition) {
+      const dir = currentPosition.direction === 'LONG' ? '🟢 LONG' : '🔴 SHORT';
+      alert(`⛔ POSITION ACTIVE\n\n${dir} sur ${currentPosition.market}\nPrix d'entrée: ${parseFloat(currentPosition.entry_price).toFixed(2)}\n\nVous devez fermer cette position avant de pouvoir scanner à nouveau.\n\nLe bot surveille automatiquement votre position en temps réel.`);
+      return;
+    }
+
     if (credits.remaining === 0) {
       alert('❌ Plus de positions disponibles\n\nVous devez fermer une position existante pour libérer des crédits avant de pouvoir scanner à nouveau.');
       return;
@@ -1104,7 +1200,7 @@ const TradingDashboard = () => {
         .from('positions')
         .select('id, market, platform, direction, entry_price')
         .eq('user_id', profile.id)
-        .eq('trading_account_id', activeAccount.id)
+        .eq('account_id', activeAccount.id)
         .eq('market', signal.market)
         .eq('status', 'OPEN')
         .maybeSingle();
@@ -1129,7 +1225,7 @@ const TradingDashboard = () => {
 
       console.log('[Position] Tentative de création:', {
         user_id: profile.id,
-        trading_account_id: activeAccount.id,
+        account_id: activeAccount.id,
         market: signal.market,
         platform: signal.platform,
         direction: signal.direction,
@@ -1144,7 +1240,7 @@ const TradingDashboard = () => {
         .from('positions')
         .insert({
           user_id: profile.id,
-          trading_account_id: activeAccount.id,
+          account_id: activeAccount.id,
           market: signal.market,
           platform: signal.platform,
           direction: signal.direction,
@@ -1224,6 +1320,11 @@ const TradingDashboard = () => {
       setSignalState({ isScanning: false, preAlert: null, signal: null });
       setCurrentSignal(null);
       setBotState('position_locked');
+
+      console.log('🔄 Démarrage surveillance position:', createdPosition.id);
+      positionManager.monitorPosition(profile.id, createdPosition.id);
+      addActivityLog('🔍 Surveillance en temps réel activée', 'info');
+
       await loadUserData();
       await loadStats(profile.id, activeAccount);
       await loadPositionsHistory(profile.id, activeAccount);
@@ -1544,7 +1645,12 @@ const TradingDashboard = () => {
         )}
         </div>
 
-        <PositionHistory positions={positionsHistory} />
+        <PositionMonitor
+          currentPosition={currentPosition}
+          currentPrice={livePrice}
+          pnl={livePnL}
+          history={history}
+        />
       </div>
 
       {scanOpportunity && (

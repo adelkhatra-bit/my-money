@@ -17,6 +17,8 @@ import { botService } from '../../services/botService';
 import { newsDetection } from '../../services/newsDetection';
 import { calculateTrailingStop, shouldUpdateTrailingStop } from '../../services/trailingStop';
 import { positionManager } from '../../services/positionManager';
+import { positionService } from '../../services/positionService';
+import { userPreferencesService } from '../../services/userPreferences';
 import { supabase } from '../../lib/supabaseClient';
 import styles from './TradingDashboard.module.css';
 
@@ -79,11 +81,7 @@ const TradingDashboard = () => {
     setMarket(newMarket);
 
     if (userId) {
-      await supabase
-        .from('user_settings')
-        .update({ last_market: newMarket })
-        .eq('user_id', userId);
-
+      await userPreferencesService.updateLastSelection(userId, newMarket, platform, timeframe);
       console.log('💾 Marché sauvegardé:', newMarket);
     }
   };
@@ -92,11 +90,7 @@ const TradingDashboard = () => {
     setPlatform(newPlatform);
 
     if (userId) {
-      await supabase
-        .from('user_settings')
-        .update({ last_platform: newPlatform })
-        .eq('user_id', userId);
-
+      await userPreferencesService.updateLastSelection(userId, market, newPlatform, timeframe);
       console.log('💾 Plateforme sauvegardée:', newPlatform);
     }
   };
@@ -328,45 +322,64 @@ const TradingDashboard = () => {
         if (settingsData) {
           audioAlerts.setEnabled(settingsData.audio_enabled);
           audioAlerts.setVolume(parseFloat(settingsData.audio_volume));
+        }
 
-          if (settingsData.last_market) {
-            setMarket(settingsData.last_market);
-          }
-          if (settingsData.last_platform) {
-            setPlatform(settingsData.last_platform);
-          }
+        const userPrefs = await userPreferencesService.getPreferences(profile.id);
+
+        if (userPrefs) {
+          if (userPrefs.last_market) setMarket(userPrefs.last_market);
+          if (userPrefs.last_platform) setPlatform(userPrefs.last_platform);
+          if (userPrefs.last_timeframe) setTimeframe(userPrefs.last_timeframe);
 
           console.log('📍 Préférences chargées:', {
-            market: settingsData.last_market || 'BTC (défaut)',
-            platform: settingsData.last_platform || 'binance (défaut)'
+            market: userPrefs.last_market || 'BTC',
+            platform: userPrefs.last_platform || 'binance',
+            timeframe: userPrefs.last_timeframe || '5m',
+            account_id: userPrefs.active_account_id
           });
-        }
 
-        const { data: accounts, error: accountError} = await supabase
-          .from('trading_accounts')
-          .select('*')
-          .eq('user_id', profile.id)
-          .eq('is_active', true)
-          .eq('market', market.toUpperCase())
-          .ilike('platform', platform);
+          if (userPrefs.active_account_id && userPrefs.trading_accounts) {
+            console.log('✅ Compte actif restauré depuis préférences:', userPrefs.trading_accounts);
+            setActiveAccount(userPrefs.trading_accounts);
+            loadStats(profile.id, userPrefs.trading_accounts);
+            loadPositionsHistory(profile.id, userPrefs.trading_accounts);
+          } else {
+            const { data: accounts } = await supabase
+              .from('trading_accounts')
+              .select('*')
+              .eq('user_id', profile.id)
+              .eq('is_active', true)
+              .eq('market', market.toUpperCase())
+              .ilike('platform', platform);
 
-        if (accountError) {
-          console.error('Erreur chargement comptes:', accountError);
-        }
-
-        console.log('📊 Comptes trouvés pour', market, '/', platform, ':', accounts?.length || 0, accounts);
-
-        if (accounts && accounts.length > 0) {
-          const activeAcc = accounts[0];
-          console.log('✅ Compte actif sélectionné:', activeAcc);
-          setActiveAccount(activeAcc);
-          loadStats(profile.id, activeAcc);
-          loadPositionsHistory(profile.id, activeAcc);
+            if (accounts && accounts.length > 0) {
+              const activeAcc = accounts[0];
+              console.log('✅ Compte actif auto-sélectionné:', activeAcc);
+              setActiveAccount(activeAcc);
+              await userPreferencesService.setActiveAccount(profile.id, activeAcc.id, market, platform);
+              loadStats(profile.id, activeAcc);
+              loadPositionsHistory(profile.id, activeAcc);
+            } else {
+              console.warn('⚠️ Aucun compte actif trouvé');
+              setActiveAccount(null);
+            }
+          }
         } else {
-          console.warn('⚠️ Aucun compte actif trouvé pour', market, '/', platform);
-          setActiveAccount(null);
-          loadStats(profile.id, null);
-          loadPositionsHistory(profile.id, null);
+          const { data: accounts } = await supabase
+            .from('trading_accounts')
+            .select('*')
+            .eq('user_id', profile.id)
+            .eq('is_active', true)
+            .eq('market', market.toUpperCase())
+            .ilike('platform', platform);
+
+          if (accounts && accounts.length > 0) {
+            const activeAcc = accounts[0];
+            setActiveAccount(activeAcc);
+            await userPreferencesService.setActiveAccount(profile.id, activeAcc.id, market, platform);
+            loadStats(profile.id, activeAcc);
+            loadPositionsHistory(profile.id, activeAcc);
+          }
         }
 
         const { data: creditData } = await supabase
@@ -454,60 +467,31 @@ const TradingDashboard = () => {
         return;
       }
 
-      const { data: positions } = await supabase
-        .from('positions')
-        .select('*')
-        .eq('user_id', userId)
-        .eq('account_id', accountToUse.id);
+      const accountStats = await positionService.getAccountStats(userId, accountToUse.id);
 
-      console.log('📊 Stats pour compte:', {
+      const realizedPnL = parseFloat(accountStats.realized_pnl || 0);
+      const currentBalance = parseFloat(accountToUse.capital || 0) + realizedPnL;
+
+      console.log('📊 Stats compte (via RPC):', {
         accountId: accountToUse.id,
         accountName: accountToUse.name,
-        capital: accountToUse.capital,
-        totalPositions: positions?.length || 0
+        capital: parseFloat(accountToUse.capital || 0).toFixed(2),
+        realizedPnL: realizedPnL.toFixed(2),
+        currentBalance: currentBalance.toFixed(2),
+        totalTrades: accountStats.total_trades,
+        wins: accountStats.wins,
+        losses: accountStats.losses,
+        winrate: accountStats.winrate
       });
 
-      if (positions) {
-        const closedPositions = positions.filter(p =>
-          p.status === 'TP1_HIT' || p.status === 'TP2_HIT' || p.status === 'SL_HIT'
-        );
-        const openPositions = positions.filter(p => p.status === 'OPEN');
-
-        const wins = closedPositions.filter(p => p.status === 'TP1_HIT' || p.status === 'TP2_HIT').length;
-        const losses = closedPositions.filter(p => p.status === 'SL_HIT').length;
-
-        const closedPnl = closedPositions.reduce((sum, p) => sum + (parseFloat(p.pnl) || 0), 0);
-        const totalPnl = closedPnl;
-
-        console.log('📈 Statistiques calculées:', {
-          closed: closedPositions.length,
-          open: openPositions.length,
-          wins,
-          losses,
-          closedPnl: closedPnl.toFixed(2),
-          openPnl: openPnl.toFixed(2),
-          totalPnl: totalPnl.toFixed(2),
-          balance: (accountToUse.capital + totalPnl).toFixed(2)
-        });
-
-        setStats({
-          balance: accountToUse.capital + totalPnl,
-          pnl: totalPnl,
-          wins,
-          losses,
-          winrate: closedPositions.length > 0 ? (wins / closedPositions.length) * 100 : 0,
-          totalTrades: positions.length
-        });
-      } else {
-        setStats({
-          balance: accountToUse.capital,
-          pnl: 0,
-          wins: 0,
-          losses: 0,
-          winrate: 0,
-          totalTrades: 0
-        });
-      }
+      setStats({
+        balance: currentBalance,
+        pnl: realizedPnL,
+        wins: parseInt(accountStats.wins || 0),
+        losses: parseInt(accountStats.losses || 0),
+        winrate: parseFloat(accountStats.winrate || 0),
+        totalTrades: parseInt(accountStats.total_trades || 0)
+      });
     } catch (error) {
       console.error('Error loading stats:', error);
     }

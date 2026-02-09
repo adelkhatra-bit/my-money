@@ -19,17 +19,17 @@ export async function calculateRealStats(accountId) {
     .from('positions')
     .select('*')
     .eq('account_id', accountId)
-    .eq('status', 'closed')
+    .in('status', ['CLOSED', 'STOPPED'])
     .order('closed_at', { ascending: true });
 
   const { data: openPosition } = await supabase
     .from('positions')
     .select('*')
     .eq('account_id', accountId)
-    .eq('status', 'open')
+    .eq('status', 'OPEN')
     .maybeSingle();
 
-  const initialBalance = parseFloat(account.initial_balance);
+  const initialBalance = parseFloat(account.initial_balance || account.capital || 0);
   let realizedPnL = 0;
   let totalGains = 0;
   let totalLosses = 0;
@@ -94,7 +94,7 @@ export async function updatePositionPnL(positionId, currentPrice) {
     .eq('id', positionId)
     .maybeSingle();
 
-  if (!position || position.status !== 'open') {
+  if (!position || position.status !== 'OPEN') {
     return null;
   }
 
@@ -132,7 +132,7 @@ export async function closePosition(positionId, exitPrice, closeReason = 'TP') {
     throw new Error('Position non trouvée');
   }
 
-  if (position.status !== 'open') {
+  if (position.status !== 'OPEN') {
     throw new Error('Position déjà fermée');
   }
 
@@ -149,13 +149,15 @@ export async function closePosition(positionId, exitPrice, closeReason = 'TP') {
   }
 
   const now = new Date().toISOString();
+  const finalStatus = closeReason === 'SL' ? 'STOPPED' : 'CLOSED';
 
   await supabase
     .from('positions')
     .update({
-      status: 'closed',
+      status: finalStatus,
       exit_price: exitPrice.toFixed(2),
       realized_pnl: realizedPnL.toFixed(2),
+      unrealized_pnl: 0,
       close_reason: closeReason,
       closed_at: now,
       updated_at: now
@@ -165,6 +167,7 @@ export async function closePosition(positionId, exitPrice, closeReason = 'TP') {
   await supabase.from('position_history').insert({
     position_id: positionId,
     account_id: position.account_id,
+    user_id: position.user_id,
     market: position.market,
     platform: position.platform,
     direction,
@@ -173,10 +176,15 @@ export async function closePosition(positionId, exitPrice, closeReason = 'TP') {
     position_size: size,
     realized_pnl: realizedPnL,
     close_reason: closeReason,
+    tp1_reached: position.tp1_reached || false,
+    be_moved: position.be_moved || false,
+    entry_time: position.entry_time || position.created_at,
     closed_at: now
   });
 
   await calculateRealStats(position.account_id);
+
+  console.log(`✅ Position ${positionId} fermée: ${closeReason}, PnL: ${realizedPnL.toFixed(2)}`);
 
   return {
     positionId,
@@ -211,7 +219,7 @@ export async function getDailyStats(accountId) {
     .from('positions')
     .select('*')
     .eq('account_id', accountId)
-    .eq('status', 'closed')
+    .in('status', ['CLOSED', 'STOPPED'])
     .gte('closed_at', todayISO);
 
   let dailyPnL = 0;
@@ -233,4 +241,15 @@ export async function getDailyStats(accountId) {
     dailyWins,
     dailyWinrate: dailyTrades > 0 ? (dailyWins / dailyTrades) * 100 : 0
   };
+}
+
+export async function cleanupGhostPositions() {
+  try {
+    await supabase.rpc('cleanup_ghost_positions');
+    console.log('✅ Nettoyage positions fantômes effectué');
+    return { success: true };
+  } catch (error) {
+    console.error('❌ Erreur nettoyage positions fantômes:', error);
+    return { success: false, error };
+  }
 }

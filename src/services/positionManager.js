@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabaseClient';
 import { getCurrentPrice } from './marketData';
+import { updatePositionPnL, closePosition } from './accountingService';
 
 class PositionManager {
   constructor() {
@@ -86,6 +87,9 @@ class PositionManager {
         }
 
         const pnl = this.calculatePnL(position, currentPrice);
+
+        await updatePositionPnL(position.id, currentPrice);
+
         const entryPrice = parseFloat(position.entry_price);
         const stopLoss = parseFloat(position.stop_loss);
         const tp1 = parseFloat(position.take_profit_1);
@@ -115,13 +119,17 @@ class PositionManager {
         if (position.direction === 'LONG') {
           if (currentPrice >= tp2 * (1 - TP2_THRESHOLD)) {
             console.log('✅ TP2 ATTEINT (LONG)');
-            await this.closePosition(position, 'TP2', currentPrice, pnl);
+            await closePosition(position.id, currentPrice, 'TP2');
+            this.stopMonitoring();
             if (this.callbacks.onTP2Hit) {
               this.callbacks.onTP2Hit(position, currentPrice, pnl);
             }
+            if (this.callbacks.onPositionClosed) {
+              this.callbacks.onPositionClosed(position, 'TP2', currentPrice, pnl);
+            }
           } else if (
             currentPrice >= tp1 * (1 - TP1_THRESHOLD) &&
-            position.tp1_hit !== true
+            position.tp1_reached !== true
           ) {
             console.log('🎯 TP1 ATTEINT (LONG)');
             await this.markTP1Hit(position.id);
@@ -130,21 +138,29 @@ class PositionManager {
             }
           } else if (currentPrice <= stopLoss * (1 + SL_THRESHOLD)) {
             console.log('❌ SL ATTEINT (LONG)');
-            await this.closePosition(position, 'SL', currentPrice, pnl);
+            await closePosition(position.id, currentPrice, 'SL');
+            this.stopMonitoring();
             if (this.callbacks.onSLHit) {
               this.callbacks.onSLHit(position, currentPrice, pnl);
+            }
+            if (this.callbacks.onPositionClosed) {
+              this.callbacks.onPositionClosed(position, 'SL', currentPrice, pnl);
             }
           }
         } else {
           if (currentPrice <= tp2 * (1 + TP2_THRESHOLD)) {
             console.log('✅ TP2 ATTEINT (SHORT)');
-            await this.closePosition(position, 'TP2', currentPrice, pnl);
+            await closePosition(position.id, currentPrice, 'TP2');
+            this.stopMonitoring();
             if (this.callbacks.onTP2Hit) {
               this.callbacks.onTP2Hit(position, currentPrice, pnl);
             }
+            if (this.callbacks.onPositionClosed) {
+              this.callbacks.onPositionClosed(position, 'TP2', currentPrice, pnl);
+            }
           } else if (
             currentPrice <= tp1 * (1 + TP1_THRESHOLD) &&
-            position.tp1_hit !== true
+            position.tp1_reached !== true
           ) {
             console.log('🎯 TP1 ATTEINT (SHORT)');
             await this.markTP1Hit(position.id);
@@ -153,9 +169,13 @@ class PositionManager {
             }
           } else if (currentPrice >= stopLoss * (1 - SL_THRESHOLD)) {
             console.log('❌ SL ATTEINT (SHORT)');
-            await this.closePosition(position, 'SL', currentPrice, pnl);
+            await closePosition(position.id, currentPrice, 'SL');
+            this.stopMonitoring();
             if (this.callbacks.onSLHit) {
               this.callbacks.onSLHit(position, currentPrice, pnl);
+            }
+            if (this.callbacks.onPositionClosed) {
+              this.callbacks.onPositionClosed(position, 'SL', currentPrice, pnl);
             }
           }
         }
@@ -184,8 +204,9 @@ class PositionManager {
       const { error } = await supabase
         .from('positions')
         .update({
-          tp1_hit: true,
-          stop_loss: newSL
+          tp1_reached: true,
+          stop_loss: newSL,
+          updated_at: new Date().toISOString()
         })
         .eq('id', positionId);
 
@@ -202,84 +223,13 @@ class PositionManager {
     }
   }
 
-  async closePosition(position, closeReason, exitPrice, pnl) {
-    try {
-      const { error } = await supabase
-        .from('positions')
-        .update({
-          status: 'CLOSED',
-          exit_price: exitPrice,
-          close_reason: closeReason,
-          pnl: pnl,
-          closed_at: new Date().toISOString()
-        })
-        .eq('id', position.id);
-
-      if (error) throw error;
-
-      console.log(`✅ Position fermée: ${closeReason}, PnL: ${pnl.toFixed(2)}`);
-
-      await this.updateUserStats(position.user_id);
-
-      this.stopMonitoring();
-
-      if (this.callbacks.onPositionClosed) {
-        this.callbacks.onPositionClosed(position, closeReason, exitPrice, pnl);
-      }
-
-      return true;
-    } catch (error) {
-      console.error('Erreur fermeture position:', error);
-      return false;
-    }
-  }
-
-  async updateUserStats(userId) {
-    try {
-      const { data: positions, error } = await supabase
-        .from('positions')
-        .select('pnl, status')
-        .eq('user_id', userId)
-        .eq('status', 'CLOSED');
-
-      if (error) throw error;
-
-      if (!positions || positions.length === 0) return;
-
-      const wins = positions.filter(p => parseFloat(p.pnl) > 0).length;
-      const losses = positions.filter(p => parseFloat(p.pnl) <= 0).length;
-      const totalPnL = positions.reduce((sum, p) => sum + parseFloat(p.pnl || 0), 0);
-      const totalTrades = positions.length;
-      const winrate = totalTrades > 0 ? ((wins / totalTrades) * 100).toFixed(2) : 0;
-
-      console.log('📊 Stats mises à jour:', {
-        wins,
-        losses,
-        totalPnL: totalPnL.toFixed(2),
-        totalTrades,
-        winrate: `${winrate}%`
-      });
-
-      return {
-        wins,
-        losses,
-        totalPnL,
-        totalTrades,
-        winrate: parseFloat(winrate)
-      };
-    } catch (error) {
-      console.error('Erreur mise à jour stats:', error);
-      return null;
-    }
-  }
-
   async getPositionHistory(userId, limit = 50) {
     try {
       const { data, error } = await supabase
         .from('positions')
         .select('*')
         .eq('user_id', userId)
-        .eq('status', 'CLOSED')
+        .in('status', ['CLOSED', 'STOPPED'])
         .order('closed_at', { ascending: false })
         .limit(limit);
 

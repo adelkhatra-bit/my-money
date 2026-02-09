@@ -50,9 +50,9 @@ class PositionService {
         .select('*')
         .eq('user_id', userId)
         .eq('account_id', accountId)
-        .in('status', ['CLOSED', 'STOPPED', 'TP1_HIT', 'TP2_HIT', 'SL_HIT'])
-        .not('exit_time', 'is', null)
-        .order('exit_time', { ascending: false, nullsFirst: false })
+        .in('status', ['CLOSED', 'STOPPED'])
+        .not('closed_at', 'is', null)
+        .order('closed_at', { ascending: false })
         .limit(limit);
 
       if (error) throw error;
@@ -180,7 +180,8 @@ class PositionService {
           stop_loss: newSL,
           be_moved: true,
           tp1_reached: true,
-          tp1_reached_at: new Date().toISOString()
+          tp1_reached_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
         })
         .eq('id', positionId);
 
@@ -221,21 +222,44 @@ class PositionService {
       }
 
       const pnlPercent = ((realizedPnL / (entryPrice * quantity)) * 100);
+      const finalStatus = closeReason === 'SL' ? 'STOPPED' : 'CLOSED';
+      const now = new Date().toISOString();
 
       const { error } = await supabase
         .from('positions')
         .update({
-          status: closeReason === 'STOP_LOSS' ? 'STOPPED' : 'CLOSED',
+          status: finalStatus,
           exit_price: exitPrice,
-          exit_time: new Date().toISOString(),
+          exit_time: now,
           realized_pnl: realizedPnL,
+          unrealized_pnl: 0,
           pnl: realizedPnL,
           pnl_percent: pnlPercent,
-          close_reason: closeReason
+          close_reason: closeReason,
+          closed_at: now,
+          updated_at: now
         })
         .eq('id', positionId);
 
       if (error) throw error;
+
+      await supabase.from('position_history').insert({
+        position_id: positionId,
+        account_id: position.account_id,
+        user_id: position.user_id,
+        market: position.market,
+        platform: position.platform,
+        direction: position.direction,
+        entry_price: entryPrice,
+        exit_price: exitPrice,
+        position_size: quantity,
+        realized_pnl: realizedPnL,
+        close_reason: closeReason,
+        tp1_reached: position.tp1_reached || false,
+        be_moved: position.be_moved || false,
+        entry_time: position.entry_time || position.created_at,
+        closed_at: now
+      });
 
       console.log('[Position] ✅ Position clôturée:', {
         positionId,

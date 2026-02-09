@@ -897,6 +897,14 @@ const TradingDashboard = () => {
   };
 
   const handleManualScan = () => {
+    if (credits.remaining === 0) {
+      alert('❌ Plus de positions disponibles\n\nVous devez fermer une position existante pour libérer des crédits avant de pouvoir scanner à nouveau.');
+      return;
+    }
+    if (signalState.isScanning) {
+      alert('⏳ Un scan est déjà en cours\n\nVeuillez patienter que l\'analyse en cours se termine.');
+      return;
+    }
     if (!marketStatus.open) {
       alert(`Le marché ${market} est actuellement fermé. ${marketStatus.message}`);
       return;
@@ -906,6 +914,11 @@ const TradingDashboard = () => {
   };
 
   const handleTestSignal = () => {
+    if (credits.remaining === 0) {
+      alert('❌ Plus de positions disponibles\n\nVous devez fermer une position existante pour libérer des crédits avant de pouvoir utiliser cette fonctionnalité.');
+      return;
+    }
+
     const currentPrice = candles && candles.length > 0 ? candles[candles.length - 1].close : 1.0850;
     const isLong = Math.random() > 0.5;
     const entryZone = currentPrice * (isLong ? 1.001 : 0.999);
@@ -923,7 +936,7 @@ const TradingDashboard = () => {
       id: `test-${Date.now()}`
     };
 
-    addActivityLog('🎮 DÉMO: Pré-alerte - Zone d\'entrée détectée', 'warning');
+    addActivityLog('📊 APERÇU: Pré-alerte - Zone d\'entrée détectée', 'warning');
     addActivityLog(`📍 Direction: ${testSignal.direction}`, 'info');
 
     setSignalState({
@@ -945,12 +958,12 @@ const TradingDashboard = () => {
       signal: null
     });
     setBotState('pre_alert');
-    setScanStatus(`⚠️ DÉMO: Position ${testSignal.direction} en approche`);
+    setScanStatus(`⚠️ APERÇU: Position ${testSignal.direction} en approche`);
 
     audioAlerts.playAlert('pre_alert');
 
     setTimeout(() => {
-      addActivityLog('🎮 DÉMO: Signal confirmé', 'signal');
+      addActivityLog('🎮 APERÇU: Signal confirmé', 'signal');
       addActivityLog(`🎯 Entrée: ${testSignal.entry_min.toFixed(5)} - ${testSignal.entry_max.toFixed(5)}`, 'signal');
       addActivityLog(`🛡️ Stop Loss: ${testSignal.stop_loss.toFixed(5)}`, 'info');
       addActivityLog(`🎯 Take Profit 1: ${testSignal.take_profit_1.toFixed(5)}`, 'info');
@@ -981,7 +994,7 @@ const TradingDashboard = () => {
       });
       setCurrentSignal(testSignal);
       setBotState('signal_ready');
-      setScanStatus(`✅ DÉMO: Signal ${testSignal.direction} prêt - Clique OK pour ouvrir`);
+      setScanStatus(`✅ APERÇU: Signal ${testSignal.direction} prêt - Clique OK pour ouvrir`);
 
       audioAlerts.playAlert('signal');
     }, 5000);
@@ -1402,7 +1415,7 @@ const TradingDashboard = () => {
           <button
             className={styles.scanBtn}
             onClick={handleManualScan}
-            disabled={scanning || !marketStatus.open}
+            disabled={scanning || !marketStatus.open || credits.remaining === 0 || signalState.isScanning}
           >
             {scanning ? '🔍 Analyse...' : '🎯 Scan Manuel'}
           </button>
@@ -1410,9 +1423,10 @@ const TradingDashboard = () => {
           <button
             className={styles.testBtn}
             onClick={handleTestSignal}
-            title="Voir une démonstration du système"
+            disabled={credits.remaining === 0}
+            title="Aperçu du système de signal"
           >
-            🎮 DÉMO Signal
+            📊 Aperçu
           </button>
         </div>
 

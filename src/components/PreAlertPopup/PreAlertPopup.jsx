@@ -6,7 +6,7 @@ const PreAlertPopup = ({ market, platform, expectedDirection, timeRemaining, onC
   const [countdown, setCountdown] = useState(timeRemaining || 300);
 
   useEffect(() => {
-    audioAlerts.play('prealert');
+    audioAlerts.playAlert('pre_alert');
   }, []);
 
   useEffect(() => {

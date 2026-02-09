@@ -1,11 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { audioAlerts } from '../../services/audioAlerts';
 import styles from './SignalPopup.module.css';
 
 const SignalPopup = ({ signal, riskCalc, onAccept, onReject, onDismiss }) => {
   const [timeRemaining, setTimeRemaining] = useState(0);
   const [isExpired, setIsExpired] = useState(false);
+
+  useEffect(() => {
+    audioAlerts.playAlert('signal');
+  }, []);
 
   useEffect(() => {
     if (!signal) return;

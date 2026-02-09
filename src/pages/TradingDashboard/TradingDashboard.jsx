@@ -1254,6 +1254,23 @@ const TradingDashboard = () => {
   }, [autoMode, marketStatus.open]);
 
   const handleAcceptSignal = async (signal) => {
+    const entryPrice = (signal.entry_min + signal.entry_max) / 2;
+    const avgTP = (signal.take_profit_1 + (signal.take_profit_2 || signal.take_profit_1)) / 2;
+
+    if ((avgTP > entryPrice && signal.stop_loss >= entryPrice) ||
+        (avgTP < entryPrice && signal.stop_loss <= entryPrice)) {
+      const errorMsg = avgTP > entryPrice
+        ? `❌ INCOHÉRENCE DÉTECTÉE - SIGNAL REJETÉ\n\nDirection LONG détectée (TP > Entry) mais Stop Loss mal placé.\n\nRègle: LONG → SL DOIT être EN DESSOUS de l'entrée\n\nEntry: ${entryPrice.toFixed(2)}\nSL actuel: ${signal.stop_loss.toFixed(2)} (ERREUR: au-dessus)\nTP1: ${signal.take_profit_1.toFixed(2)}`
+        : `❌ INCOHÉRENCE DÉTECTÉE - SIGNAL REJETÉ\n\nDirection SHORT détectée (TP < Entry) mais Stop Loss mal placé.\n\nRègle: SHORT → SL DOIT être AU-DESSUS de l'entrée\n\nEntry: ${entryPrice.toFixed(2)}\nSL actuel: ${signal.stop_loss.toFixed(2)} (ERREUR: en dessous)\nTP1: ${signal.take_profit_1.toFixed(2)}`;
+
+      alert(errorMsg);
+      audioAlerts.errorAlert();
+      addActivityLog('❌ Signal incohérent rejeté automatiquement', 'error');
+      setSignalState({ isScanning: false, preAlert: null, signal: null });
+      setCurrentSignal(null);
+      return;
+    }
+
     addActivityLog(`✅ Signal accepté - Ouverture position ${signal.direction}`, 'position');
 
     if (!activeAccount) {

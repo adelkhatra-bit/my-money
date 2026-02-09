@@ -22,44 +22,33 @@ export const isMarketOpen = (market) => {
   }
 
   if (market === 'NASDAQ' || market === 'GOLD') {
-    if (day === 0 || day === 6) {
-      console.log(`[Market Hours] ${market} fermé - Week-end (jour ${day})`);
+    if (day === 6) {
+      console.log(`[Market Hours] ${market} fermé - Samedi`);
       return false;
     }
 
-    if (day === 5 && hours >= 16) {
-      console.log(`[Market Hours] ${market} fermé - Vendredi après 16h00 ET`);
+    if (day === 5 && hours >= 17) {
+      console.log(`[Market Hours] ${market} fermé - Vendredi après 17h00 ET`);
       return false;
     }
 
-    if (day === 1 && (hours < 9 || (hours === 9 && minutes < 30))) {
-      console.log(`[Market Hours] ${market} fermé - Lundi avant 9h30 ET`);
+    if (day === 0 && hours < 18) {
+      console.log(`[Market Hours] ${market} fermé - Dimanche avant 18h00 ET`);
       return false;
     }
 
-    if (market === 'NASDAQ') {
-      const marketOpenMinutes = 9 * 60 + 30;
-      const marketCloseMinutes = 16 * 60;
-      const isOpen = totalMinutes >= marketOpenMinutes && totalMinutes < marketCloseMinutes;
-
-      if (!isOpen) {
-        console.log(`[Market Hours] NASDAQ fermé - Hors horaires (${hours}:${minutes.toString().padStart(2, '0')} ET, ouvert 9:30-16:00 ET)`);
-      }
-
-      return isOpen;
+    if (day === 1 && hours < 18 && totalMinutes >= 17 * 60 && totalMinutes < 18 * 60) {
+      console.log(`[Market Hours] ${market} fermé - Pause quotidienne 17h00-18h00 ET`);
+      return false;
     }
 
-    if (market === 'GOLD') {
-      const marketOpenMinutes = 8 * 60;
-      const marketCloseMinutes = 17 * 60;
-      const isOpen = totalMinutes >= marketOpenMinutes && totalMinutes < marketCloseMinutes;
-
-      if (!isOpen) {
-        console.log(`[Market Hours] GOLD fermé - Hors horaires (${hours}:${minutes.toString().padStart(2, '0')} ET, ouvert 8:00-17:00 ET)`);
-      }
-
-      return isOpen;
+    if (day >= 2 && day <= 5 && totalMinutes >= 17 * 60 && totalMinutes < 18 * 60) {
+      console.log(`[Market Hours] ${market} fermé - Pause quotidienne 17h00-18h00 ET`);
+      return false;
     }
+
+    console.log(`[Market Hours] ${market} ouvert - Futures trading 24h (dimanche 18h00 ET - vendredi 17h00 ET)`);
+    return true;
   }
 
   console.log(`[Market Hours] ${market} - Marché non reconnu ou fermé`);
@@ -80,39 +69,22 @@ export const getMarketStatus = (market) => {
   const day = estDate.getDay();
   const hours = estDate.getHours();
   const minutes = estDate.getMinutes();
+  const totalMinutes = hours * 60 + minutes;
 
-  if (day === 0) {
-    return { open: false, message: 'Marché fermé (dimanche) - Réouverture lundi 9h30 ET' };
+  if (day === 0 && hours < 18) {
+    return { open: false, message: 'Marché fermé (dimanche) - Ouverture à 18h00 ET (minuit heure FR)' };
   }
 
   if (day === 6) {
-    return { open: false, message: 'Marché fermé (samedi) - Réouverture lundi 9h30 ET' };
+    return { open: false, message: 'Marché fermé (samedi) - Réouverture dimanche 18h00 ET (minuit heure FR)' };
   }
 
-  if (day === 5 && hours >= 16) {
-    return { open: false, message: 'Marché fermé (vendredi soir) - Réouverture lundi 9h30 ET' };
+  if (day === 5 && hours >= 17) {
+    return { open: false, message: 'Marché fermé (vendredi soir) - Réouverture dimanche 18h00 ET (minuit heure FR)' };
   }
 
-  if (day === 1 && (hours < 9 || (hours === 9 && minutes < 30))) {
-    return { open: false, message: 'Marché fermé (lundi matin) - Ouverture à 9h30 ET' };
-  }
-
-  if (market === 'NASDAQ') {
-    if (hours < 9 || (hours === 9 && minutes < 30)) {
-      return { open: false, message: 'NASDAQ fermé - Ouverture à 9h30 ET' };
-    }
-    if (hours >= 16) {
-      return { open: false, message: 'NASDAQ fermé - Session terminée. Réouverture demain 9h30 ET' };
-    }
-  }
-
-  if (market === 'GOLD') {
-    if (hours < 8) {
-      return { open: false, message: 'GOLD fermé - Ouverture à 8h00 ET' };
-    }
-    if (hours >= 17) {
-      return { open: false, message: 'GOLD fermé - Session terminée. Réouverture demain 8h00 ET' };
-    }
+  if (totalMinutes >= 17 * 60 && totalMinutes < 18 * 60) {
+    return { open: false, message: 'Pause quotidienne (17h00-18h00 ET) - Réouverture dans quelques minutes' };
   }
 
   return { open: false, message: 'Marché fermé (hors horaires de trading)' };
@@ -127,16 +99,20 @@ export const getNextMarketOpen = (market) => {
   const estDate = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
   const day = estDate.getDay();
   const hours = estDate.getHours();
+  const totalMinutes = hours * 60 + estDate.getMinutes();
 
   if (day === 6) {
-    return 'Lundi 9h30 ET';
+    return 'Dimanche 18h00 ET (minuit heure FR)';
   }
-  if (day === 0) {
-    return 'Lundi 9h30 ET';
+  if (day === 0 && hours < 18) {
+    return 'Dimanche 18h00 ET (minuit heure FR)';
   }
-  if (day === 5 && hours >= 16) {
-    return 'Lundi 9h30 ET';
+  if (day === 5 && hours >= 17) {
+    return 'Dimanche 18h00 ET (minuit heure FR)';
+  }
+  if (totalMinutes >= 17 * 60 && totalMinutes < 18 * 60) {
+    return "Aujourd'hui 18h00 ET";
   }
 
-  return 'Demain 9h30 ET';
+  return 'Marché ouvert presque 24h/24';
 };

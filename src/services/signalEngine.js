@@ -7,6 +7,11 @@ import {
 } from './indicators';
 import { getCurrentPrice } from './marketData';
 import { isMarketOpen } from './marketHours';
+import {
+  enforceDirectionRules,
+  validateSignalCoherence,
+  DIRECTION
+} from './directionValidator';
 
 const lastSignalTime = {};
 const lastSignalData = {};
@@ -80,11 +85,11 @@ export const generateSignal = async (market, platform, candles, userAccount = nu
   }
 
   if (rsi >= 30 && rsi <= 70) {
-    const tempDirection = rsi < 50 ? 'LONG' : 'SHORT';
+    const tempDirection = rsi < 50 ? DIRECTION.LONG : DIRECTION.SHORT;
     const tempEntry = currentPrice;
-    const tempTP1 = tempDirection === 'LONG' ? currentPrice * 1.02 : currentPrice * 0.98;
-    const tempTP2 = tempDirection === 'LONG' ? currentPrice * 1.04 : currentPrice * 0.96;
-    const tempSL = tempDirection === 'LONG' ? currentPrice * 0.985 : currentPrice * 1.015;
+    const tempTP1 = tempDirection === DIRECTION.LONG ? currentPrice * 1.02 : currentPrice * 0.98;
+    const tempTP2 = tempDirection === DIRECTION.LONG ? currentPrice * 1.04 : currentPrice * 0.96;
+    const tempSL = tempDirection === DIRECTION.LONG ? currentPrice * 0.985 : currentPrice * 1.015;
 
     analysis.potentialEntry = {
       direction: tempDirection,
@@ -200,26 +205,30 @@ export const generateSignal = async (market, platform, candles, userAccount = nu
     }
   }
 
-  if (takeProfit1 < entryMid) {
-    direction = 'SHORT';
-    console.log('📉 DIRECTION DÉTECTÉE: SHORT (TP1 < Entry)', {
+  const avgTP = (takeProfit1 + (takeProfit2 || takeProfit1)) / 2;
+
+  if (avgTP > entryMid) {
+    direction = DIRECTION.LONG;
+    console.log('📈 DIRECTION DÉTECTÉE: LONG (TP moyen > Entry)', {
       entry: entryMid.toFixed(5),
       tp1: takeProfit1.toFixed(5),
-      difference: (entryMid - takeProfit1).toFixed(5)
+      tp2: takeProfit2 ? takeProfit2.toFixed(5) : 'N/A',
+      avgTP: avgTP.toFixed(5)
     });
-  } else if (takeProfit1 > entryMid) {
-    direction = 'LONG';
-    console.log('📈 DIRECTION DÉTECTÉE: LONG (TP1 > Entry)', {
+  } else if (avgTP < entryMid) {
+    direction = DIRECTION.SHORT;
+    console.log('📉 DIRECTION DÉTECTÉE: SHORT (TP moyen < Entry)', {
       entry: entryMid.toFixed(5),
       tp1: takeProfit1.toFixed(5),
-      difference: (takeProfit1 - entryMid).toFixed(5)
+      tp2: takeProfit2 ? takeProfit2.toFixed(5) : 'N/A',
+      avgTP: avgTP.toFixed(5)
     });
   } else {
     console.error('🚨 INCOHÉRENCE - Signal rejeté', {
       entry: entryMid.toFixed(5),
       tp1: takeProfit1.toFixed(5),
       tp2: takeProfit2 ? takeProfit2.toFixed(5) : 'N/A',
-      problem: 'TP1 égal à entry (impossible)'
+      problem: 'TP moyen égal à entry (impossible)'
     });
     return {
       signal: null,
@@ -228,7 +237,7 @@ export const generateSignal = async (market, platform, candles, userAccount = nu
     };
   }
 
-  if (trend === 'downtrend' && direction === 'LONG') {
+  if (trend === 'downtrend' && direction === DIRECTION.LONG) {
     console.warn('🔴 FILTRAGE STRICT: Marché baissier détecté, LONG INTERDIT');
     return {
       signal: null,
@@ -237,39 +246,11 @@ export const generateSignal = async (market, platform, candles, userAccount = nu
     };
   }
 
-  if (trend === 'uptrend' && direction === 'SHORT') {
+  if (trend === 'uptrend' && direction === DIRECTION.SHORT) {
     console.warn('🟢 FILTRAGE STRICT: Marché haussier détecté, SHORT INTERDIT');
     return {
       signal: null,
       reason: 'Marché en tendance haussière - Seuls les LONG sont autorisés',
-      analysis
-    };
-  }
-
-  if (direction === 'LONG' && stopLoss >= entryMid) {
-    console.error('🚨 INCOHÉRENCE CRITIQUE: LONG avec SL au-dessus de l\'entry!', {
-      direction,
-      entry: entryMid.toFixed(5),
-      sl: stopLoss.toFixed(5),
-      problem: 'SL LONG doit être EN DESSOUS de l\'entry'
-    });
-    return {
-      signal: null,
-      reason: 'Erreur technique: SL mal placé pour LONG',
-      analysis
-    };
-  }
-
-  if (direction === 'SHORT' && stopLoss <= entryMid) {
-    console.error('🚨 INCOHÉRENCE CRITIQUE: SHORT avec SL en dessous de l\'entry!', {
-      direction,
-      entry: entryMid.toFixed(5),
-      sl: stopLoss.toFixed(5),
-      problem: 'SL SHORT doit être AU-DESSUS de l\'entry'
-    });
-    return {
-      signal: null,
-      reason: 'Erreur technique: SL mal placé pour SHORT',
       analysis
     };
   }
@@ -286,7 +267,7 @@ export const generateSignal = async (market, platform, candles, userAccount = nu
     const defaultLotSize = rules.minLotSize || 1;
     const slDistance = (maxRiskAmount / (pointValue * defaultLotSize)) * tickSize;
 
-    if (direction === 'SHORT') {
+    if (direction === DIRECTION.SHORT) {
       stopLoss = entryMid + slDistance;
     } else {
       stopLoss = entryMid - slDistance;
@@ -300,40 +281,68 @@ export const generateSignal = async (market, platform, candles, userAccount = nu
       entryMid: entryMid.toFixed(2),
       slPrice: stopLoss.toFixed(2),
       direction,
-      placement: direction === 'SHORT' ? 'AU-DESSUS entry ↑' : 'EN DESSOUS entry ↓',
+      placement: direction === DIRECTION.SHORT ? 'AU-DESSUS entry ↑' : 'EN DESSOUS entry ↓',
       formula: `Risque max = ${maxRiskAmount.toFixed(2)}$ (${riskPercent}% de ${capital}$)`
     });
   } else {
     console.warn('⚠️ PROFIL NON TROUVÉ - SL par défaut utilisé (1.5% du prix)');
-    if (direction === 'SHORT') {
+    if (direction === DIRECTION.SHORT) {
       stopLoss = entryMid * 1.015;
     } else {
       stopLoss = entryMid * 0.985;
     }
   }
 
-  if (direction === 'LONG' && takeProfit2 && takeProfit2 <= entryMid) {
+  if (direction === DIRECTION.LONG && takeProfit2 && takeProfit2 <= entryMid) {
     console.warn('TP2 LONG incohérent - désactivé');
     takeProfit2 = null;
-  } else if (direction === 'SHORT' && takeProfit2 && takeProfit2 >= entryMid) {
+  } else if (direction === DIRECTION.SHORT && takeProfit2 && takeProfit2 >= entryMid) {
     console.warn('TP2 SHORT incohérent - désactivé');
     takeProfit2 = null;
   }
 
-  if (macd.crossover === (direction === 'LONG' ? 'bullish' : 'bearish')) {
-    reasons.push(`Croisement MACD ${direction === 'LONG' ? 'haussier' : 'baissier'}`);
+  if (macd.crossover === (direction === DIRECTION.LONG ? 'bullish' : 'bearish')) {
+    reasons.push(`Croisement MACD ${direction === DIRECTION.LONG ? 'haussier' : 'baissier'}`);
     confidence += 15;
-  } else if (macd.trend === (direction === 'LONG' ? 'bullish' : 'bearish')) {
-    reasons.push(`MACD ${direction === 'LONG' ? 'haussier' : 'baissier'}`);
+  } else if (macd.trend === (direction === DIRECTION.LONG ? 'bullish' : 'bearish')) {
+    reasons.push(`MACD ${direction === DIRECTION.LONG ? 'haussier' : 'baissier'}`);
     confidence += 10;
   } else {
     reasons.push('Configuration MACD neutre');
     confidence += 5;
   }
 
-  const isValid = direction === 'LONG'
-    ? (takeProfit1 > entryMid && stopLoss < entryMid)
-    : (takeProfit1 < entryMid && stopLoss > entryMid);
+  let signalData = {
+    entry: entryMid,
+    tp1: takeProfit1,
+    tp2: takeProfit2 || takeProfit1,
+    stopLoss,
+    direction
+  };
+
+  try {
+    const enforcedSignal = enforceDirectionRules(signalData);
+
+    if (enforcedSignal.corrected) {
+      console.warn('⚠️ SIGNAL CORRIGÉ AUTOMATIQUEMENT:', {
+        originalSL: stopLoss.toFixed(5),
+        correctedSL: enforcedSignal.stopLoss.toFixed(5),
+        direction: enforcedSignal.direction
+      });
+      stopLoss = enforcedSignal.stopLoss;
+      direction = enforcedSignal.direction;
+    }
+
+    validateSignalCoherence(enforcedSignal);
+
+  } catch (error) {
+    console.error('🚨 VALIDATION STRICTE ÉCHOUÉE:', error.message);
+    return {
+      signal: null,
+      reason: `Validation échouée: ${error.message}`,
+      analysis
+    };
+  }
 
   analysis.potentialEntry = {
     direction,
@@ -343,21 +352,6 @@ export const generateSignal = async (market, platform, candles, userAccount = nu
     take_profit_1: takeProfit1,
     take_profit_2: takeProfit2
   };
-
-  if (!isValid) {
-    console.error('🚨 VALIDATION FINALE ÉCHOUÉE', {
-      direction,
-      entry: entryMid.toFixed(5),
-      stopLoss: stopLoss.toFixed(5),
-      tp1: takeProfit1.toFixed(5),
-      tp2: takeProfit2 ? takeProfit2.toFixed(5) : 'N/A'
-    });
-    return {
-      signal: null,
-      reason: 'Validation finale échouée',
-      analysis
-    };
-  }
 
   if (confidence < 75) {
     console.warn(`⚠️ CONFIANCE INSUFFISANTE: ${confidence}% (minimum requis: 75%)`);
@@ -385,18 +379,18 @@ export const generateSignal = async (market, platform, candles, userAccount = nu
   const validUntil = new Date(now + validityMinutes * 60 * 1000);
   const signalId = `${marketKey}_${now}_${direction}`;
 
-  console.log('✅ SIGNAL VALIDÉ (v3.0.0):', {
+  console.log('✅ SIGNAL VALIDÉ (v3.1.0 - Direction stricte):', {
     direction,
-    currentPrice: currentPrice.toFixed(5),
-    entry: entryMid.toFixed(5),
-    stopLoss: stopLoss.toFixed(5),
-    tp1: takeProfit1.toFixed(5),
-    tp2: takeProfit2 ? takeProfit2.toFixed(5) : 'N/A',
-    validation: direction === 'SHORT'
-      ? `SL(${stopLoss.toFixed(5)}) > Entry(${entryMid.toFixed(5)}) > TP1(${takeProfit1.toFixed(5)}) ✓`
-      : `TP1(${takeProfit1.toFixed(5)}) > Entry(${entryMid.toFixed(5)}) > SL(${stopLoss.toFixed(5)}) ✓`,
-    slPosition: direction === 'SHORT' ? 'AU-DESSUS ↑' : 'EN DESSOUS ↓',
-    tpPosition: direction === 'SHORT' ? 'EN DESSOUS ↓' : 'AU-DESSUS ↑'
+    currentPrice: currentPrice.toFixed(2),
+    entry: entryMid.toFixed(2),
+    stopLoss: stopLoss.toFixed(2),
+    tp1: takeProfit1.toFixed(2),
+    tp2: takeProfit2 ? takeProfit2.toFixed(2) : 'N/A',
+    validation: direction === DIRECTION.SHORT
+      ? `SL(${stopLoss.toFixed(2)}) > Entry(${entryMid.toFixed(2)}) > TP1(${takeProfit1.toFixed(2)}) ✓`
+      : `TP1(${takeProfit1.toFixed(2)}) > Entry(${entryMid.toFixed(2)}) > SL(${stopLoss.toFixed(2)}) ✓`,
+    slPosition: direction === DIRECTION.SHORT ? 'AU-DESSUS ↑' : 'EN DESSOUS ↓',
+    tpPosition: direction === DIRECTION.SHORT ? 'EN DESSOUS ↓' : 'AU-DESSUS ↑'
   });
 
   return {

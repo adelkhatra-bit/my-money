@@ -852,7 +852,7 @@ const TradingDashboard = () => {
       id: `test-${Date.now()}`
     };
 
-    addActivityLog('🧪 TEST: Pré-alerte - Zone d\'entrée détectée', 'warning');
+    addActivityLog('🎮 DÉMO: Pré-alerte - Zone d\'entrée détectée', 'warning');
     addActivityLog(`📍 Direction: ${testSignal.direction}`, 'info');
 
     setSignalState({
@@ -874,12 +874,12 @@ const TradingDashboard = () => {
       signal: null
     });
     setBotState('pre_alert');
-    setScanStatus(`⚠️ TEST: Position ${testSignal.direction} en approche`);
+    setScanStatus(`⚠️ DÉMO: Position ${testSignal.direction} en approche`);
 
     audioAlerts.playAlert('pre_alert');
 
     setTimeout(() => {
-      addActivityLog('🧪 TEST: Signal confirmé', 'signal');
+      addActivityLog('🎮 DÉMO: Signal confirmé', 'signal');
       addActivityLog(`🎯 Entrée: ${testSignal.entry_min.toFixed(5)} - ${testSignal.entry_max.toFixed(5)}`, 'signal');
       addActivityLog(`🛡️ Stop Loss: ${testSignal.stop_loss.toFixed(5)}`, 'info');
       addActivityLog(`🎯 Take Profit 1: ${testSignal.take_profit_1.toFixed(5)}`, 'info');
@@ -910,7 +910,7 @@ const TradingDashboard = () => {
       });
       setCurrentSignal(testSignal);
       setBotState('signal_ready');
-      setScanStatus(`✅ TEST: Signal ${testSignal.direction} prêt - Clique OK pour ouvrir`);
+      setScanStatus(`✅ DÉMO: Signal ${testSignal.direction} prêt - Clique OK pour ouvrir`);
 
       audioAlerts.playAlert('signal');
     }, 5000);
@@ -1339,9 +1339,9 @@ const TradingDashboard = () => {
           <button
             className={styles.testBtn}
             onClick={handleTestSignal}
-            title="Tester le système avec un signal de démonstration"
+            title="Voir une démonstration du système"
           >
-            🧪 TEST Signal
+            🎮 DÉMO Signal
           </button>
         </div>
 

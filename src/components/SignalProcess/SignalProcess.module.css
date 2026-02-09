@@ -25,9 +25,9 @@
 .signalBox,
 .expiredBox {
   background: white;
-  border-radius: 16px;
-  padding: 2rem;
-  max-width: 500px;
+  border-radius: 12px;
+  padding: 1.5rem;
+  max-width: 420px;
   width: 90%;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
   animation: slideUp 0.4s ease;
@@ -311,7 +311,7 @@
 }
 
 .pulsingIcon {
-  font-size: 3.5rem;
+  font-size: 2.8rem;
   animation: pulse 1.5s ease-in-out infinite;
   margin-bottom: 0.5rem;
 }
@@ -328,7 +328,7 @@
 }
 
 .alertTitle {
-  font-size: 1.8rem;
+  font-size: 1.5rem;
   font-weight: 800;
   color: #1e293b;
   margin: 0;
@@ -345,7 +345,7 @@
 }
 
 .directionLabel {
-  font-size: 1.3rem;
+  font-size: 1.1rem;
   font-weight: 800;
   margin-bottom: 0.5rem;
 }
@@ -380,8 +380,8 @@
 
 .priceSchema {
   background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-  border-radius: 12px;
-  padding: 1.5rem;
+  border-radius: 10px;
+  padding: 1rem;
   margin-bottom: 1.5rem;
   border: 2px solid #cbd5e1;
 }

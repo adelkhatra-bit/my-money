@@ -189,6 +189,29 @@
   transform: none;
 }
 
+.testBtn {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  border: none;
+  color: #fff;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 11px;
+  transition: all 0.2s;
+  white-space: nowrap;
+  min-height: 32px;
+  min-width: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.testBtn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
 .marketStatus {
   display: flex;
   align-items: center;

@@ -4,12 +4,23 @@ import styles from './ScanOpportunity.module.css';
 const ScanOpportunity = ({ opportunity, onConfirm, onDismiss }) => {
   if (!opportunity) return null;
 
-  const { direction, entry_min, entry_max, stop_loss, take_profit_1, take_profit_2, market, confidence } = opportunity;
+  const {
+    direction,
+    entry_min,
+    entry_max,
+    stop_loss,
+    take_profit_1,
+    take_profit_2,
+    market,
+    confidence = 75,
+    currentPrice
+  } = opportunity;
+
   const isLong = direction === 'LONG';
   const entryZone = (entry_min + entry_max) / 2;
 
   const riskReward = Math.abs((take_profit_1 - entryZone) / (entryZone - stop_loss)).toFixed(2);
-  const distanceToEntry = Math.abs(((opportunity.currentPrice - entryZone) / entryZone) * 100).toFixed(2);
+  const distanceToEntry = currentPrice ? Math.abs(((currentPrice - entryZone) / entryZone) * 100).toFixed(2) : '0.00';
 
   return (
     <div className={styles.container}>

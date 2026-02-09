@@ -669,21 +669,6 @@ const TradingDashboard = () => {
 
       if (result.signal) {
         setPotentialEntry(null);
-        addActivityLog(`🎯 SIGNAL DÉTECTÉ! Direction: ${result.signal.direction}`, 'signal');
-        addActivityLog(`📍 Prix d'entrée: ${result.signal.entry_min} - ${result.signal.entry_max}`, 'signal');
-        addActivityLog(`🛡️ Stop Loss: ${result.signal.stop_loss}`, 'info');
-        addActivityLog(`🎯 Take Profit 1: ${result.signal.take_profit_1}`, 'info');
-        addActivityLog(`🎯 Take Profit 2: ${result.signal.take_profit_2}`, 'info');
-        addActivityLog(`💪 Confiance: ${result.signal.confidence}%`, result.signal.confidence >= 75 ? 'success' : 'warning');
-
-        const currentPrice = candles && candles.length > 0 ? candles[candles.length - 1].close : null;
-
-        setScanOpportunity({
-          ...result.signal,
-          currentPrice,
-          market,
-          platform
-        });
 
         if (result.signal.market !== market) {
           console.error(`Signal market mismatch: expected ${market}, got ${result.signal.market}`);
@@ -703,6 +688,15 @@ const TradingDashboard = () => {
           return;
         }
 
+        addActivityLog(`🎯 SIGNAL DÉTECTÉ! Direction: ${result.signal.direction}`, 'signal');
+        addActivityLog(`📍 Prix d'entrée: ${result.signal.entry_min} - ${result.signal.entry_max}`, 'signal');
+        addActivityLog(`🛡️ Stop Loss: ${result.signal.stop_loss}`, 'info');
+        addActivityLog(`🎯 Take Profit 1: ${result.signal.take_profit_1}`, 'info');
+        if (result.signal.take_profit_2) {
+          addActivityLog(`🎯 Take Profit 2: ${result.signal.take_profit_2}`, 'info');
+        }
+        addActivityLog(`💪 Confiance: ${result.signal.confidence}%`, result.signal.confidence >= 75 ? 'success' : 'warning');
+
         if (userId) {
           await logAction(userId, 'SIGNAL_GENERATED', market, platform, {
             direction: result.signal.direction,
@@ -715,84 +709,42 @@ const TradingDashboard = () => {
           });
         }
 
-        setShowAnalysis(false);
-        setSignalState({
-          isScanning: false,
-          preAlert: {
-            market,
-            platform,
-            direction: result.signal.direction,
-            currentPrice,
-            entry_min: result.signal.entry_min,
-            entry_max: result.signal.entry_max,
-            stop_loss: result.signal.stop_loss,
-            take_profit_1: result.signal.take_profit_1,
-            take_profit_2: result.signal.take_profit_2,
-            supports: supports || [],
-            resistances: resistances || []
-          },
-          signal: null
-        });
-        setBotState('pre_alert');
-        setScanStatus(`⚠️ PRÉPARE-TOI : Une position ${result.signal.direction === 'LONG' ? 'ACHAT' : 'VENTE'} est en préparation sur ${market}`);
+        const currentPrice = candles && candles.length > 0 ? candles[candles.length - 1].close : null;
 
-        audioAlerts.playAlert('pre_alert');
+        if (activeAccount) {
+          const calc = calculatePositionSize(activeAccount, result.signal);
+          setRiskCalc(calc);
+        }
+
+        setScanOpportunity({
+          ...result.signal,
+          currentPrice,
+          market,
+          platform,
+          id: result.signal.id || `signal-${Date.now()}`
+        });
+
+        setShowAnalysis(false);
+        setSignalState({ isScanning: false, preAlert: null, signal: null });
+        setBotState('signal_ready');
+        setScanStatus(`🎯 Opportunité ${result.signal.direction} détectée sur ${market}`);
+
+        audioAlerts.play('signal');
 
         if ('Notification' in window && Notification.permission === 'granted' && document.hidden) {
-          new Notification('🤖 Signal de Trading Détecté!', {
-            body: `Une position ${result.signal.direction === 'LONG' ? 'ACHAT' : 'VENTE'} est en préparation sur ${market}`,
+          new Notification('🎯 Opportunité Détectée!', {
+            body: `Position ${result.signal.direction} disponible sur ${market}`,
             icon: '/logo192.png',
             tag: 'trading-signal',
             requireInteraction: true
           });
         }
-
-        setTimeout(() => {
-          if (activeAccount) {
-            const calc = calculatePositionSize(activeAccount, result.signal);
-            setRiskCalc(calc);
-          }
-
-          const signalWithTimer = {
-            ...result.signal,
-            validUntil: Date.now() + 120000,
-            entryMin: result.signal.entry_min,
-            entryMax: result.signal.entry_max,
-            sl: result.signal.stop_loss,
-            tp1: result.signal.take_profit_1,
-            tp2: result.signal.take_profit_2,
-            lots: calculatePositionSize(activeAccount, result.signal)?.positionSize || 1,
-            risk: activeAccount?.risk_per_trade_percent || 1,
-            confidence: result.signal.confidence || 75
-          };
-
-          audioAlerts.playAlert('signal');
-
-          setShowAnalysis(true);
-          setSignalState({
-            isScanning: false,
-            preAlert: null,
-            signal: signalWithTimer
-          });
-          setCurrentSignal(result.signal);
-          setBotState('signal_ready');
-          audioAlerts.signalAlert();
-          setScanStatus(`✅ POSITION ${result.signal.direction === 'LONG' ? 'ACHAT' : 'VENTE'} CONFIRMÉE - Clique OK pour accepter`);
-
-          if ('Notification' in window && Notification.permission === 'granted' && document.hidden) {
-            new Notification('✅ Signal Confirmé!', {
-              body: `Position ${result.signal.direction === 'LONG' ? 'ACHAT (LONG)' : 'VENTE (SHORT)'} confirmée sur ${market}. Reviens vite pour accepter!`,
-              icon: '/logo192.png',
-              tag: 'trading-signal-confirmed',
-              requireInteraction: true
-            });
-          }
-        }, 5000);
       } else {
         const reason = result.reason || 'Aucune opportunité détectée pour le moment';
         setScanStatus(`ℹ️ ${reason}`);
         addActivityLog(`ℹ️ ${reason}`, 'info');
         setSignalState({ isScanning: false, preAlert: null, signal: null });
+        setScanOpportunity(null);
         setBotState('idle');
 
         setTimeout(() => {
@@ -809,6 +761,7 @@ const TradingDashboard = () => {
       setScanStatus('❌ Erreur lors de l\'analyse du marché');
       addActivityLog(`❌ Erreur: ${error.message || 'Erreur inconnue'}`, 'error');
       setSignalState({ isScanning: false, preAlert: null, signal: null });
+      setScanOpportunity(null);
       setBotState('idle');
     } finally {
       setScanning(false);
@@ -823,6 +776,41 @@ const TradingDashboard = () => {
     }
     addActivityLog('🖱️ Scan manuel déclenché par l\'utilisateur', 'scan');
     performScan();
+  };
+
+  const handleTestSignal = () => {
+    const currentPrice = candles && candles.length > 0 ? candles[candles.length - 1].close : 1.0850;
+    const isLong = Math.random() > 0.5;
+    const entryZone = currentPrice * (isLong ? 1.001 : 0.999);
+
+    const testSignal = {
+      direction: isLong ? 'LONG' : 'SHORT',
+      entry_min: entryZone * 0.9995,
+      entry_max: entryZone * 1.0005,
+      stop_loss: isLong ? entryZone * 0.995 : entryZone * 1.005,
+      take_profit_1: isLong ? entryZone * 1.01 : entryZone * 0.99,
+      take_profit_2: isLong ? entryZone * 1.02 : entryZone * 0.98,
+      market: market,
+      platform: platform,
+      confidence: 75 + Math.floor(Math.random() * 20),
+      id: `test-${Date.now()}`
+    };
+
+    addActivityLog('🧪 TEST: Signal de démonstration généré', 'signal');
+
+    if (activeAccount) {
+      const calc = calculatePositionSize(activeAccount, testSignal);
+      setRiskCalc(calc);
+    }
+
+    setScanOpportunity({
+      ...testSignal,
+      currentPrice
+    });
+
+    audioAlerts.play('signal');
+    setBotState('signal_ready');
+    setScanStatus(`🧪 TEST: Opportunité ${testSignal.direction} de démonstration`);
   };
 
   const handleToggleBot = () => {
@@ -1243,6 +1231,14 @@ const TradingDashboard = () => {
             disabled={scanning || !marketStatus.open}
           >
             {scanning ? '🔍 Analyse...' : '🎯 Scan Manuel'}
+          </button>
+
+          <button
+            className={styles.testBtn}
+            onClick={handleTestSignal}
+            title="Tester le système avec un signal de démonstration"
+          >
+            🧪 TEST Signal
           </button>
         </div>
 

@@ -81,8 +81,9 @@ const TradingDashboard = () => {
     setMarket(newMarket);
 
     if (userId) {
+      console.log('💾 Sauvegarde préférences:', { userProfileId: userId, newMarket, platform, timeframe });
       await userPreferencesService.updateLastSelection(userId, newMarket, platform, timeframe);
-      console.log('💾 Marché sauvegardé:', newMarket);
+      console.log('✅ Marché sauvegardé:', newMarket);
     }
   };
 

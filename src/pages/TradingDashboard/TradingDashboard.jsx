@@ -201,13 +201,15 @@ const TradingDashboard = () => {
           .from('trading_accounts')
           .select('*')
           .eq('user_id', profile.id)
-          .eq('is_active', true);
+          .eq('is_active', true)
+          .eq('market', market)
+          .eq('platform', platform);
 
         if (accountError) {
           console.error('Erreur chargement comptes:', accountError);
         }
 
-        console.log('📊 Comptes trouvés:', accounts?.length || 0, accounts);
+        console.log('📊 Comptes trouvés pour', market, '/', platform, ':', accounts?.length || 0, accounts);
 
         if (accounts && accounts.length > 0) {
           const activeAcc = accounts[0];
@@ -216,7 +218,7 @@ const TradingDashboard = () => {
           loadStats(profile.id, activeAcc);
           loadPositionsHistory(profile.id, activeAcc);
         } else {
-          console.warn('⚠️ Aucun compte actif trouvé');
+          console.warn('⚠️ Aucun compte actif trouvé pour', market, '/', platform);
           setActiveAccount(null);
           loadStats(profile.id, null);
           loadPositionsHistory(profile.id, null);

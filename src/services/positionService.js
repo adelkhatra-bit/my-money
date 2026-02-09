@@ -50,8 +50,9 @@ class PositionService {
         .select('*')
         .eq('user_id', userId)
         .eq('account_id', accountId)
-        .in('status', ['CLOSED', 'STOPPED'])
-        .order('exit_time', { ascending: false })
+        .in('status', ['CLOSED', 'STOPPED', 'TP1_HIT', 'TP2_HIT', 'SL_HIT'])
+        .not('exit_time', 'is', null)
+        .order('exit_time', { ascending: false, nullsFirst: false })
         .limit(limit);
 
       if (error) throw error;

@@ -75,6 +75,32 @@ const TradingDashboard = () => {
     }
   };
 
+  const handleMarketChange = async (newMarket) => {
+    setMarket(newMarket);
+
+    if (userId) {
+      await supabase
+        .from('user_settings')
+        .update({ last_market: newMarket })
+        .eq('user_id', userId);
+
+      console.log('💾 Marché sauvegardé:', newMarket);
+    }
+  };
+
+  const handlePlatformChange = async (newPlatform) => {
+    setPlatform(newPlatform);
+
+    if (userId) {
+      await supabase
+        .from('user_settings')
+        .update({ last_platform: newPlatform })
+        .eq('user_id', userId);
+
+      console.log('💾 Plateforme sauvegardée:', newPlatform);
+    }
+  };
+
   const loadPositionAndHistory = useCallback(async () => {
     if (!userId) return;
 
@@ -122,17 +148,22 @@ const TradingDashboard = () => {
 
       positionManager.setCallback('onTP1Hit', (position, currentPrice, pnl) => {
         console.log('🎯 TP1 ATTEINT!', { currentPrice, pnl });
+
+        const entryPrice = parseFloat(position.entry_price);
+        const oldSL = parseFloat(position.stop_loss);
+        const newSL = entryPrice * (position.direction === 'LONG' ? 1.001 : 0.999);
+
         setShowTrailingStopPopup(true);
         setTrailingStopData({
           direction: position.direction,
-          oldSL: position.stop_loss,
-          newSL: position.entry_price,
+          oldSL: oldSL,
+          newSL: newSL,
           currentPrice,
-          reason: 'TP1 atteint',
+          reason: 'TP1 atteint - SL automatiquement déplacé au break-even',
           gainProtected: pnl.toFixed(2)
         });
-        audioAlerts.playAlert('signal');
-        addActivityLog(`🎯 TP1 atteint! Protégez vos gains en déplaçant le SL au break-even`, 'success');
+        audioAlerts.playAlert('warning');
+        addActivityLog(`🎯 TP1 atteint! SL déplacé automatiquement au break-even (${newSL.toFixed(2)})`, 'success');
       });
 
       positionManager.setCallback('onTP2Hit', async (position, currentPrice, pnl) => {
@@ -290,6 +321,18 @@ const TradingDashboard = () => {
         if (settingsData) {
           audioAlerts.setEnabled(settingsData.audio_enabled);
           audioAlerts.setVolume(parseFloat(settingsData.audio_volume));
+
+          if (settingsData.last_market) {
+            setMarket(settingsData.last_market);
+          }
+          if (settingsData.last_platform) {
+            setPlatform(settingsData.last_platform);
+          }
+
+          console.log('📍 Préférences chargées:', {
+            market: settingsData.last_market || 'BTC (défaut)',
+            platform: settingsData.last_platform || 'binance (défaut)'
+          });
         }
 
         const { data: accounts, error: accountError } = await supabase
@@ -1461,7 +1504,31 @@ const TradingDashboard = () => {
 
       {!isLoadingAccount && !activeAccount && (
         <div className={styles.warningBanner}>
-          Aucun compte de trading actif configuré. <a href="/accounts">Créez un compte</a> pour commencer à recevoir des signaux.
+          ⚠️ AUCUN COMPTE DE TRADING ACTIF pour {market} sur {platform}
+          <br />
+          <a href="/accounts" style={{ color: '#00ff88', fontWeight: 'bold', textDecoration: 'underline' }}>
+            Créez un compte de trading
+          </a> avec ce marché et cette plateforme pour commencer.
+        </div>
+      )}
+
+      {!isLoadingAccount && activeAccount && (
+        <div className={styles.accountBanner}>
+          <div className={styles.accountInfo}>
+            <span className={styles.accountLabel}>📊 COMPTE ACTIF:</span>
+            <span className={styles.accountName}>{activeAccount.name || `${activeAccount.market} - ${activeAccount.platform}`}</span>
+            <span className={styles.accountDetails}>
+              💰 Capital: {activeAccount.currency === 'EUR' ? '€' : '$'}{parseFloat(activeAccount.capital).toFixed(2)}
+            </span>
+            <span className={styles.accountDetails}>
+              🎯 Risque: {parseFloat(activeAccount.risk_per_trade_percent).toFixed(2)}%
+            </span>
+            {activeAccount.max_daily_loss && (
+              <span className={styles.accountDetails}>
+                ⚠️ Max Perte/Jour: {activeAccount.currency === 'EUR' ? '€' : '$'}{parseFloat(activeAccount.max_daily_loss).toFixed(2)}
+              </span>
+            )}
+          </div>
         </div>
       )}
 
@@ -1474,7 +1541,7 @@ const TradingDashboard = () => {
         <div className={styles.controls}>
           <div className={styles.controlGroup}>
             <label>Marché:</label>
-            <select value={market} onChange={(e) => setMarket(e.target.value)}>
+            <select value={market} onChange={(e) => handleMarketChange(e.target.value)}>
               <option value="BTC">BTC</option>
               <option value="ETH">ETH</option>
               <option value="NASDAQ">NASDAQ</option>
@@ -1484,7 +1551,7 @@ const TradingDashboard = () => {
 
           <div className={styles.controlGroup}>
             <label>Plateforme:</label>
-            <select value={platform} onChange={(e) => setPlatform(e.target.value)}>
+            <select value={platform} onChange={(e) => handlePlatformChange(e.target.value)}>
               {(market === 'BTC' || market === 'ETH') && (
                 <>
                   <option value="binance">Binance</option>

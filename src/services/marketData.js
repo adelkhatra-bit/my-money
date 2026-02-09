@@ -60,7 +60,7 @@ export const connectToMarketData = (market, platform, callback) => {
 };
 
 const generateDemoData = (market, timeframe, limit) => {
-  const basePrice = market === 'NASDAQ' ? 25800 : 2050;
+  const basePrice = market === 'NASDAQ' ? 25300 : 2050;
   const volatility = market === 'NASDAQ' ? 50 : 10;
 
   const now = Math.floor(Date.now() / 1000);
@@ -151,7 +151,7 @@ export const getCurrentPrice = async (market, platform) => {
     }
 
     if (market === 'NASDAQ') {
-      return 25800 + (Math.random() - 0.5) * 100;
+      return 25300 + (Math.random() - 0.5) * 100;
     }
 
     if (market === 'GOLD') {

@@ -17,6 +17,55 @@ const lastSignalTime = {};
 const lastSignalData = {};
 const COOLDOWN_MS = 5 * 60 * 1000;
 
+(function runDirectionValidationTests() {
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log('🧪 TEST AUTOMATIQUE - VALIDATION DIRECTION LONG/SHORT');
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
+  const testCases = [
+    {
+      name: 'TEST CASE SHORT',
+      entry: 71390,
+      tp1: 70507,
+      tp2: 70157,
+      expectedDirection: 'SHORT',
+      expectedSLPosition: 'AU-DESSUS'
+    },
+    {
+      name: 'TEST CASE LONG',
+      entry: 100,
+      tp1: 105,
+      tp2: 110,
+      expectedDirection: 'LONG',
+      expectedSLPosition: 'EN DESSOUS'
+    }
+  ];
+
+  testCases.forEach((test, index) => {
+    const avgTP = (test.tp1 + test.tp2) / 2;
+    const detectedDirection = avgTP > test.entry ? 'LONG' : 'SHORT';
+    const calculatedSL = detectedDirection === 'SHORT'
+      ? test.entry * 1.015
+      : test.entry * 0.985;
+    const slPosition = calculatedSL > test.entry ? 'AU-DESSUS' : 'EN DESSOUS';
+
+    const passed = detectedDirection === test.expectedDirection &&
+                   slPosition === test.expectedSLPosition;
+
+    console.log(`\n${passed ? '✅' : '❌'} ${test.name}`);
+    console.log(`   Entry: ${test.entry.toFixed(2)}`);
+    console.log(`   TP1: ${test.tp1.toFixed(2)} | TP2: ${test.tp2.toFixed(2)}`);
+    console.log(`   TP Moyen: ${avgTP.toFixed(2)}`);
+    console.log(`   Direction détectée: ${detectedDirection} (attendu: ${test.expectedDirection})`);
+    console.log(`   SL calculé: ${calculatedSL.toFixed(2)} - Position: ${slPosition} (attendu: ${test.expectedSLPosition})`);
+    console.log(`   RÉSULTAT: ${passed ? '✓ PASS' : '✗ FAIL'}`);
+  });
+
+  console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log('📊 FIN DES TESTS - Version v3.1.4-DIRECTION-FIX');
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+})();
+
 export const generateSignal = async (market, platform, candles, userAccount = null) => {
   if (!isMarketOpen(market)) {
     return {

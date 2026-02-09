@@ -247,21 +247,7 @@ export const generateSignal = async (market, platform, candles, userAccount = nu
   }
 
   if (userAccount && userAccount.capital && userAccount.risk_per_trade_percent) {
-    const riskPercent = userAccount.risk_per_trade_percent;
-
-    let slMultiplier;
-    if (riskPercent <= 0.5) {
-      slMultiplier = 1.5;
-    } else if (riskPercent <= 1.0) {
-      slMultiplier = 2.0;
-    } else if (riskPercent <= 1.5) {
-      slMultiplier = 2.5;
-    } else {
-      slMultiplier = 3.0;
-    }
-
-    const slDistance = riskPercent * slMultiplier;
-    const slPercent = Math.max(0.5, Math.min(slDistance, 3.0));
+    const slPercent = parseFloat(userAccount.risk_per_trade_percent);
 
     if (direction === 'SHORT') {
       stopLoss = entryMid * (1 + slPercent / 100);
@@ -272,13 +258,11 @@ export const generateSignal = async (market, platform, candles, userAccount = nu
     console.log('💰 SL CALCULÉ DEPUIS PROFIL:', {
       capital: userAccount.capital,
       currency: userAccount.currency || 'USD',
-      riskPercent: riskPercent,
-      slMultiplier: slMultiplier,
       slPercent: slPercent.toFixed(3),
       slPrice: stopLoss.toFixed(5),
       direction,
       placement: direction === 'SHORT' ? 'AU-DESSUS entry' : 'EN DESSOUS entry',
-      formula: `Risque ${riskPercent}% × ${slMultiplier} = ${slPercent.toFixed(2)}% SL`
+      formula: `SL = ${slPercent}% de l'entry`
     });
   } else {
     console.warn('⚠️ PROFIL NON TROUVÉ - SL par défaut utilisé');

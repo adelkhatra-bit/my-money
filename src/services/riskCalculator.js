@@ -1,12 +1,14 @@
+import { formatPrice } from '../utils/priceFormatter';
+
 export const calculatePositionSize = (account, signal) => {
   if (!account || !signal) return null;
 
   const { capital, risk_per_trade_percent } = account;
   const { direction, entry_min, entry_max, stop_loss } = signal;
 
-  const entryPrice = (entry_min + entry_max) / 2;
-  const stopDistance = Math.abs(entryPrice - stop_loss);
-  const stopDistancePercent = (stopDistance / entryPrice) * 100;
+  const entryPrice = formatPrice((entry_min + entry_max) / 2, 2);
+  const stopDistance = formatPrice(Math.abs(entryPrice - stop_loss), 2);
+  const stopDistancePercent = formatPrice((stopDistance / entryPrice) * 100, 2);
 
   const maxRiskAmount = capital * (risk_per_trade_percent / 100);
 

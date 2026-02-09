@@ -255,6 +255,13 @@ const TradingDashboard = () => {
   }, [autoMode, market, userId]);
 
   useEffect(() => {
+    if (!isLoadingAccount && !activeAccount && userId) {
+      console.log('⚠️ Alerte: Aucun compte actif');
+      audioAlerts.errorAlert();
+    }
+  }, [activeAccount, isLoadingAccount, userId]);
+
+  useEffect(() => {
     const newsListener = (isActive) => {
       setNewsSuspension(isActive);
       if (isActive) {
@@ -335,13 +342,13 @@ const TradingDashboard = () => {
           });
         }
 
-        const { data: accounts, error: accountError } = await supabase
+        const { data: accounts, error: accountError} = await supabase
           .from('trading_accounts')
           .select('*')
           .eq('user_id', profile.id)
           .eq('is_active', true)
-          .eq('market', market)
-          .eq('platform', platform);
+          .eq('market', market.toUpperCase())
+          .ilike('platform', platform);
 
         if (accountError) {
           console.error('Erreur chargement comptes:', accountError);
@@ -469,9 +476,8 @@ const TradingDashboard = () => {
         const wins = closedPositions.filter(p => p.status === 'TP1_HIT' || p.status === 'TP2_HIT').length;
         const losses = closedPositions.filter(p => p.status === 'SL_HIT').length;
 
-        const closedPnl = closedPositions.reduce((sum, p) => sum + (p.pnl || 0), 0);
-        const openPnl = openPositions.reduce((sum, p) => sum + (p.pnl || 0), 0);
-        const totalPnl = closedPnl + openPnl;
+        const closedPnl = closedPositions.reduce((sum, p) => sum + (parseFloat(p.pnl) || 0), 0);
+        const totalPnl = closedPnl;
 
         console.log('📈 Statistiques calculées:', {
           closed: closedPositions.length,
@@ -789,20 +795,6 @@ const TradingDashboard = () => {
       return;
     }
 
-    if (credits.remaining <= 0) {
-      setScanStatus('❌ Crédits épuisés - Rechargez votre compte');
-      setBotState('idle');
-      addActivityLog('❌ Crédits épuisés - Impossible de prendre une position', 'error');
-      return;
-    }
-
-    if (currentPosition && currentPosition.status === 'OPEN') {
-      const dir = currentPosition.direction === 'LONG' ? '🟢 LONG' : '🔴 SHORT';
-      setScanStatus(`⏸️ Position active: ${dir} sur ${currentPosition.market} - Bot en pause`);
-      setBotState('position_locked');
-      return;
-    }
-
     if (!activeAccount) {
       setScanStatus('⚠️ Aucun compte actif - Configurez un compte');
       setBotState('idle');
@@ -840,13 +832,27 @@ const TradingDashboard = () => {
       if (openPositions && openPositions.length > 0) {
         const position = openPositions[0];
         const dir = position.direction === 'LONG' ? '🟢 LONG' : '🔴 SHORT';
-        setScanStatus(`⏸️ Position active: ${dir} - Bot en pause jusqu'à fermeture`);
+        console.log('🔒 VERROU ACTIF - Position déjà ouverte:', {
+          positionId: position.id,
+          market: position.market,
+          direction: dir,
+          entry: position.entry_price
+        });
+        setScanStatus(`🔒 POSITION ACTIVE: ${dir} sur ${market} - Scan bloqué`);
         setBotState('position_locked');
         setCurrentPosition(position);
+        addActivityLog(`🔒 Scan bloqué - Position ${dir} déjà ouverte sur ${market}`, 'warning');
         return;
       }
     } catch (error) {
       console.error('Error checking positions:', error);
+    }
+
+    if (credits.remaining <= 0) {
+      setScanStatus('❌ Crédits épuisés - Rechargez votre compte');
+      setBotState('idle');
+      addActivityLog('❌ Crédits épuisés - Impossible de prendre une position', 'error');
+      return;
     }
 
     const now = new Date();
@@ -1063,6 +1069,12 @@ const TradingDashboard = () => {
   };
 
   const handleTestSignal = () => {
+    if (currentPosition && currentPosition.status === 'OPEN') {
+      const dir = currentPosition.direction === 'LONG' ? '🟢 LONG' : '🔴 SHORT';
+      alert(`🔒 POSITION DÉJÀ ACTIVE\n\n${dir} sur ${currentPosition.market}\nPrix d'entrée: ${parseFloat(currentPosition.entry_price).toFixed(2)}\n\nAPERÇU BLOQUÉ: Vous ne pouvez pas utiliser l'aperçu pendant qu'une position est ouverte.\n\nLe bot surveille automatiquement votre position en temps réel.`);
+      return;
+    }
+
     if (credits.remaining === 0) {
       alert('❌ Plus de positions disponibles\n\nVous devez fermer une position existante pour libérer des crédits avant de pouvoir utiliser cette fonctionnalité.');
       return;
@@ -1239,22 +1251,6 @@ const TradingDashboard = () => {
         return;
       }
 
-      const { data: existingOpenPosition } = await supabase
-        .from('positions')
-        .select('id, market, platform, direction, entry_price')
-        .eq('user_id', profile.id)
-        .eq('account_id', activeAccount.id)
-        .eq('market', signal.market)
-        .eq('status', 'OPEN')
-        .maybeSingle();
-
-      if (existingOpenPosition) {
-        const dir = existingOpenPosition.direction === 'LONG' ? '🟢 LONG' : '🔴 SHORT';
-        alert(`⚠️ UNE POSITION EST DÉJÀ OUVERTE\n\n${dir} sur ${existingOpenPosition.market}\nPrix d'entrée: ${existingOpenPosition.entry_price.toFixed(2)}\n\nVous devez fermer cette position avant d'en ouvrir une nouvelle.\n\nLe bot ne prendra pas de nouvelles positions tant que celle-ci est active.`);
-        setSignalState({ isScanning: false, preAlert: null, signal: null });
-        return;
-      }
-
       if (credits.remaining < 2) {
         const confirmed = window.confirm(`⚠️ ATTENTION: Il vous reste seulement ${credits.remaining} crédit(s)\n\nSi vous ouvrez cette position, vous ne pourrez plus en ouvrir d'autres jusqu'à ce que celle-ci se ferme.\n\nVoulez-vous continuer?`);
         if (!confirmed) {
@@ -1266,7 +1262,7 @@ const TradingDashboard = () => {
       const entryPrice = (signal.entry_min + signal.entry_max) / 2;
       const positionSize = riskCalc?.positionSize || 1;
 
-      console.log('[Position] Tentative de création:', {
+      console.log('[Position Lock] Tentative de création avec verrou transactionnel:', {
         user_id: profile.id,
         account_id: activeAccount.id,
         market: signal.market,
@@ -1279,35 +1275,43 @@ const TradingDashboard = () => {
         position_size: positionSize
       });
 
-      const { data: positionData, error: positionError } = await supabase
-        .from('positions')
-        .insert({
-          user_id: profile.id,
-          account_id: activeAccount.id,
-          market: signal.market,
-          platform: signal.platform,
-          direction: signal.direction,
-          entry_price: entryPrice,
-          stop_loss: signal.stop_loss,
-          take_profit_1: signal.take_profit_1,
-          take_profit_2: signal.take_profit_2,
-          position_size: positionSize,
-          status: 'OPEN'
-        })
-        .select();
+      const { data: rpcResult, error: rpcError } = await supabase.rpc('create_position_with_lock', {
+        p_user_id: profile.id,
+        p_account_id: activeAccount.id,
+        p_market: signal.market,
+        p_platform: signal.platform,
+        p_direction: signal.direction,
+        p_entry_price: entryPrice,
+        p_stop_loss: signal.stop_loss,
+        p_take_profit_1: signal.take_profit_1,
+        p_take_profit_2: signal.take_profit_2,
+        p_position_size: positionSize
+      });
 
-      if (positionError) {
-        console.error('[Position] Erreur lors de l\'insertion:', positionError);
-        throw positionError;
+      if (rpcError) {
+        console.error('[Position Lock] Erreur RPC:', rpcError);
+        throw rpcError;
       }
 
-      console.log('[Position] Position créée avec succès:', positionData);
+      if (!rpcResult || !rpcResult.success) {
+        const errorMsg = rpcResult?.message || 'Erreur inconnue lors de la création de position';
+        const errorCode = rpcResult?.error || 'UNKNOWN';
 
-      if (!positionData || positionData.length === 0) {
-        throw new Error('Position créée mais aucune donnée retournée');
+        if (errorCode === 'POSITION_EXISTS') {
+          alert(`🔒 UNE POSITION EST DÉJÀ OUVERTE\n\nUne position est déjà active sur ${signal.market}.\n\nVous devez attendre la fermeture de cette position avant d'en ouvrir une nouvelle.\n\nLe système empêche automatiquement les doublons.`);
+          console.warn('[Position Lock] VERROU ACTIF - Position existe déjà:', rpcResult.existing_position_id);
+          setSignalState({ isScanning: false, preAlert: null, signal: null });
+          await loadUserData();
+          await loadPositionAndHistory();
+          return;
+        }
+
+        throw new Error(errorMsg);
       }
 
-      const createdPosition = positionData[0];
+      console.log('[Position Lock] Position créée avec succès (verrouillée):', rpcResult.position);
+
+      const createdPosition = rpcResult.position;
 
       await supabase
         .from('signal_history')
@@ -1582,18 +1586,24 @@ const TradingDashboard = () => {
 
           <div className={styles.controlGroup}>
             <button
-              className={`${styles.toggleBtn} ${autoMode ? styles.active : ''}`}
+              className={`${styles.toggleBtn} ${autoMode ? styles.active : ''} ${currentPosition && currentPosition.status === 'OPEN' ? styles.locked : ''}`}
               onClick={handleToggleBot}
-              title={autoMode ? 'Robot activé - Scan automatique toutes les 30s' : 'Robot désactivé - Scan manuel uniquement'}
+              disabled={currentPosition && currentPosition.status === 'OPEN'}
+              title={
+                currentPosition && currentPosition.status === 'OPEN'
+                  ? '🔒 ROBOT VERROUILLÉ - Position en cours'
+                  : autoMode ? 'Robot activé - Scan automatique toutes les 30s' : 'Robot désactivé - Scan manuel uniquement'
+              }
             >
-              {autoMode ? '🤖 ROBOT ON' : '⏸️ ROBOT OFF'}
+              {currentPosition && currentPosition.status === 'OPEN' ? '🔒 ROBOT VERROUILLÉ' : autoMode ? '🤖 ROBOT ON' : '⏸️ ROBOT OFF'}
             </button>
           </div>
 
           <button
             className={styles.scanBtn}
             onClick={handleManualScan}
-            disabled={scanning || !marketStatus.open || credits.remaining === 0 || signalState.isScanning}
+            disabled={scanning || !marketStatus.open || credits.remaining === 0 || signalState.isScanning || (currentPosition && currentPosition.status === 'OPEN')}
+            title={currentPosition && currentPosition.status === 'OPEN' ? '🔒 Scan bloqué - Position en cours' : 'Lancer un scan manuel'}
           >
             {scanning ? '🔍 Analyse...' : '🎯 Scan Manuel'}
           </button>
@@ -1601,8 +1611,8 @@ const TradingDashboard = () => {
           <button
             className={styles.testBtn}
             onClick={handleTestSignal}
-            disabled={credits.remaining === 0}
-            title="Aperçu du système de signal"
+            disabled={credits.remaining === 0 || (currentPosition && currentPosition.status === 'OPEN')}
+            title={currentPosition && currentPosition.status === 'OPEN' ? '🔒 Aperçu bloqué - Position en cours' : 'Aperçu du système de signal'}
           >
             📊 Aperçu
           </button>

@@ -95,6 +95,14 @@ class AudioAlertService {
     setTimeout(() => { this.isPlaying = false; }, 350);
   }
 
+  errorAlert() {
+    if (!this.canPlayAlert('error')) return;
+    this.isPlaying = true;
+    this.playBeep(500, 400);
+    setTimeout(() => this.playBeep(450, 400), 450);
+    setTimeout(() => { this.isPlaying = false; }, 900);
+  }
+
   setVolume(volume) {
     this.volume = Math.max(0, Math.min(1, volume));
   }

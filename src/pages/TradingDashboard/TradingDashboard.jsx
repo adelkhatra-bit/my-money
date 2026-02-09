@@ -5,6 +5,7 @@ import BotStatus from '../../components/BotStatus/BotStatus';
 import PositionHistory from '../../components/PositionHistory/PositionHistory';
 import TrailingStopPopup from '../../components/TrailingStopPopup/TrailingStopPopup';
 import BotActivityLog from '../../components/BotActivityLog/BotActivityLog';
+import ScanOpportunity from '../../components/ScanOpportunity/ScanOpportunity';
 import { fetchHistoricalData, connectToMarketData, getCurrentPrice } from '../../services/marketData';
 import { generateSignal } from '../../services/signalEngine';
 import { calculatePositionSize } from '../../services/riskCalculator';
@@ -59,6 +60,8 @@ const TradingDashboard = () => {
   const [lastTrailingStopUpdate, setLastTrailingStopUpdate] = useState(null);
   const [activityLogCallback, setActivityLogCallback] = useState(null);
   const [potentialEntry, setPotentialEntry] = useState(null);
+  const [showActivityLog, setShowActivityLog] = useState(false);
+  const [scanOpportunity, setScanOpportunity] = useState(null);
 
   const addActivityLog = (message, type = 'info') => {
     if (activityLogCallback) {
@@ -673,6 +676,15 @@ const TradingDashboard = () => {
         addActivityLog(`🎯 Take Profit 2: ${result.signal.take_profit_2}`, 'info');
         addActivityLog(`💪 Confiance: ${result.signal.confidence}%`, result.signal.confidence >= 75 ? 'success' : 'warning');
 
+        const currentPrice = candles && candles.length > 0 ? candles[candles.length - 1].close : null;
+
+        setScanOpportunity({
+          ...result.signal,
+          currentPrice,
+          market,
+          platform
+        });
+
         if (result.signal.market !== market) {
           console.error(`Signal market mismatch: expected ${market}, got ${result.signal.market}`);
           setScanStatus(`❌ Erreur: Signal pour ${result.signal.market} au lieu de ${market}`);
@@ -702,8 +714,6 @@ const TradingDashboard = () => {
             confidence: result.signal.confidence
           });
         }
-
-        const currentPrice = candles && candles.length > 0 ? candles[candles.length - 1].close : null;
 
         setShowAnalysis(false);
         setSignalState({
@@ -822,6 +832,26 @@ const TradingDashboard = () => {
       addActivityLog('🤖 Robot activé - Scan automatique toutes les 30 secondes', 'success');
     } else {
       addActivityLog('⏸️ Robot désactivé - Scan manuel uniquement', 'warning');
+    }
+  };
+
+  const handleConfirmOpportunity = () => {
+    if (scanOpportunity) {
+      audioAlerts.play('signal');
+      addActivityLog('✅ Opportunité confirmée - Ouverture en cours', 'success');
+      handleAcceptSignal(scanOpportunity);
+      setScanOpportunity(null);
+    }
+  };
+
+  const handleDismissOpportunity = () => {
+    if (scanOpportunity) {
+      addActivityLog('❌ Opportunité ignorée', 'warning');
+      setDismissedSignals(prev => new Set([...prev, scanOpportunity.id]));
+      setScanOpportunity(null);
+      setScanning(false);
+      setSignalState({ isScanning: false, preAlert: null, signal: null });
+      setBotState('idle');
     }
   };
 
@@ -1323,6 +1353,16 @@ const TradingDashboard = () => {
         <PositionHistory positions={positionsHistory} />
       </div>
 
+      {scanOpportunity && (
+        <div style={{ margin: '20px', maxWidth: '600px', marginLeft: 'auto', marginRight: 'auto' }}>
+          <ScanOpportunity
+            opportunity={scanOpportunity}
+            onConfirm={handleConfirmOpportunity}
+            onDismiss={handleDismissOpportunity}
+          />
+        </div>
+      )}
+
       <SignalProcess
         isScanning={signalState.isScanning}
         preAlert={signalState.preAlert}
@@ -1345,11 +1385,31 @@ const TradingDashboard = () => {
       />
 
       <div style={{ margin: '20px', maxWidth: '100%' }}>
-        <BotActivityLog
-          isActive={autoMode}
-          currentState={botState}
-          onActivityUpdate={(callback) => setActivityLogCallback(() => callback)}
-        />
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+          <h3 style={{ margin: 0, color: '#fff', fontSize: '16px' }}>Activité du Bot</h3>
+          <button
+            onClick={() => setShowActivityLog(!showActivityLog)}
+            style={{
+              background: 'rgba(255, 255, 255, 0.1)',
+              border: '1px solid rgba(255, 255, 255, 0.2)',
+              color: '#fff',
+              padding: '6px 12px',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '12px',
+              fontWeight: 600
+            }}
+          >
+            {showActivityLog ? '🔽 Masquer' : '▶️ Afficher'}
+          </button>
+        </div>
+        {showActivityLog && (
+          <BotActivityLog
+            isActive={autoMode}
+            currentState={botState}
+            onActivityUpdate={(callback) => setActivityLogCallback(() => callback)}
+          />
+        )}
       </div>
 
       <div className={styles.statsBar}>

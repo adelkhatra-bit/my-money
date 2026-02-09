@@ -1,8 +1,13 @@
 import React, { useState, useEffect } from 'react';
+import { audioAlerts } from '../../services/audioAlerts';
 import styles from './PreAlertPopup.module.css';
 
 const PreAlertPopup = ({ market, platform, expectedDirection, timeRemaining, onClose }) => {
   const [countdown, setCountdown] = useState(timeRemaining || 300);
+
+  useEffect(() => {
+    audioAlerts.play('prealert');
+  }, []);
 
   useEffect(() => {
     const interval = setInterval(() => {

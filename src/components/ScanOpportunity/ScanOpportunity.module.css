@@ -1,0 +1,183 @@
+.container {
+  background: linear-gradient(135deg, #1e1e1e 0%, #2a2a2a 100%);
+  border-radius: 10px;
+  padding: 16px;
+  margin: 12px 0;
+  border: 2px solid rgba(102, 126, 234, 0.3);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
+  margin: 0;
+}
+
+.confidence {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.confidenceValue {
+  font-weight: 700;
+  color: #667eea;
+}
+
+.market {
+  font-size: 18px;
+  font-weight: 700;
+  color: #667eea;
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+.visualZone {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 12px;
+}
+
+.priceLevel {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 10px;
+  margin: 4px 0;
+  border-left: 3px solid var(--color);
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+
+.entryZone {
+  margin: 8px 0;
+  padding: 8px;
+  border-radius: 6px;
+  border: 2px solid;
+}
+
+.entryZone.long {
+  background: rgba(76, 175, 80, 0.1);
+  border-color: #4caf50;
+}
+
+.entryZone.short {
+  background: rgba(244, 67, 54, 0.1);
+  border-color: #f44336;
+}
+
+.entryLine {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 8px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.entryCenter {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px;
+  margin: 4px 0;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 4px;
+  font-weight: 700;
+}
+
+.levelLabel {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.levelPrice {
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  font-family: 'Courier New', monospace;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.statItem {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 6px;
+  padding: 8px;
+  text-align: center;
+}
+
+.statLabel {
+  display: block;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.6);
+  margin-bottom: 4px;
+}
+
+.statValue {
+  display: block;
+  font-size: 16px;
+  font-weight: 700;
+  color: #667eea;
+}
+
+.actions {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.dismissBtn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  padding: 10px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.dismissBtn:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.confirmBtn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  color: #fff;
+  padding: 10px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.confirmBtn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.warning {
+  font-size: 11px;
+  color: rgba(255, 193, 7, 0.8);
+  text-align: center;
+  margin: 0;
+  padding: 6px;
+  background: rgba(255, 193, 7, 0.1);
+  border-radius: 4px;
+}

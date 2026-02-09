@@ -23,9 +23,9 @@
 
 .popup {
   background: linear-gradient(135deg, #1a1f3a 0%, #2d1b4e 100%);
-  border-radius: 20px;
-  padding: 30px;
-  max-width: 500px;
+  border-radius: 16px;
+  padding: 20px;
+  max-width: 360px;
   width: 90%;
   box-shadow: 0 20px 60px rgba(0, 255, 136, 0.3);
   border: 2px solid #00ff88;
@@ -53,7 +53,7 @@
 }
 
 .icon {
-  font-size: 48px;
+  font-size: 36px;
   animation: pulse 2s infinite;
 }
 
@@ -68,7 +68,7 @@
 
 .header h3 {
   margin: 0;
-  font-size: 24px;
+  font-size: 18px;
   font-weight: 700;
   color: #00ff88;
   text-transform: uppercase;
@@ -84,9 +84,9 @@
 .gainBadge {
   background: linear-gradient(90deg, #00ff88 0%, #00d4ff 100%);
   color: #000;
-  padding: 15px 25px;
-  border-radius: 15px;
-  font-size: 24px;
+  padding: 12px 20px;
+  border-radius: 12px;
+  font-size: 20px;
   font-weight: 800;
   text-align: center;
   box-shadow: 0 5px 20px rgba(0, 255, 136, 0.5);

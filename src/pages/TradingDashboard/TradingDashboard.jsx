@@ -97,6 +97,22 @@ const TradingDashboard = () => {
   }, [market]);
 
   useEffect(() => {
+    loadUserData();
+
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        loadUserData();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
+
+  useEffect(() => {
     if ('Notification' in window && Notification.permission === 'default') {
       Notification.requestPermission();
     }
@@ -181,18 +197,26 @@ const TradingDashboard = () => {
           audioAlerts.setVolume(parseFloat(settingsData.audio_volume));
         }
 
-        const { data: accounts } = await supabase
+        const { data: accounts, error: accountError } = await supabase
           .from('trading_accounts')
           .select('*')
           .eq('user_id', profile.id)
-          .eq('is_active', true)
-          .maybeSingle();
+          .eq('is_active', true);
 
-        if (accounts) {
-          setActiveAccount(accounts);
-          loadStats(profile.id, accounts);
-          loadPositionsHistory(profile.id, accounts);
+        if (accountError) {
+          console.error('Erreur chargement comptes:', accountError);
+        }
+
+        console.log('📊 Comptes trouvés:', accounts?.length || 0, accounts);
+
+        if (accounts && accounts.length > 0) {
+          const activeAcc = accounts[0];
+          console.log('✅ Compte actif sélectionné:', activeAcc);
+          setActiveAccount(activeAcc);
+          loadStats(profile.id, activeAcc);
+          loadPositionsHistory(profile.id, activeAcc);
         } else {
+          console.warn('⚠️ Aucun compte actif trouvé');
           setActiveAccount(null);
           loadStats(profile.id, null);
           loadPositionsHistory(profile.id, null);

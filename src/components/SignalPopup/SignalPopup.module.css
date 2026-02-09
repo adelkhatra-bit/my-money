@@ -25,9 +25,9 @@
   background: #1a1a1a;
   border-radius: 12px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-  max-width: 380px;
+  max-width: 340px;
   width: 90%;
-  max-height: 85vh;
+  max-height: 75vh;
   overflow-y: auto;
   animation: slideUp 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
 }
@@ -304,40 +304,41 @@
 
 .dismissBtn {
   flex: 1 1 100%;
-  padding: 8px 12px;
-  background: rgba(255, 255, 255, 0.05);
-  color: #888;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #aaa;
+  border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 6px;
-  font-size: 10px;
-  font-weight: 500;
+  font-size: 12px;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
   text-transform: none;
-  min-height: 30px;
+  min-height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .dismissBtn:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: #aaa;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.25);
 }
 
 .acceptBtn,
 .rejectBtn {
   flex: 1;
-  padding: 10px 14px;
+  padding: 12px 14px;
   border: none;
   border-radius: 6px;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.2s;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  min-height: 36px;
+  min-height: 42px;
   display: flex;
   align-items: center;
   justify-content: center;

@@ -20,8 +20,8 @@ export const isMarketOpen = (market) => {
       return false;
     }
 
-    if (day === 1 && hours < 13) {
-      console.log(`[Market Hours] ${market} fermé - Lundi avant 13h UTC`);
+    if (day === 1 && (hours < 14 || (hours === 14 && minutes < 30))) {
+      console.log(`[Market Hours] ${market} fermé - Lundi avant 14h30 UTC (9h30 ET)`);
       return false;
     }
 
@@ -80,8 +80,8 @@ export const getMarketStatus = (market) => {
     return { open: false, message: 'Marché fermé (vendredi soir) - Réouverture lundi 9h30 ET' };
   }
 
-  if (day === 1 && hours < 13) {
-    return { open: false, message: 'Marché fermé (lundi matin) - Ouverture à 9h30 ET' };
+  if (day === 1 && (hours < 14 || (hours === 14 && minutes < 30))) {
+    return { open: false, message: 'Marché fermé (lundi matin) - Ouverture à 9h30 ET (14h30 UTC)' };
   }
 
   if (market === 'NASDAQ') {

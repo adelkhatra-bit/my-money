@@ -96,32 +96,52 @@ const SignalPopup = ({ signal, riskCalc, onAccept, onReject, onDismiss }) => {
         )}
 
         <div className={styles.priceInfo}>
-          <div className={styles.priceRow}>
-            <span className={styles.label}>Entrée:</span>
-            <span className={styles.value}>
-              {entryMid.toFixed(2)}
-            </span>
+          <div className={styles.schemaTitle}>
+            {isLong ? '📈 STRUCTURE LONG (ACHAT)' : '📉 STRUCTURE SHORT (VENTE)'}
           </div>
-          <div className={styles.priceRow}>
-            <span className={styles.label}>Stop Loss:</span>
-            <span className={styles.value} style={{ color: '#ef4444' }}>
-              {signal.stop_loss.toFixed(2)}
-            </span>
-          </div>
-          <div className={styles.priceRow}>
-            <span className={styles.label}>Take Profit 1:</span>
-            <span className={styles.value} style={{ color: '#00e676' }}>
-              {signal.take_profit_1.toFixed(2)}
-            </span>
-          </div>
-          {signal.take_profit_2 && (
-            <div className={styles.priceRow}>
-              <span className={styles.label}>Take Profit 2:</span>
-              <span className={styles.value} style={{ color: '#00e676' }}>
-                {signal.take_profit_2.toFixed(2)}
-              </span>
+
+          <div className={styles.visualStructure}>
+            <div className={styles.structureBox}>
+              {isLong ? (
+                <>
+                  {signal.take_profit_2 && (
+                    <div className={styles.structureLine} style={{ background: 'linear-gradient(135deg, #00e676, #00c853)', color: '#000' }}>
+                      🎯 TP2: {signal.take_profit_2.toFixed(2)}
+                    </div>
+                  )}
+                  <div className={styles.structureLine} style={{ background: 'linear-gradient(135deg, #00e676, #00c853)', color: '#000' }}>
+                    🎯 TP1: {signal.take_profit_1.toFixed(2)}
+                  </div>
+                  <div className={styles.structureLine} style={{ background: 'linear-gradient(135deg, #26a69a, #1e8e86)', color: '#fff' }}>
+                    🟢 ENTRÉE: {entryMid.toFixed(2)}
+                  </div>
+                  <div className={styles.structureLine} style={{ background: 'linear-gradient(135deg, #ff1744, #d50000)', color: '#fff' }}>
+                    🛑 SL: {signal.stop_loss.toFixed(2)}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className={styles.structureLine} style={{ background: 'linear-gradient(135deg, #ff1744, #d50000)', color: '#fff' }}>
+                    🛑 SL: {signal.stop_loss.toFixed(2)}
+                  </div>
+                  <div className={styles.structureLine} style={{ background: 'linear-gradient(135deg, #ef5350, #e53935)', color: '#fff' }}>
+                    🔴 ENTRÉE: {entryMid.toFixed(2)}
+                  </div>
+                  <div className={styles.structureLine} style={{ background: 'linear-gradient(135deg, #00e676, #00c853)', color: '#000' }}>
+                    🎯 TP1: {signal.take_profit_1.toFixed(2)}
+                  </div>
+                  {signal.take_profit_2 && (
+                    <div className={styles.structureLine} style={{ background: 'linear-gradient(135deg, #00e676, #00c853)', color: '#000' }}>
+                      🎯 TP2: {signal.take_profit_2.toFixed(2)}
+                    </div>
+                  )}
+                </>
+              )}
             </div>
-          )}
+            <div className={styles.structureLabel}>
+              {isLong ? '↑ Prix monte = Profit' : '↓ Prix descend = Profit'}
+            </div>
+          </div>
         </div>
 
         {riskCalc && (

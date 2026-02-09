@@ -53,12 +53,12 @@ class PositionManager {
     if (!position || !currentPrice) return 0;
 
     const entryPrice = parseFloat(position.entry_price);
-    const quantity = parseFloat(position.quantity || 1);
+    const positionSize = parseFloat(position.position_size || 1);
 
     if (position.direction === 'LONG') {
-      return (currentPrice - entryPrice) * quantity;
+      return (currentPrice - entryPrice) * positionSize;
     } else {
-      return (entryPrice - currentPrice) * quantity;
+      return (entryPrice - currentPrice) * positionSize;
     }
   }
 

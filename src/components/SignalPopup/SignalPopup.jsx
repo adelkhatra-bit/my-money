@@ -49,8 +49,8 @@ const SignalPopup = ({ signal, riskCalc, onAccept, onReject, onDismiss }) => {
     console.warn('⚠️ [SignalPopup] Direction incorrecte corrigée:', {
       stored: signal.direction,
       correct: correctDirection,
-      entry: entryMid.toFixed(5),
-      tp1: signal.take_profit_1.toFixed(5)
+      entry: entryMid.toFixed(2),
+      tp1: signal.take_profit_1.toFixed(2)
     });
   }
 

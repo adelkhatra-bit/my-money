@@ -3,12 +3,7 @@ import { createChart } from 'lightweight-charts';
 import styles from './TradingChart.module.css';
 
 const formatPrice = (price, market) => {
-  if (market === 'NASDAQ' || market === 'GOLD') {
-    return price.toFixed(2);
-  } else if (market === 'BTC' || market === 'ETH') {
-    return price.toFixed(2);
-  }
-  return price.toFixed(5);
+  return price.toFixed(2);
 };
 
 const TradingChart = ({ candles, signal, position, supports, resistances, orderBlocks, hasCredits = false, showAnalysis = false, potentialEntry = null }) => {

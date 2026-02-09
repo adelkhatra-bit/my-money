@@ -11,6 +11,7 @@ import SuperAdmin from './pages/SuperAdmin/SuperAdmin';
 import Profil from './pages/Profil/Profil';
 import LegalDisclaimer from './components/LegalDisclaimer/LegalDisclaimer';
 import Navbar from './components/Navbar/Navbar';
+import ErrorBoundary from './components/ErrorBoundary/ErrorBoundary';
 import './App.css';
 
 function App() {
@@ -119,7 +120,7 @@ function App() {
         />
         <Route
           path="/trading"
-          element={user ? <TradingDashboard /> : <Navigate to="/login" />}
+          element={user ? <ErrorBoundary><TradingDashboard /></ErrorBoundary> : <Navigate to="/login" />}
         />
         <Route
           path="/accounts"

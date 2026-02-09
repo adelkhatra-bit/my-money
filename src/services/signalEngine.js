@@ -229,19 +229,47 @@ export const generateSignal = async (market, platform, candles, userAccount = nu
   }
 
   if (trend === 'downtrend' && direction === 'LONG') {
-    console.warn('⚠️ FILTRAGE DIRECTIONNEL: Marché en downtrend, LONG rejeté');
+    console.warn('🔴 FILTRAGE STRICT: Marché baissier détecté, LONG INTERDIT');
     return {
       signal: null,
-      reason: 'Marché baissier - Signal LONG filtré (risque trop élevé)',
+      reason: 'Marché en tendance baissière - Seuls les SHORT sont autorisés',
       analysis
     };
   }
 
   if (trend === 'uptrend' && direction === 'SHORT') {
-    console.warn('⚠️ FILTRAGE DIRECTIONNEL: Marché en uptrend, SHORT rejeté');
+    console.warn('🟢 FILTRAGE STRICT: Marché haussier détecté, SHORT INTERDIT');
     return {
       signal: null,
-      reason: 'Marché haussier - Signal SHORT filtré (risque trop élevé)',
+      reason: 'Marché en tendance haussière - Seuls les LONG sont autorisés',
+      analysis
+    };
+  }
+
+  if (direction === 'LONG' && stopLoss >= entryMid) {
+    console.error('🚨 INCOHÉRENCE CRITIQUE: LONG avec SL au-dessus de l\'entry!', {
+      direction,
+      entry: entryMid.toFixed(5),
+      sl: stopLoss.toFixed(5),
+      problem: 'SL LONG doit être EN DESSOUS de l\'entry'
+    });
+    return {
+      signal: null,
+      reason: 'Erreur technique: SL mal placé pour LONG',
+      analysis
+    };
+  }
+
+  if (direction === 'SHORT' && stopLoss <= entryMid) {
+    console.error('🚨 INCOHÉRENCE CRITIQUE: SHORT avec SL en dessous de l\'entry!', {
+      direction,
+      entry: entryMid.toFixed(5),
+      sl: stopLoss.toFixed(5),
+      problem: 'SL SHORT doit être AU-DESSUS de l\'entry'
+    });
+    return {
+      signal: null,
+      reason: 'Erreur technique: SL mal placé pour SHORT',
       analysis
     };
   }

@@ -290,7 +290,7 @@ function generateDeterministicData(symbol, count = 500) {
 
   const basePrice = basePrices[symbol] || 100;
   const guardrails = priceGuardrails[symbol];
-  const now = Date.now();
+  const baseTime = 1707523200;
   const candles = [];
 
   let currentPrice = basePrice;
@@ -300,8 +300,8 @@ function generateDeterministicData(symbol, count = 500) {
     return Math.max(guardrails.min, Math.min(guardrails.max, price));
   };
 
-  for (let i = count - 1; i >= 0; i--) {
-    const time = new Date(now - i * 60 * 1000).toISOString();
+  for (let i = 0; i < count; i++) {
+    const time = baseTime + i * 60;
     const changePercent = (Math.random() - 0.5) * 0.003;
     const volatility = basePrice * 0.001;
 

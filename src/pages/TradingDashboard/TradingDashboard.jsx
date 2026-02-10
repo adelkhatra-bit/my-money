@@ -87,6 +87,8 @@ const TradingDashboard = () => {
   });
   const [showProofMode, setShowProofMode] = useState(false);
   const [dataMetadata, setDataMetadata] = useState(null);
+  const [showDbProof, setShowDbProof] = useState(false);
+  const [dbProofData, setDbProofData] = useState(null);
 
   const addActivityLog = (message, type = 'info') => {
     if (activityLogCallback) {
@@ -174,7 +176,22 @@ const TradingDashboard = () => {
 
 
   const loadPositionAndHistory = useCallback(async () => {
-    if (!userId || !activeAccount) return;
+    const fetchTimestamp = new Date().toISOString();
+    const fetchTrigger = !dbProofData ? 'initial' : (dbProofData.userId !== userId ? 'userId-change' : 'activeAccount-change');
+
+    if (!userId || !activeAccount) {
+      setDbProofData({
+        userId: userId || null,
+        activeAccountId: activeAccount?.id || null,
+        openPositionsCount: 0,
+        historyCount: 0,
+        lastFetchAt: fetchTimestamp,
+        status: !activeAccount ? 'ERROR' : 'OK',
+        reason: !activeAccount ? 'activeAccount missing' : null,
+        fetchTriggeredBy: fetchTrigger
+      });
+      return;
+    }
 
     try {
       const openPosition = await positionService.getOpenPosition(userId, activeAccount.id);
@@ -203,10 +220,32 @@ const TradingDashboard = () => {
           totalTrades: accountStats.total_trades || 0
         });
       }
+
+      setDbProofData({
+        userId,
+        activeAccountId: activeAccount.id,
+        openPositionsCount: openPosition ? 1 : 0,
+        historyCount: positionsHistory.length,
+        lastFetchAt: fetchTimestamp,
+        status: 'OK',
+        reason: null,
+        fetchTriggeredBy: fetchTrigger
+      });
+
     } catch (error) {
       console.error('Erreur chargement position/historique:', error);
+      setDbProofData({
+        userId,
+        activeAccountId: activeAccount?.id || null,
+        openPositionsCount: 0,
+        historyCount: 0,
+        lastFetchAt: fetchTimestamp,
+        status: 'ERROR',
+        reason: error.message || 'Erreur fetch DB',
+        fetchTriggeredBy: fetchTrigger
+      });
     }
-  }, [userId, activeAccount]);
+  }, [userId, activeAccount, dbProofData]);
 
   useEffect(() => {
     if (userId) {
@@ -1908,6 +1947,13 @@ const TradingDashboard = () => {
             >
               🔍 Mode Preuve
             </button>
+            <button
+              className={styles.proofModeToggle}
+              onClick={() => setShowDbProof(!showDbProof)}
+              title="Afficher/masquer les métriques DB"
+            >
+              💾 DB Proof
+            </button>
             <MarketHealthIndicator
               status={marketHealth.status}
               message={marketHealth.message}
@@ -1949,6 +1995,37 @@ const TradingDashboard = () => {
                 <span className={styles.proofWarning}>→ Scan et trading désactivés</span>
               </div>
             )}
+          </div>
+        )}
+
+        {showDbProof && dbProofData && (
+          <div className={`${styles.proofModeBar} ${dbProofData.status === 'OK' ? styles.proofOk : styles.proofBlocked}`}>
+            <div className={styles.proofRow}>
+              <strong>💾 DB PROOF - Branchement Positions & Historique</strong>
+            </div>
+            <div className={styles.proofRow}>
+              <strong>👤 User ID:</strong> <span className={styles.proofDetail}>{dbProofData.userId || 'null'}</span>
+            </div>
+            <div className={styles.proofRow}>
+              <strong>💼 Active Account ID:</strong> <span className={styles.proofDetail}>{dbProofData.activeAccountId || 'null'}</span>
+            </div>
+            <div className={styles.proofRow}>
+              <strong>📊 Positions ouvertes:</strong> <span className={styles.proofDetail}>{dbProofData.openPositionsCount}</span>
+              {' | '}
+              <strong>Historique:</strong> <span className={styles.proofDetail}>{dbProofData.historyCount}</span>
+            </div>
+            <div className={styles.proofRow}>
+              <strong>⏰ Dernier fetch:</strong> <span className={styles.proofDetail}>{new Date(dbProofData.lastFetchAt).toLocaleString('fr-FR')}</span>
+            </div>
+            <div className={styles.proofRow}>
+              <strong>🔄 Déclenché par:</strong> <span className={styles.proofDetail}>{dbProofData.fetchTriggeredBy}</span>
+            </div>
+            <div className={styles.proofRow}>
+              <strong>{dbProofData.status === 'OK' ? '✅ STATUT: OK' : '❌ STATUT: ERROR'}</strong>
+              {dbProofData.reason && (
+                <span className={styles.proofReason}> → {dbProofData.reason}</span>
+              )}
+            </div>
           </div>
         )}
         {(!candles || (Array.isArray(candles) && candles.length === 0) || (candles.error && !candles.candles)) ? (

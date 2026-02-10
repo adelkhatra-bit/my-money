@@ -103,9 +103,10 @@ function App() {
   }
 
   return (
-    <BrowserRouter>
-      {user && <Navbar isSuperAdmin={isSuperAdmin} />}
-      <Routes>
+    <ErrorBoundary>
+      <BrowserRouter>
+        {user && <Navbar isSuperAdmin={isSuperAdmin} />}
+        <Routes>
         <Route
           path="/login"
           element={user ? <Navigate to="/" /> : <Login />}
@@ -120,7 +121,7 @@ function App() {
         />
         <Route
           path="/trading"
-          element={user ? <ErrorBoundary><TradingDashboard /></ErrorBoundary> : <Navigate to="/login" />}
+          element={user ? <TradingDashboard /> : <Navigate to="/login" />}
         />
         <Route
           path="/accounts"
@@ -139,7 +140,8 @@ function App() {
           element={user && isSuperAdmin ? <SuperAdmin /> : <Navigate to="/" />}
         />
       </Routes>
-    </BrowserRouter>
+      </BrowserRouter>
+    </ErrorBoundary>
   );
 }
 

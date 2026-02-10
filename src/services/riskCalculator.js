@@ -71,12 +71,17 @@ const getPlatformRules = (platform, market) => {
       ETH: { pointValue: 1, minLotSize: 0.01, tickSize: 0.01 }
     },
     ftmo: {
-      NASDAQ: { pointValue: 5, minLotSize: 1, tickSize: 0.25 },
-      GOLD: { pointValue: 100, minLotSize: 1, tickSize: 0.1 }
+      NASDAQ: { pointValue: 20, minLotSize: 1, tickSize: 0.25 },
+      GOLD: { pointValue: 100, minLotSize: 1, tickSize: 0.1 },
+      SP500: { pointValue: 50, minLotSize: 1, tickSize: 0.25 }
     },
     topstep: {
-      NASDAQ: { pointValue: 5, minLotSize: 1, tickSize: 0.25 },
-      GOLD: { pointValue: 100, minLotSize: 1, tickSize: 0.1 }
+      NASDAQ: { pointValue: 2, minLotSize: 1, tickSize: 0.25 },
+      GOLD: { pointValue: 10, minLotSize: 1, tickSize: 0.1 },
+      SP500: { pointValue: 5, minLotSize: 1, tickSize: 0.25 }
+    },
+    anto: {
+      ANTO_NASDAQ: { pointValue: 2, minLotSize: 1, tickSize: 0.25 }
     }
   };
 

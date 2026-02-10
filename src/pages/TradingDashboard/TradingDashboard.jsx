@@ -261,7 +261,7 @@ const TradingDashboard = () => {
       positionManager.stopMonitoring();
       positionManager.clearCallbacks();
     };
-  }, [userId]);
+  }, [userId, activeAccount]);
 
   useEffect(() => {
     const validation = validateMarketPlatformCompatibility(market, platform);
@@ -2030,7 +2030,7 @@ const TradingDashboard = () => {
         />
 
         <PositionHistory
-          history={history}
+          positions={history}
           market={market}
         />
       </div>

@@ -11,6 +11,8 @@ import MarketHealthIndicator from '../../components/MarketHealthIndicator/Market
 import MarketBlockedPopup from '../../components/MarketBlockedPopup/MarketBlockedPopup';
 import ConnectTopstep from '../../components/ConnectTopstep/ConnectTopstep';
 import TradingViewAlerts from '../../components/TradingViewAlerts/TradingViewAlerts';
+import EntryPreparation from '../../components/EntryPreparation/EntryPreparation';
+import PositionVerification from '../../components/PositionVerification/PositionVerification';
 import { marketDataProvider } from '../../services/MarketDataProvider';
 import { generateSignal } from '../../services/signalEngine';
 import { calculatePositionSize } from '../../services/riskCalculator';
@@ -89,6 +91,9 @@ const TradingDashboard = () => {
     return saved === 'true';
   });
   const [isSimulation, setIsSimulation] = useState(true);
+  const [showEntryPrep, setShowEntryPrep] = useState(false);
+  const [showPositionVerif, setShowPositionVerif] = useState(false);
+  const [prepSignal, setPrepSignal] = useState(null);
 
   const addActivityLog = (message, type = 'info') => {
     if (activityLogCallback) {
@@ -1357,8 +1362,8 @@ const TradingDashboard = () => {
 
     if (scanOpportunity) {
       audioAlerts.play('signal');
-      addActivityLog('✅ Opportunité confirmée - Ouverture en cours', 'success');
-      handleAcceptSignal(scanOpportunity);
+      addActivityLog('✅ Opportunité détectée - Préparation entrée', 'success');
+      handleShowEntryPrep(scanOpportunity);
       setScanOpportunity(null);
     }
   };
@@ -1443,6 +1448,32 @@ const TradingDashboard = () => {
       botService.removeCallback(scanCallback);
     };
   }, [autoMode, marketStatus.open]);
+
+  const handleShowEntryPrep = (signal) => {
+    setPrepSignal(signal);
+    setShowEntryPrep(true);
+    setSignalState({ isScanning: false, preAlert: null, signal: null });
+  };
+
+  const handleVerifyPosition = async (signal) => {
+    setShowEntryPrep(false);
+    setShowPositionVerif(true);
+  };
+
+  const handleConfirmEntry = async () => {
+    setShowPositionVerif(false);
+    if (prepSignal) {
+      await handleAcceptSignal(prepSignal);
+      setPrepSignal(null);
+    }
+  };
+
+  const handleCancelEntry = () => {
+    setShowEntryPrep(false);
+    setShowPositionVerif(false);
+    setPrepSignal(null);
+    setSignalState({ isScanning: false, preAlert: null, signal: null });
+  };
 
   const handleAcceptSignal = async (signal) => {
     const entryPrice = (signal.entry_min + signal.entry_max) / 2;
@@ -2105,10 +2136,25 @@ const TradingDashboard = () => {
         isScanning={signalState.isScanning}
         preAlert={signalState.preAlert}
         signal={signalState.signal}
-        onAcceptSignal={handleAcceptSignal}
+        onAcceptSignal={handleShowEntryPrep}
         onDeclineSignal={handleDeclineSignal}
         onDismissSignal={handleDismissSignal}
         userCredits={credits.remaining}
+      />
+
+      <EntryPreparation
+        signal={prepSignal}
+        onVerify={handleVerifyPosition}
+        onCancel={handleCancelEntry}
+        visible={showEntryPrep}
+      />
+
+      <PositionVerification
+        signal={prepSignal}
+        account={activeAccount}
+        onConfirm={handleConfirmEntry}
+        onCancel={handleCancelEntry}
+        visible={showPositionVerif}
       />
 
       <TrailingStopPopup

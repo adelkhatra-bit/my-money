@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { supabase } from './lib/supabaseClient';
 import Dashboard from './pages/Dashboard/Dashboard';
-import TradingDashboard from './pages/TradingDashboard/TradingDashboard';
+import TradingDashboard from './pages/TradingDashboard/TradingDashboardSimple';
 import TradingSetup from './pages/TradingSetup/TradingSetup';
 import Login from './pages/Auth/Login';
 import Signup from './pages/Auth/Signup';

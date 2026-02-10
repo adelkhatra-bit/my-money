@@ -4,7 +4,7 @@ import DebugSnapshot from '../DebugSnapshot/DebugSnapshot';
 import { displayPrice } from '../../utils/priceFormatter';
 import styles from './TradingChart.module.css';
 
-const TradingChart = ({ candles, signal, position, supports, resistances, orderBlocks, hasCredits = false, showAnalysis = false, potentialEntry = null, platform = null, market = null, metadata = null, showProofMode = false }) => {
+const TradingChart = ({ candles, signal, position, supports, resistances, orderBlocks, hasCredits = false, showAnalysis = false, potentialEntry = null, platform = null, market = null, metadata = null, showProofMode = false, isSimulation = true }) => {
   const chartContainerRef = useRef(null);
   const chartRef = useRef(null);
   const candleSeriesRef = useRef(null);
@@ -541,6 +541,7 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
 
     const proofData = {
       ts: new Date().toISOString(),
+      dataSource: isSimulation ? 'SIMULATION' : 'TOPSTEP_LIVE',
       platform: metadata.platform || 'N/A',
       market: metadata.market || 'N/A',
       symbol: metadata.symbol || 'N/A',
@@ -583,10 +584,43 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
 
   return (
     <div className={`${styles.chartWrapper} ${isFullscreen ? styles.fullscreen : ''}`}>
-      {metadata && metadata.source === 'marketDataUnified' && (
-        <div className={styles.simulationBadge}>
-          <span className={styles.simulationIcon}>🔶</span>
-          <span className={styles.simulationText}>SIMULATION — Données fictives calibrées</span>
+      {isSimulation && (
+        <div className={styles.simulationBadge} style={{
+          position: 'absolute',
+          top: '10px',
+          left: '10px',
+          zIndex: 1000,
+          background: 'linear-gradient(135deg, #ff1744 0%, #c62828 100%)',
+          color: '#fff',
+          padding: '12px 20px',
+          borderRadius: '8px',
+          fontWeight: 'bold',
+          fontSize: '16px',
+          border: '2px solid #ff5252',
+          boxShadow: '0 4px 16px rgba(255, 23, 68, 0.5)',
+          animation: 'pulse 2s infinite'
+        }}>
+          <span style={{ marginRight: '8px' }}>⚠️</span>
+          <span>SIMULATION - Données fictives</span>
+        </div>
+      )}
+      {!isSimulation && (
+        <div className={styles.liveBadge} style={{
+          position: 'absolute',
+          top: '10px',
+          left: '10px',
+          zIndex: 1000,
+          background: 'linear-gradient(135deg, #00e676 0%, #00c853 100%)',
+          color: '#000',
+          padding: '12px 20px',
+          borderRadius: '8px',
+          fontWeight: 'bold',
+          fontSize: '16px',
+          border: '2px solid #69f0ae',
+          boxShadow: '0 4px 16px rgba(0, 230, 118, 0.5)'
+        }}>
+          <span style={{ marginRight: '8px' }}>✅</span>
+          <span>TOPSTEP LIVE</span>
         </div>
       )}
       {showProofMode && metadata && (

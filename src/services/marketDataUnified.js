@@ -219,8 +219,44 @@ function createAggregatedCandle(candles) {
   return { time, open, high, low, close, volume };
 }
 
-async function fetchRealMarketData(symbol, timeframe, limit = 500) {
+async function fetchRealMarketData(symbol, timeframe, limit = 500, platform = 'topstep') {
+  const isTopstepPlatform = ['topstep', 'ftmo', 'apex'].includes(platform.toLowerCase());
+
+  if (isTopstepPlatform) {
+    try {
+      console.log(`🔄 [Market Data] Attempting TOPSTEP LIVE provider for ${symbol}...`);
+      const url = `${SUPABASE_URL}/functions/v1/topstep-live-provider/candles?symbol=${symbol}&timeframe=${timeframe}&limit=${limit}`;
+
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json',
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+
+        if (data.isSimulation === false && data.candles && data.candles.length > 0) {
+          isSimulationMode = false;
+          console.log(`✅ [Market Data] TOPSTEP LIVE DATA from ${data.provider}:`, {
+            symbol: data.symbol,
+            candles: data.candles.length,
+            lastPrice: data.candles[data.candles.length - 1]?.close,
+            dataSource: data.dataSource
+          });
+          return data.candles;
+        }
+      }
+
+      console.warn('⚠️ [Market Data] Topstep live not available, trying fallback...');
+    } catch (error) {
+      console.warn('⚠️ [Market Data] Topstep live failed, trying fallback:', error.message);
+    }
+  }
+
   try {
+    console.log(`🔄 [Market Data] Using fallback provider (Polygon) for ${symbol}...`);
     const url = `${SUPABASE_URL}/functions/v1/market-data-proxy/candles?symbol=${symbol}&timeframe=${timeframe}&limit=${limit}`;
 
     const response = await fetch(url, {
@@ -232,11 +268,11 @@ async function fetchRealMarketData(symbol, timeframe, limit = 500) {
 
     if (!response.ok) {
       const errorData = await response.json();
-      console.warn('⚠️ [Market Data] Edge function returned error:', errorData);
+      console.warn('⚠️ [Market Data] Fallback provider returned error:', errorData);
 
       if (errorData.isSimulation) {
         isSimulationMode = true;
-        console.warn('🔴 [Market Data] API not configured - falling back to SIMULATION');
+        console.warn('🔴 [Market Data] No API configured - falling back to SIMULATION');
         return null;
       }
 
@@ -247,7 +283,7 @@ async function fetchRealMarketData(symbol, timeframe, limit = 500) {
 
     if (data.isSimulation === false && data.candles && data.candles.length > 0) {
       isSimulationMode = false;
-      console.log(`✅ [Market Data] LIVE DATA from ${data.provider}:`, {
+      console.log(`✅ [Market Data] FALLBACK LIVE DATA from ${data.provider}:`, {
         symbol: data.symbol,
         candles: data.candles.length,
         lastPrice: data.candles[data.candles.length - 1]?.close
@@ -259,7 +295,7 @@ async function fetchRealMarketData(symbol, timeframe, limit = 500) {
     isSimulationMode = true;
     return null;
   } catch (error) {
-    console.error('❌ [Market Data] Failed to fetch real data:', error.message);
+    console.error('❌ [Market Data] All providers failed:', error.message);
     isSimulationMode = true;
     return null;
   }
@@ -300,7 +336,7 @@ export async function getUnifiedMarketData(market, platform, timeframe) {
   if (!candles1m || candles1m.length < requiredCandles1m) {
     console.log(`🔄 [Market Data] Fetching baseline (1m) for ${symbol}: ${requiredCandles1m} candles`);
 
-    const realData = await fetchRealMarketData(symbol, '1m', requiredCandles1m);
+    const realData = await fetchRealMarketData(symbol, '1m', requiredCandles1m, platform);
 
     if (realData && realData.length > 0) {
       candles1m = realData;

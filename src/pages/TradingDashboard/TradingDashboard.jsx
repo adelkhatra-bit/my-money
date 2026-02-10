@@ -2018,6 +2018,7 @@ const TradingDashboard = () => {
               hasCredits={credits.remaining > 0}
               showAnalysis={credits.remaining > 0 && showAnalysis}
               potentialEntry={credits.remaining > 0 ? potentialEntry : null}
+              isSimulation={isSimulation}
             />
             {currentPosition && currentPosition.status === 'OPEN' && (
               <div className={styles.positionLevels}>

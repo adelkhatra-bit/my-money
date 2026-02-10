@@ -1312,31 +1312,46 @@ const TradingDashboard = () => {
       return;
     }
 
-    const currentPrice = candles && candles.length > 0 ? candles[candles.length - 1].close : 1.0850;
-    const isLong = Math.random() > 0.5;
-    const entryZone = currentPrice * (isLong ? 1.001 : 0.999);
+    let positionToDisplay = null;
+
+    if (currentPosition && currentPosition.status === 'OPEN') {
+      positionToDisplay = currentPosition;
+    } else if (history && history.length > 0) {
+      const lastAcceptedPosition = history
+        .filter(p => p.action === 'ACCEPT' || p.status === 'CLOSED')
+        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
+      positionToDisplay = lastAcceptedPosition;
+    }
+
+    if (!positionToDisplay) {
+      addActivityLog('📊 APERÇU: Aucune position disponible à afficher', 'warning');
+      return;
+    }
+
+    const currentPrice = candles && candles.length > 0 ? candles[candles.length - 1].close : positionToDisplay.entry_price;
+    const isLong = positionToDisplay.direction === 'LONG';
 
     const testSignal = {
-      direction: isLong ? 'LONG' : 'SHORT',
-      entry_min: entryZone * 0.9995,
-      entry_max: entryZone * 1.0005,
-      stop_loss: isLong ? entryZone * 0.995 : entryZone * 1.005,
-      take_profit_1: isLong ? entryZone * 1.01 : entryZone * 0.99,
-      take_profit_2: isLong ? entryZone * 1.02 : entryZone * 0.98,
-      market: market,
-      platform: platform,
-      confidence: 75 + Math.floor(Math.random() * 20),
-      id: `test-${Date.now()}`
+      direction: positionToDisplay.direction,
+      entry_min: positionToDisplay.entry_price * 0.9995,
+      entry_max: positionToDisplay.entry_price * 1.0005,
+      stop_loss: positionToDisplay.stop_loss,
+      take_profit_1: positionToDisplay.take_profit_1,
+      take_profit_2: positionToDisplay.take_profit_2,
+      market: positionToDisplay.market,
+      platform: positionToDisplay.platform,
+      confidence: 80,
+      id: `preview-${positionToDisplay.id}`
     };
 
-    addActivityLog('📊 APERÇU: Pré-alerte - Zone d\'entrée détectée', 'warning');
+    addActivityLog(`📊 APERÇU: Affichage ${positionToDisplay.status === 'OPEN' ? 'position active' : 'dernière position'}`, 'info');
     addActivityLog(`📍 Direction: ${testSignal.direction}`, 'info');
 
     setSignalState({
       isScanning: false,
       preAlert: {
-        market,
-        platform,
+        market: positionToDisplay.market,
+        platform: positionToDisplay.platform,
         direction: testSignal.direction,
         currentPrice,
         entry_min: testSignal.entry_min,
@@ -2017,37 +2032,93 @@ const TradingDashboard = () => {
         {showProofMode && dataMetadata && (
           <div className={`${styles.proofModeBar} ${dataMetadata.status === 'OK' ? styles.proofOk : styles.proofBlocked}`}>
             <div className={styles.proofRow}>
-              <strong>🔍 SOURCE:</strong> {dataMetadata.source}
+              <strong>🔍 DATA PROVIDER:</strong> {dataMetadata.dataProviderFile} → {dataMetadata.dataProviderFn}()
             </div>
             <div className={styles.proofRow}>
-              <strong>📍 Marché:</strong> {market} | Plateforme: {platform} | Timeframe: {timeframe}
+              <strong>🆔 Request ID:</strong> <span className={styles.proofDetail}>{dataMetadata.requestId}</span>
             </div>
             <div className={styles.proofRow}>
-              <strong>📊 Données reçues:</strong>
+              <strong>📍 Marché:</strong> {market} ({dataMetadata.symbol}) | Plateforme: {platform} | Timeframe: {dataMetadata.timeframeRequested}
+            </div>
+            <div className={styles.proofRow}>
+              <strong>📊 Bougies:</strong>
               <span className={styles.proofDetail}>
-                Bougies 1m: {dataMetadata.baseline1mCount} → Agrégées: {dataMetadata.aggregatedCount}
-                {dataMetadata.duplicatesRemoved > 0 && ` (${dataMetadata.duplicatesRemoved} doublons supprimés)`}
+                Baseline 1m: {dataMetadata.baseline1mCount} → Agrégées: {dataMetadata.aggregatedCount}
+                {dataMetadata.duplicatesRemoved > 0 && ` (${dataMetadata.duplicatesRemoved} doublons)`}
+              </span>
+            </div>
+            <div className={styles.proofRow}>
+              <strong>⏰ Timestamps:</strong>
+              <span className={styles.proofDetail}>
+                Baseline: {dataMetadata.baselineFirstTime} → {dataMetadata.baselineLastTime} |
+                Agrégé: {dataMetadata.aggregatedFirstTime} → {dataMetadata.aggregatedLastTime}
               </span>
             </div>
             <div className={styles.proofRow}>
               <strong>💰 Prix:</strong>
               <span className={styles.proofDetail}>
-                Baseline: {dataMetadata.lastPriceBaseline.toFixed(2)} |
-                Agrégé: {dataMetadata.lastPriceAggregated.toFixed(2)} |
-                Diff: {dataMetadata.priceDiff.toFixed(4)}
+                baselineLastClose: {dataMetadata.baselineLastClose?.toFixed(2)} |
+                aggregatedLastClose: {dataMetadata.aggregatedLastClose?.toFixed(2)} |
+                priceDiff: {dataMetadata.priceDiff?.toFixed(4)}
               </span>
             </div>
             <div className={styles.proofRow}>
-              <strong>{dataMetadata.status === 'OK' ? '✅ STATUT: OK' : '❌ STATUT: BLOQUÉ'}</strong>
+              <strong>{dataMetadata.status === 'OK' ? '✅ STATUT: OK' : '❌ STATUT: BLOCKED'}</strong>
               {dataMetadata.reason && (
-                <span className={styles.proofReason}>{dataMetadata.reason}</span>
+                <span className={styles.proofReason}> → {dataMetadata.reason}</span>
               )}
             </div>
-            {dataMetadata.status === 'BLOCKED' && (
-              <div className={styles.proofRow}>
-                <span className={styles.proofWarning}>→ Scan et trading désactivés</span>
-              </div>
-            )}
+            <div className={styles.proofRow}>
+              <button
+                className={styles.copyProofButton}
+                onClick={() => {
+                  const proofJson = JSON.stringify({
+                    ts: dataMetadata.ts,
+                    dataProviderFile: dataMetadata.dataProviderFile,
+                    dataProviderFn: dataMetadata.dataProviderFn,
+                    requestId: dataMetadata.requestId,
+                    platform: dataMetadata.platform,
+                    market: dataMetadata.market,
+                    symbol: dataMetadata.symbol,
+                    timeframeRequested: dataMetadata.timeframeRequested,
+                    baseline1mCount: dataMetadata.baseline1mCount,
+                    aggregatedCount: dataMetadata.aggregatedCount,
+                    baselineFirstTime: dataMetadata.baselineFirstTime,
+                    baselineLastTime: dataMetadata.baselineLastTime,
+                    aggregatedFirstTime: dataMetadata.aggregatedFirstTime,
+                    aggregatedLastTime: dataMetadata.aggregatedLastTime,
+                    baselineLastClose: dataMetadata.baselineLastClose,
+                    aggregatedLastClose: dataMetadata.aggregatedLastClose,
+                    priceDiff: dataMetadata.priceDiff,
+                    status: dataMetadata.status,
+                    reason: dataMetadata.reason
+                  }, null, 2);
+                  navigator.clipboard.writeText(proofJson);
+                  addActivityLog('📋 Preuve Data copiée dans le presse-papiers', 'success');
+                }}
+              >
+                📋 Copier preuve
+              </button>
+              <button
+                className={styles.copyProofButton}
+                onClick={() => {
+                  const gateProof = JSON.stringify({
+                    ts: new Date().toISOString(),
+                    allowed: gateStatus.allowed,
+                    reason: gateStatus.reason,
+                    scanAllowed: gateStatus.allowed && !autoMode,
+                    botAllowed: gateStatus.allowed && autoMode,
+                    popupsAllowed: gateStatus.allowed,
+                    previewAllowed: gateStatus.allowed
+                  }, null, 2);
+                  navigator.clipboard.writeText(gateProof);
+                  addActivityLog('📋 Gate Proof copié dans le presse-papiers', 'success');
+                }}
+                style={{ marginLeft: '10px' }}
+              >
+                📋 Copier Gate Proof
+              </button>
+            </div>
           </div>
         )}
 

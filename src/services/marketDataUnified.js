@@ -77,26 +77,41 @@ export function getSymbolMapping(market, platform) {
 }
 
 export function aggregateCandles(candles1m, targetTimeframe, metadata = {}) {
+  const requestId = metadata.requestId || `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  const firstCandle = candles1m[0];
+  const lastCandle = candles1m[candles1m.length - 1];
+
   if (targetTimeframe === '1m') {
     const enrichedMetadata = {
+      ts: new Date().toISOString(),
+      dataProviderFile: 'src/services/marketDataUnified.js',
+      dataProviderFn: 'getUnifiedMarketData',
+      requestId,
       source: 'marketDataUnified',
       symbol: metadata.symbol || 'N/A',
       platform: metadata.platform || 'N/A',
       market: metadata.market || 'N/A',
+      timeframeRequested: '1m',
       timeframe: '1m',
       baseline1mCount: candles1m.length,
       aggregatedCount: candles1m.length,
       duplicatesRemoved: metadata.duplicatesRemoved || 0,
       candlesAfterClean: candles1m.length,
-      lastPriceBaseline: candles1m[candles1m.length - 1]?.close || 0,
-      lastPriceAggregated: candles1m[candles1m.length - 1]?.close || 0,
+      baselineFirstTime: firstCandle?.time || 0,
+      baselineLastTime: lastCandle?.time || 0,
+      aggregatedFirstTime: firstCandle?.time || 0,
+      aggregatedLastTime: lastCandle?.time || 0,
+      baselineLastClose: lastCandle?.close || 0,
+      aggregatedLastClose: lastCandle?.close || 0,
+      lastPriceBaseline: lastCandle?.close || 0,
+      lastPriceAggregated: lastCandle?.close || 0,
       priceDiff: 0,
       status: candles1m.length >= 300 ? 'OK' : 'BLOCKED',
       reason: candles1m.length < 300 ? `Données insuffisantes (${candles1m.length} / 300 requises)` : null
     };
     return {
       candles: candles1m,
-      lastPrice: candles1m[candles1m.length - 1]?.close || 0,
+      lastPrice: lastCandle?.close || 0,
       metadata: enrichedMetadata
     };
   }
@@ -144,20 +159,33 @@ export function aggregateCandles(candles1m, targetTimeframe, metadata = {}) {
     aggregated.push(createAggregatedCandle(currentBucket));
   }
 
-  const lastPriceAggregated = aggregated[aggregated.length - 1]?.close || 0;
-  const lastPriceBaseline = candles1m[candles1m.length - 1]?.close || 0;
+  const firstCandleAggregated = aggregated[0];
+  const lastCandleAggregated = aggregated[aggregated.length - 1];
+  const lastPriceAggregated = lastCandleAggregated?.close || 0;
+  const lastPriceBaseline = lastCandle?.close || 0;
   const priceDiff = Math.abs(lastPriceBaseline - lastPriceAggregated);
 
   const enrichedMetadata = {
+    ts: new Date().toISOString(),
+    dataProviderFile: 'src/services/marketDataUnified.js',
+    dataProviderFn: 'getUnifiedMarketData',
+    requestId,
     source: 'marketDataUnified',
     symbol: metadata.symbol || 'N/A',
     platform: metadata.platform || 'N/A',
     market: metadata.market || 'N/A',
+    timeframeRequested: targetTimeframe,
     timeframe: targetTimeframe,
     baseline1mCount: candles1m.length,
     aggregatedCount: aggregated.length,
     duplicatesRemoved: metadata.duplicatesRemoved || 0,
     candlesAfterClean: candles1m.length,
+    baselineFirstTime: firstCandle?.time || 0,
+    baselineLastTime: lastCandle?.time || 0,
+    aggregatedFirstTime: firstCandleAggregated?.time || 0,
+    aggregatedLastTime: lastCandleAggregated?.time || 0,
+    baselineLastClose: lastPriceBaseline,
+    aggregatedLastClose: lastPriceAggregated,
     lastPriceBaseline: lastPriceBaseline,
     lastPriceAggregated: lastPriceAggregated,
     priceDiff: priceDiff,
@@ -232,8 +260,12 @@ export async function getUnifiedMarketData(market, platform, timeframe) {
   }
 
   const lastPrice1m = candles1m[candles1m.length - 1]?.close;
+  const requestId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  const firstCandle = candles1m[0];
+  const lastCandle = candles1m[candles1m.length - 1];
 
   const metadataBase = {
+    requestId,
     symbol,
     platform,
     market,
@@ -243,15 +275,26 @@ export async function getUnifiedMarketData(market, platform, timeframe) {
   if (timeframe === '1m') {
     console.log(`✅ [Market Data] Returning ${candles1m.length} candles (1m base), lastPrice: ${lastPrice1m.toFixed(2)}`);
     const metadata = {
+      ts: new Date().toISOString(),
+      dataProviderFile: 'src/services/marketDataUnified.js',
+      dataProviderFn: 'getUnifiedMarketData',
+      requestId,
       source: 'marketDataUnified',
       symbol,
       platform,
       market,
+      timeframeRequested: '1m',
       timeframe: '1m',
       baseline1mCount: candles1m.length,
       aggregatedCount: candles1m.length,
       duplicatesRemoved: 0,
       candlesAfterClean: candles1m.length,
+      baselineFirstTime: firstCandle?.time || 0,
+      baselineLastTime: lastCandle?.time || 0,
+      aggregatedFirstTime: firstCandle?.time || 0,
+      aggregatedLastTime: lastCandle?.time || 0,
+      baselineLastClose: lastPrice1m,
+      aggregatedLastClose: lastPrice1m,
       lastPriceBaseline: lastPrice1m,
       lastPriceAggregated: lastPrice1m,
       priceDiff: 0,

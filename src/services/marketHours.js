@@ -170,6 +170,53 @@ export const getMarketStatus = (market) => {
   return { open: false, message: 'Marché fermé (hors horaires de trading)' };
 };
 
+export const getMarketCountdown = (market) => {
+  if (market === 'BTC' || market === 'ETH') {
+    return null;
+  }
+
+  const now = new Date();
+  const nowET = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+  const day = nowET.getDay();
+  const hours = nowET.getHours();
+  const minutes = nowET.getMinutes();
+
+  let targetET = new Date(nowET);
+
+  if (day === 6) {
+    const daysUntilSunday = 1;
+    targetET.setDate(nowET.getDate() + daysUntilSunday);
+    targetET.setHours(18, 0, 0, 0);
+  } else if (day === 0 && hours < 18) {
+    targetET.setHours(18, 0, 0, 0);
+  } else if (day === 5 && hours >= 17) {
+    targetET.setDate(nowET.getDate() + 2);
+    targetET.setHours(18, 0, 0, 0);
+  } else if (hours * 60 + minutes >= 17 * 60 && hours * 60 + minutes < 18 * 60) {
+    targetET.setHours(18, 0, 0, 0);
+  } else {
+    return null;
+  }
+
+  const targetETString = targetET.toLocaleString('en-US', { timeZone: 'America/New_York' });
+  const targetLocal = new Date(targetETString);
+
+  const diffMs = targetLocal - now;
+  const diffMinutes = Math.floor(diffMs / (1000 * 60));
+  const diffHours = Math.floor(diffMinutes / 60);
+  const remainingMinutes = diffMinutes % 60;
+
+  if (diffHours > 24) {
+    const days = Math.floor(diffHours / 24);
+    const remainingHours = diffHours % 24;
+    return `${days}j ${remainingHours}h ${remainingMinutes}m`;
+  } else if (diffHours > 0) {
+    return `${diffHours}h ${remainingMinutes}m`;
+  } else {
+    return `${diffMinutes}m`;
+  }
+};
+
 export const getNextMarketOpen = (market) => {
   if (market === 'BTC' || market === 'ETH') {
     return null;
@@ -183,18 +230,19 @@ export const getNextMarketOpen = (market) => {
 
   const tzLabel = getTimezoneLabel();
   const openingTimeLocal = convertETToLocal(18, 0);
+  const countdown = getMarketCountdown(market);
 
   if (day === 6) {
-    return `Dimanche ${openingTimeLocal} ${tzLabel}`;
+    return `Dimanche ${openingTimeLocal} ${tzLabel}${countdown ? ` (dans ${countdown})` : ''}`;
   }
   if (day === 0 && hours < 18) {
-    return `Dimanche ${openingTimeLocal} ${tzLabel}`;
+    return `Dimanche ${openingTimeLocal} ${tzLabel}${countdown ? ` (dans ${countdown})` : ''}`;
   }
   if (day === 5 && hours >= 17) {
-    return `Dimanche ${openingTimeLocal} ${tzLabel}`;
+    return `Dimanche ${openingTimeLocal} ${tzLabel}${countdown ? ` (dans ${countdown})` : ''}`;
   }
   if (totalMinutes >= 17 * 60 && totalMinutes < 18 * 60) {
-    return `Aujourd'hui ${convertETToLocal(18, 0)} ${tzLabel}`;
+    return `Aujourd'hui ${convertETToLocal(18, 0)} ${tzLabel}${countdown ? ` (dans ${countdown})` : ''}`;
   }
 
   return 'Marché ouvert presque 24h/24';

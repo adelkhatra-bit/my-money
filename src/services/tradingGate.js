@@ -211,4 +211,71 @@ class TradingGate {
   }
 }
 
+export const simpleGate = (metadata, platform, market, context = {}) => {
+  if (!metadata) {
+    return {
+      allowed: false,
+      reason: 'Données graphique manquantes'
+    };
+  }
+
+  if (metadata.status !== 'OK') {
+    return {
+      allowed: false,
+      reason: metadata.reason || 'Graphique invalide'
+    };
+  }
+
+  if (!metadata.baseline1mCount || metadata.baseline1mCount < 300) {
+    return {
+      allowed: false,
+      reason: `Baseline insuffisante: ${metadata.baseline1mCount || 0}/300 bougies 1m`
+    };
+  }
+
+  if (metadata.duplicatesRemoved > 0) {
+    return {
+      allowed: false,
+      reason: `${metadata.duplicatesRemoved} doublons détectés`
+    };
+  }
+
+  if (Math.abs(metadata.priceDiff) > 0.01) {
+    return {
+      allowed: false,
+      reason: `Écart prix: ${metadata.priceDiff.toFixed(4)}`
+    };
+  }
+
+  const validCombinations = [
+    { platform: 'TopStep', market: 'NASDAQ' },
+    { platform: 'TopStep', market: 'Forex' },
+    { platform: 'Binance', market: 'BTC' },
+    { platform: 'Binance', market: 'ETH' }
+  ];
+
+  const isValidCombo = validCombinations.some(
+    combo => combo.platform === platform && combo.market === market
+  );
+
+  if (!isValidCombo) {
+    return {
+      allowed: false,
+      reason: `Incompatibilité: ${platform} ne supporte pas ${market}`
+    };
+  }
+
+  if (context.requiresBotEnabled && !context.botEnabled) {
+    return {
+      allowed: false,
+      reason: 'Robot désactivé'
+    };
+  }
+
+  return {
+    allowed: true,
+    reason: null
+  };
+};
+
 export default new TradingGate();

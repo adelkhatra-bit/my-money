@@ -23,7 +23,7 @@ import { positionService } from '../../services/positionService';
 import { userPreferencesService } from '../../services/userPreferences';
 import { validateMarketPlatformCompatibility } from '../../services/marketDataUnified';
 import { getCompatiblePlatforms, getDefaultPlatformForMarket, isPlatformCompatible } from '../../services/platformFilter';
-import tradingGate from '../../services/tradingGate';
+import tradingGate, { simpleGate } from '../../services/tradingGate';
 import { supabase } from '../../lib/supabaseClient';
 import styles from './TradingDashboard.module.css';
 
@@ -89,6 +89,7 @@ const TradingDashboard = () => {
   const [dataMetadata, setDataMetadata] = useState(null);
   const [showDbProof, setShowDbProof] = useState(false);
   const [dbProofData, setDbProofData] = useState(null);
+  const [gateStatus, setGateStatus] = useState({ allowed: false, reason: 'En attente des données graphique' });
 
   const addActivityLog = (message, type = 'info') => {
     if (activityLogCallback) {
@@ -101,6 +102,11 @@ const TradingDashboard = () => {
     setStatsBarCollapsed(newState);
     localStorage.setItem('trading_statsbar_collapsed', newState.toString());
   };
+
+  useEffect(() => {
+    const result = simpleGate(dataMetadata, platform, market, { botEnabled: autoMode });
+    setGateStatus(result);
+  }, [dataMetadata, platform, market, autoMode]);
 
   const handleMarketChange = async (newMarket) => {
     console.log('🔄 [Market Change] Changement de marché:', { from: market, to: newMarket, currentPlatform: platform });
@@ -927,6 +933,13 @@ const TradingDashboard = () => {
   };
 
   const performScan = async () => {
+    if (!gateStatus.allowed) {
+      setScanStatus(`🚫 ${gateStatus.reason}`);
+      setBotState('blocked');
+      addActivityLog(`🚫 Scan bloqué: ${gateStatus.reason}`, 'warning');
+      return;
+    }
+
     addActivityLog('🔄 Démarrage du scan automatique...', 'scan');
 
     if (!marketStatus.open) {
@@ -1255,6 +1268,11 @@ const TradingDashboard = () => {
   };
 
   const handleManualScan = async () => {
+    if (!gateStatus.allowed) {
+      addActivityLog(`🚫 Scan bloqué: ${gateStatus.reason}`, 'warning');
+      return;
+    }
+
     if (currentPosition) {
       const dir = currentPosition.direction === 'LONG' ? '🟢 LONG' : '🔴 SHORT';
       alert(`⛔ POSITION ACTIVE\n\n${dir} sur ${currentPosition.market}\nPrix d'entrée: ${parseFloat(currentPosition.entry_price).toFixed(2)}\n\nVous devez fermer cette position avant de pouvoir scanner à nouveau.\n\nLe bot surveille automatiquement votre position en temps réel.`);
@@ -2035,6 +2053,24 @@ const TradingDashboard = () => {
           </div>
         ) : (
           <>
+            {!gateStatus.allowed && (
+              <div style={{
+                padding: '12px 20px',
+                background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(220, 38, 38, 0.1) 100%)',
+                border: '1px solid rgba(239, 68, 68, 0.3)',
+                borderRadius: '8px',
+                marginBottom: '15px',
+                color: '#fff',
+                fontSize: '14px',
+                fontWeight: 600,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px'
+              }}>
+                <span>🚫</span>
+                <span>Graphique bloqué: {gateStatus.reason}</span>
+              </div>
+            )}
             <TradingChart
               candles={candles}
               signal={signalState.signal || currentSignal}

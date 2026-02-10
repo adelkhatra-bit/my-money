@@ -1388,6 +1388,29 @@ const TradingDashboard = () => {
     }, 5000);
   };
 
+  const handleCopyGateProof = async () => {
+    const gateProof = {
+      ts: new Date().toISOString(),
+      allowed: gateStatus.allowed,
+      reason: gateStatus.reason,
+      platform: platform,
+      market: market,
+      rule300: "B",
+      baseline1mCount: dataMetadata?.baseline1mCount || 0,
+      aggregatedCount: dataMetadata?.aggregatedCount || 0,
+      duplicatesRemoved: dataMetadata?.duplicatesRemoved || 0,
+      priceDiff: dataMetadata?.priceDiff || 0
+    };
+
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(gateProof, null, 2));
+      addActivityLog('📋 Gate Proof copié dans le presse-papier', 'success');
+    } catch (err) {
+      console.error('Erreur lors de la copie:', err);
+      addActivityLog('❌ Erreur lors de la copie du Gate Proof', 'error');
+    }
+  };
+
   const handleToggleBot = () => {
     const newState = !autoMode;
     setAutoMode(newState);
@@ -1971,6 +1994,13 @@ const TradingDashboard = () => {
               title="Afficher/masquer les métriques DB"
             >
               💾 DB Proof
+            </button>
+            <button
+              className={styles.proofModeToggle}
+              onClick={handleCopyGateProof}
+              title="Copier les métriques du gate dans le presse-papier"
+            >
+              📋 Copier Gate Proof
             </button>
             <MarketHealthIndicator
               status={marketHealth.status}

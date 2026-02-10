@@ -1,6 +1,14 @@
 const baseTimeframe = '1m';
 let dataCache = {};
 
+export function clearDataCache() {
+  dataCache = {};
+  console.log('🗑️ [Market Data] Cache vidé - régénération des données');
+}
+
+console.log('🔄 [Market Data] Vidage automatique du cache au démarrage (timestamps corrigés)');
+dataCache = {};
+
 export function validateMarketPlatformCompatibility(market, platform) {
   const cryptoMarkets = ['BTC', 'ETH'];
   const cryptoPlatforms = ['binance', 'bybit', 'okx', 'coinbase'];

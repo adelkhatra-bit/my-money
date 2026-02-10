@@ -9,6 +9,7 @@ import BotActivityLog from '../../components/BotActivityLog/BotActivityLog';
 import ScanOpportunity from '../../components/ScanOpportunity/ScanOpportunity';
 import MarketHealthIndicator from '../../components/MarketHealthIndicator/MarketHealthIndicator';
 import MarketBlockedPopup from '../../components/MarketBlockedPopup/MarketBlockedPopup';
+import ConnectTopstep from '../../components/ConnectTopstep/ConnectTopstep';
 import { marketDataProvider } from '../../services/MarketDataProvider';
 import { generateSignal } from '../../services/signalEngine';
 import { calculatePositionSize } from '../../services/riskCalculator';
@@ -1801,22 +1802,29 @@ const TradingDashboard = () => {
       <div className={styles.header}>
         <div className={styles.titleRow}>
           <h1>AI Trading Platform</h1>
-          <div className={styles.paperTradingBadge} style={{
-            background: isSimulation
-              ? 'linear-gradient(135deg, #ff1744 0%, #c62828 100%)'
-              : 'linear-gradient(135deg, #00e676 0%, #00c853 100%)',
-            color: '#fff',
-            padding: '8px 16px',
-            borderRadius: '8px',
-            fontSize: '14px',
-            fontWeight: 'bold',
-            border: isSimulation ? '2px solid #ff5252' : '2px solid #69f0ae',
-            boxShadow: isSimulation
-              ? '0 4px 12px rgba(255, 23, 68, 0.4)'
-              : '0 4px 12px rgba(0, 230, 118, 0.4)',
-            animation: isSimulation ? 'pulse 2s infinite' : 'none'
-          }}>
-            {isSimulation ? '⚠️ SIMULATION - Données déterministes' : '✅ LIVE - Données temps réel'}
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+            <div className={styles.paperTradingBadge} style={{
+              background: isSimulation
+                ? 'linear-gradient(135deg, #ff1744 0%, #c62828 100%)'
+                : 'linear-gradient(135deg, #00e676 0%, #00c853 100%)',
+              color: '#fff',
+              padding: '8px 16px',
+              borderRadius: '8px',
+              fontSize: '14px',
+              fontWeight: 'bold',
+              border: isSimulation ? '2px solid #ff5252' : '2px solid #69f0ae',
+              boxShadow: isSimulation
+                ? '0 4px 12px rgba(255, 23, 68, 0.4)'
+                : '0 4px 12px rgba(0, 230, 118, 0.4)',
+              animation: isSimulation ? 'pulse 2s infinite' : 'none'
+            }}>
+              {isSimulation ? '⚠️ SIMULATION - Données déterministes' : '✅ LIVE - Données temps réel'}
+            </div>
+            <ConnectTopstep onConnectionChange={(connected) => {
+              if (connected) {
+                console.log('✅ [TradingDashboard] Topstep connected - reloading data...');
+              }
+            }} />
           </div>
         </div>
 

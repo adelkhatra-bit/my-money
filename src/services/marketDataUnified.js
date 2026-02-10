@@ -222,42 +222,15 @@ function createAggregatedCandle(candles) {
 async function fetchRealMarketData(symbol, timeframe, limit = 500, platform = 'topstep') {
   const isTopstepPlatform = ['topstep', 'ftmo', 'apex'].includes(platform.toLowerCase());
 
-  if (isTopstepPlatform) {
-    try {
-      console.log(`🔄 [Market Data] Attempting TOPSTEP LIVE provider for ${symbol}...`);
-      const url = `${SUPABASE_URL}/functions/v1/topstep-live-provider/candles?symbol=${symbol}&timeframe=${timeframe}&limit=${limit}`;
-
-      const response = await fetch(url, {
-        headers: {
-          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-          'Content-Type': 'application/json',
-        }
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-
-        if (data.isSimulation === false && data.candles && data.candles.length > 0) {
-          isSimulationMode = false;
-          console.log(`✅ [Market Data] TOPSTEP LIVE DATA from ${data.provider}:`, {
-            symbol: data.symbol,
-            candles: data.candles.length,
-            lastPrice: data.candles[data.candles.length - 1]?.close,
-            dataSource: data.dataSource
-          });
-          return data.candles;
-        }
-      }
-
-      console.warn('⚠️ [Market Data] Topstep live not available, trying fallback...');
-    } catch (error) {
-      console.warn('⚠️ [Market Data] Topstep live failed, trying fallback:', error.message);
-    }
+  if (!isTopstepPlatform) {
+    console.log(`ℹ️ [Market Data] Platform ${platform} not configured for LIVE data - using SIMULATION`);
+    isSimulationMode = true;
+    return null;
   }
 
   try {
-    console.log(`🔄 [Market Data] Using fallback provider (Polygon) for ${symbol}...`);
-    const url = `${SUPABASE_URL}/functions/v1/market-data-proxy/candles?symbol=${symbol}&timeframe=${timeframe}&limit=${limit}`;
+    console.log(`🔄 [Market Data] Attempting TOPSTEP LIVE provider for ${symbol}...`);
+    const url = `${SUPABASE_URL}/functions/v1/topstep-live-provider/candles?symbol=${symbol}&timeframe=${timeframe}&limit=${limit}`;
 
     const response = await fetch(url, {
       headers: {
@@ -266,36 +239,26 @@ async function fetchRealMarketData(symbol, timeframe, limit = 500, platform = 't
       }
     });
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      console.warn('⚠️ [Market Data] Fallback provider returned error:', errorData);
+    if (response.ok) {
+      const data = await response.json();
 
-      if (errorData.isSimulation) {
-        isSimulationMode = true;
-        console.warn('🔴 [Market Data] No API configured - falling back to SIMULATION');
-        return null;
+      if (data.isSimulation === false && data.candles && data.candles.length > 0) {
+        isSimulationMode = false;
+        console.log(`✅ [Market Data] TOPSTEP LIVE DATA from ${data.provider}:`, {
+          symbol: data.symbol,
+          candles: data.candles.length,
+          lastPrice: data.candles[data.candles.length - 1]?.close,
+          dataSource: data.dataSource
+        });
+        return data.candles;
       }
-
-      throw new Error(`Market data fetch failed: ${response.status}`);
     }
 
-    const data = await response.json();
-
-    if (data.isSimulation === false && data.candles && data.candles.length > 0) {
-      isSimulationMode = false;
-      console.log(`✅ [Market Data] FALLBACK LIVE DATA from ${data.provider}:`, {
-        symbol: data.symbol,
-        candles: data.candles.length,
-        lastPrice: data.candles[data.candles.length - 1]?.close
-      });
-      return data.candles;
-    }
-
-    console.warn('⚠️ [Market Data] No valid data returned - falling back to SIMULATION');
+    console.log('ℹ️ [Market Data] Topstep LIVE not connected - using SIMULATION');
     isSimulationMode = true;
     return null;
   } catch (error) {
-    console.error('❌ [Market Data] All providers failed:', error.message);
+    console.log(`ℹ️ [Market Data] Topstep LIVE not available (${error.message}) - using SIMULATION`);
     isSimulationMode = true;
     return null;
   }

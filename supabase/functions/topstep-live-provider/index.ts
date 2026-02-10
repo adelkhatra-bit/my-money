@@ -189,6 +189,74 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    if (path.includes('/auth')) {
+      if (req.method !== 'POST') {
+        return new Response(
+          JSON.stringify({ error: 'Method not allowed' }),
+          { status: 405, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const body = await req.json();
+      const { username, password, cid, deviceId, broker } = body;
+
+      if (!username || !password || !cid) {
+        return new Response(
+          JSON.stringify({ error: 'Username, password, and CID are required' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      try {
+        const authPayload = {
+          name: username,
+          password: password,
+          appId: cid,
+          appVersion: '1.0',
+          deviceId: deviceId || 'trading-platform',
+          cid: cid,
+        };
+
+        const response = await fetch(`${TRADOVATE_BASE_URL}/auth/accesstokenrequest`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          body: JSON.stringify(authPayload),
+        });
+
+        if (!response.ok) {
+          return new Response(
+            JSON.stringify({
+              error: 'Authentication failed',
+              message: 'Invalid credentials or Tradovate API error'
+            }),
+            { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        const authData = await response.json();
+
+        return new Response(
+          JSON.stringify({
+            success: true,
+            message: 'Authentication successful',
+            expiresAt: authData.expirationTime,
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      } catch (error) {
+        return new Response(
+          JSON.stringify({
+            error: 'Authentication error',
+            message: error.message
+          }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
     if (path.includes('/candles')) {
       const symbol = url.searchParams.get('symbol') || 'MNQ';
       const timeframe = url.searchParams.get('timeframe') || '1m';

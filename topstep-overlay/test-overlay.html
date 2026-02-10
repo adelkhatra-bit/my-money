@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test TopstepOverlay</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #1a1a1a;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+        .fake-chart {
+            width: 100%;
+            height: 600px;
+            background: #2a2a2a;
+            border: 2px solid #444;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: #666;
+        }
+        .price-display {
+            position: absolute;
+            top: 100px;
+            left: 100px;
+            background: #333;
+            padding: 20px;
+            border-radius: 8px;
+            font-size: 32px;
+            font-weight: bold;
+            color: #10b981;
+        }
+        .instructions {
+            margin: 20px 0;
+            padding: 20px;
+            background: #2a2a2a;
+            border: 2px solid #10b981;
+            border-radius: 8px;
+        }
+        .instructions h2 {
+            margin-top: 0;
+            color: #10b981;
+        }
+        .instructions ol {
+            line-height: 1.8;
+        }
+    </style>
+</head>
+<body>
+    <div class="instructions">
+        <h2>🧪 Test Overlay Local</h2>
+        <ol>
+            <li>Ouvre la Console (F12)</li>
+            <li>Cherche les logs <code>[TOPSTEPOVERLAY]</code></li>
+            <li>L'overlay doit apparaître en haut à droite</li>
+            <li>Clique "BOT ON" → scan auto toutes les 5s</li>
+            <li>Clique "📋 Copy Debug" pour copier les infos</li>
+        </ol>
+        <p><strong>✅ Si ça marche ici, ça marchera sur Tradovate.</strong></p>
+    </div>
+
+    <div class="price-display">MES: 5850.25</div>
+
+    <div class="fake-chart">
+        <canvas id="chart-canvas" width="800" height="500"></canvas>
+        <div style="position: absolute;">📈 Fake Tradovate Chart 📉</div>
+    </div>
+
+    <link rel="stylesheet" href="overlay-styles.css">
+    <script src="content-script.js"></script>
+</body>
+</html>

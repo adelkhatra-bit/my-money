@@ -22,7 +22,14 @@ function App() {
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
 
   useEffect(() => {
-    checkUser();
+    const initTimeout = setTimeout(() => {
+      console.warn('⚠️ Init timeout - forcing load');
+      setLoading(false);
+    }, 3000);
+
+    checkUser().finally(() => {
+      clearTimeout(initTimeout);
+    });
 
     localStorage.setItem('disclaimer_accepted', 'true');
 
@@ -38,6 +45,7 @@ function App() {
     );
 
     return () => {
+      clearTimeout(initTimeout);
       subscription?.unsubscribe();
     };
   }, []);

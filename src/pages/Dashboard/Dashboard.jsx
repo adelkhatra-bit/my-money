@@ -126,12 +126,12 @@ export default function Dashboard() {
         {totalCredits > 0 && (
           <button
             className={styles.tradingButton}
-            onClick={() => navigate('/trading')}
+            onClick={() => navigate('/setup')}
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
             </svg>
-            Accéder au Trading
+            Commencer à Trader
           </button>
         )}
       </div>
@@ -242,12 +242,12 @@ export default function Dashboard() {
       <div className={styles.quickActions}>
         <h2>Actions Rapides</h2>
         <div className={styles.actionsGrid}>
-          <a href="/trading" className={styles.actionCard}>
+          <a href="/setup" className={styles.actionCard}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M3 3h18v18H3V3zm16 16V5H5v14h14zM11 7h2v10h-2V7zm4 3h2v7h-2v-7zm-8 2h2v5H7v-5z"/>
             </svg>
             <h3>Commencer à trader</h3>
-            <p>Accéder à la plateforme de trading</p>
+            <p>Configurer TradingView</p>
           </a>
 
           <a href="/accounts" className={styles.actionCard}>

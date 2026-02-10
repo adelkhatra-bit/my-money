@@ -9,7 +9,7 @@ Votre Edge Function est maintenant déployée et opérationnelle.
 Pour configurer vos alertes TradingView, utilisez cette URL:
 
 ```
-https://xvqjynhbgdlqmapqtxdi.supabase.co/functions/v1/tradingview-webhook
+https://alsftpbjneityeyzwyzz.supabase.co/functions/v1/tradingview-webhook
 ```
 
 ## 📋 Format des Messages
@@ -89,7 +89,7 @@ https://xvqjynhbgdlqmapqtxdi.supabase.co/functions/v1/tradingview-webhook
 
 2. Collez l'URL:
    ```
-   https://xvqjynhbgdlqmapqtxdi.supabase.co/functions/v1/tradingview-webhook
+   https://alsftpbjneityeyzwyzz.supabase.co/functions/v1/tradingview-webhook
    ```
 
 3. Dans le champ **Message**, collez un message JSON valide (voir exemples ci-dessus)
@@ -146,7 +146,7 @@ Le webhook accepte plusieurs formats pour compatibilité:
 ### Avec curl (terminal)
 
 ```bash
-curl -X POST https://xvqjynhbgdlqmapqtxdi.supabase.co/functions/v1/tradingview-webhook \
+curl -X POST https://alsftpbjneityeyzwyzz.supabase.co/functions/v1/tradingview-webhook \
   -H "Content-Type: application/json" \
   -d '{
     "symbol": "CME_MINI:MNQ1!",
@@ -340,7 +340,7 @@ Le webhook **doit** être public pour que TradingView puisse envoyer les alertes
 
 1. URL correcte ?
    ```
-   https://xvqjynhbgdlqmapqtxdi.supabase.co/functions/v1/tradingview-webhook
+   https://alsftpbjneityeyzwyzz.supabase.co/functions/v1/tradingview-webhook
    ```
 
 2. Message JSON valide ?

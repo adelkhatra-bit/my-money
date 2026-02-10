@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { supabase } from './lib/supabaseClient';
 import Dashboard from './pages/Dashboard/Dashboard';
 import TradingDashboard from './pages/TradingDashboard/TradingDashboard';
+import TradingSetup from './pages/TradingSetup/TradingSetup';
 import Login from './pages/Auth/Login';
 import Signup from './pages/Auth/Signup';
 import AccountManagement from './pages/AccountManagement/AccountManagement';
@@ -151,6 +152,10 @@ function App() {
         <Route
           path="/trading"
           element={user ? <TradingDashboard /> : <Navigate to="/login" />}
+        />
+        <Route
+          path="/setup"
+          element={user ? <TradingSetup /> : <Navigate to="/login" />}
         />
         <Route
           path="/accounts"

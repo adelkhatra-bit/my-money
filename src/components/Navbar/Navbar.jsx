@@ -50,14 +50,14 @@ const Navbar = ({ isSuperAdmin }) => {
           <span>Trading</span>
         </Link>
         <Link
-          to="/chart"
-          className={`${styles.navButton} ${location.pathname === '/chart' ? styles.active : ''}`}
+          to="/setup"
+          className={`${styles.navButton} ${location.pathname === '/setup' ? styles.active : ''}`}
         >
           <svg className={styles.icon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <polyline points="3 17 9 11 13 15 21 7"/>
             <polyline points="14 7 21 7 21 14"/>
           </svg>
-          <span>TradingView</span>
+          <span>Configuration</span>
         </Link>
         <Link
           to="/accounts"

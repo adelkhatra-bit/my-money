@@ -13,6 +13,7 @@ import ConnectTopstep from '../../components/ConnectTopstep/ConnectTopstep';
 import TradingViewAlerts from '../../components/TradingViewAlerts/TradingViewAlerts';
 import EntryPreparation from '../../components/EntryPreparation/EntryPreparation';
 import PositionVerification from '../../components/PositionVerification/PositionVerification';
+import LivePriceHeader from '../../components/LivePriceHeader/LivePriceHeader';
 import { marketDataProvider } from '../../services/MarketDataProvider';
 import { generateSignal } from '../../services/signalEngine';
 import { calculatePositionSize } from '../../services/riskCalculator';
@@ -31,6 +32,15 @@ import tradingGate from '../../services/tradingGate';
 import { supabase } from '../../lib/supabaseClient';
 import { getAntoCompatibilityProof, getAntoGateProof, initializeAntoMarket } from '../../services/antoMarketEngine';
 import styles from './TradingDashboard.module.css';
+
+const mapMarketToPriceEngine = (market) => {
+  const mapping = {
+    'NASDAQ': 'MNQ',
+    'GOLD': 'MGC',
+    'BTC': 'BTC'
+  };
+  return mapping[market] || market;
+};
 
 const TradingDashboard = () => {
   console.log('🚀 [TradingDashboard] Initialisation du composant');
@@ -1875,6 +1885,8 @@ const TradingDashboard = () => {
             }} />
           </div>
         </div>
+
+        <LivePriceHeader market={mapMarketToPriceEngine(market)} />
 
         <div className={styles.controls}>
           <div className={styles.controlGroup}>

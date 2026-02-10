@@ -1,5 +1,7 @@
 const MARKET_DECIMALS = {
+  MNQ: 2,
   NASDAQ: 2,
+  MGC: 2,
   GOLD: 2,
   BTC: 2,
   ETH: 2,
@@ -28,7 +30,10 @@ export const formatPercentage = (percentage, decimals = 2) => {
 export const displayPrice = (price, market = null) => {
   const decimals = market ? getMarketDecimals(market) : 2;
   const formatted = formatPrice(price, market);
-  return formatted.toFixed(decimals);
+  return `$${formatted.toLocaleString('en-US', {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals
+  })}`;
 };
 
 export const displayPnL = (pnl, decimals = 2) => {

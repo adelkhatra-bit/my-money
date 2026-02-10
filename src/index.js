@@ -2,10 +2,13 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App.jsx';
 import './index.css';
+import { getDataModeConfig } from './config/dataMode.js';
 
 console.log('✅ [DIAGNOSTIC] index.js loaded at', new Date().toISOString());
 console.log('✅ [DIAGNOSTIC] React version:', React.version);
 console.log('✅ [DIAGNOSTIC] App component:', typeof App);
+console.log('🔒 [DATA MODE]', getDataModeConfig());
+console.log('✅ [SECRETS] No secrets required - SIMULATION mode active');
 
 window.onerror = function(message, source, lineno, colno, error) {
   console.error('❌ [window.onerror]', { message, source, lineno, colno, error });

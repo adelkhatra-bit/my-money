@@ -1,9 +1,9 @@
 const baseTimeframe = '1m';
 let dataCache = {};
-let isSimulationMode = false;
 
-const SUPABASE_URL = process.env.REACT_APP_SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-const SUPABASE_ANON_KEY = process.env.REACT_APP_SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+const DATA_MODE = 'SIMULATION';
+const FORCE_SIMULATION = true;
+let isSimulationMode = true;
 
 export function clearDataCache() {
   dataCache = {};
@@ -220,48 +220,15 @@ function createAggregatedCandle(candles) {
 }
 
 async function fetchRealMarketData(symbol, timeframe, limit = 500, platform = 'topstep') {
-  const isTopstepPlatform = ['topstep', 'ftmo', 'apex'].includes(platform.toLowerCase());
-
-  if (!isTopstepPlatform) {
-    console.log(`ℹ️ [Market Data] Platform ${platform} not configured for LIVE data - using SIMULATION`);
+  if (FORCE_SIMULATION) {
+    console.log(`🔒 [Market Data] SIMULATION MODE (FORCED) - No API calls, no secrets required`);
     isSimulationMode = true;
     return null;
   }
 
-  try {
-    console.log(`🔄 [Market Data] Attempting TOPSTEP LIVE provider for ${symbol}...`);
-    const url = `${SUPABASE_URL}/functions/v1/topstep-live-provider/candles?symbol=${symbol}&timeframe=${timeframe}&limit=${limit}`;
-
-    const response = await fetch(url, {
-      headers: {
-        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-        'Content-Type': 'application/json',
-      }
-    });
-
-    if (response.ok) {
-      const data = await response.json();
-
-      if (data.isSimulation === false && data.candles && data.candles.length > 0) {
-        isSimulationMode = false;
-        console.log(`✅ [Market Data] TOPSTEP LIVE DATA from ${data.provider}:`, {
-          symbol: data.symbol,
-          candles: data.candles.length,
-          lastPrice: data.candles[data.candles.length - 1]?.close,
-          dataSource: data.dataSource
-        });
-        return data.candles;
-      }
-    }
-
-    console.log('ℹ️ [Market Data] Topstep LIVE not connected - using SIMULATION');
-    isSimulationMode = true;
-    return null;
-  } catch (error) {
-    console.log(`ℹ️ [Market Data] Topstep LIVE not available (${error.message}) - using SIMULATION`);
-    isSimulationMode = true;
-    return null;
-  }
+  console.log(`ℹ️ [Market Data] Platform ${platform} - using SIMULATION (no external APIs)`);
+  isSimulationMode = true;
+  return null;
 }
 
 const MINIMUM_CANDLES = 300;

@@ -1,3 +1,44 @@
+export const getUserTimezone = () => {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone;
+  } catch (error) {
+    return 'UTC';
+  }
+};
+
+export const convertETToLocal = (etHour, etMinute = 0) => {
+  const etDate = new Date();
+  etDate.setHours(etHour, etMinute, 0, 0);
+
+  const etString = etDate.toLocaleString('en-US', {
+    timeZone: 'America/New_York',
+    hour12: false,
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+
+  const userTz = getUserTimezone();
+  const localString = etDate.toLocaleString('en-US', {
+    timeZone: userTz,
+    hour12: false,
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+
+  return localString;
+};
+
+export const getTimezoneLabel = () => {
+  const userTz = getUserTimezone();
+  const now = new Date();
+  const tzAbbr = now.toLocaleTimeString('en-US', {
+    timeZone: userTz,
+    timeZoneName: 'short'
+  }).split(' ').pop();
+
+  return tzAbbr;
+};
+
 export const isMarketOpen = (market) => {
   const now = new Date();
 
@@ -15,7 +56,15 @@ export const isMarketOpen = (market) => {
   const minutes = estDate.getMinutes();
   const totalMinutes = hours * 60 + minutes;
 
-  console.log(`[Market Hours] Heure EST: ${hours}:${minutes.toString().padStart(2, '0')}, jour: ${day} (0=dim, 1=lun, 2=mar...)`);
+  const userTz = getUserTimezone();
+  const localTime = now.toLocaleTimeString('en-US', {
+    timeZone: userTz,
+    hour12: false,
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+
+  console.log(`[Market Hours] Heure locale (${userTz}): ${localTime}, ET: ${hours}:${minutes.toString().padStart(2, '0')}, jour: ${day}`);
 
   if (market === 'BTC' || market === 'ETH') {
     return true;
@@ -84,20 +133,38 @@ export const getMarketStatus = (market) => {
   const minutes = estDate.getMinutes();
   const totalMinutes = hours * 60 + minutes;
 
+  const tzLabel = getTimezoneLabel();
+  const openingTimeLocal = convertETToLocal(18, 0);
+  const closingTimeLocal = convertETToLocal(17, 0);
+  const pauseStart = convertETToLocal(17, 0);
+  const pauseEnd = convertETToLocal(18, 0);
+
   if (day === 0 && hours < 18) {
-    return { open: false, message: 'Marché fermé (dimanche) - Ouverture à 18h00 ET (minuit heure FR)' };
+    return {
+      open: false,
+      message: `Marché fermé (dimanche) - Ouverture à ${openingTimeLocal} ${tzLabel}`
+    };
   }
 
   if (day === 6) {
-    return { open: false, message: 'Marché fermé (samedi) - Réouverture dimanche 18h00 ET (minuit heure FR)' };
+    return {
+      open: false,
+      message: `Marché fermé (samedi) - Réouverture dimanche ${openingTimeLocal} ${tzLabel}`
+    };
   }
 
   if (day === 5 && hours >= 17) {
-    return { open: false, message: 'Marché fermé (vendredi soir) - Réouverture dimanche 18h00 ET (minuit heure FR)' };
+    return {
+      open: false,
+      message: `Marché fermé (vendredi soir) - Réouverture dimanche ${openingTimeLocal} ${tzLabel}`
+    };
   }
 
   if (totalMinutes >= 17 * 60 && totalMinutes < 18 * 60) {
-    return { open: false, message: 'Pause quotidienne (17h00-18h00 ET) - Réouverture dans quelques minutes' };
+    return {
+      open: false,
+      message: `Pause quotidienne (${pauseStart}-${pauseEnd} ${tzLabel}) - Réouverture dans quelques minutes`
+    };
   }
 
   return { open: false, message: 'Marché fermé (hors horaires de trading)' };
@@ -114,17 +181,20 @@ export const getNextMarketOpen = (market) => {
   const hours = estDate.getHours();
   const totalMinutes = hours * 60 + estDate.getMinutes();
 
+  const tzLabel = getTimezoneLabel();
+  const openingTimeLocal = convertETToLocal(18, 0);
+
   if (day === 6) {
-    return 'Dimanche 18h00 ET (minuit heure FR)';
+    return `Dimanche ${openingTimeLocal} ${tzLabel}`;
   }
   if (day === 0 && hours < 18) {
-    return 'Dimanche 18h00 ET (minuit heure FR)';
+    return `Dimanche ${openingTimeLocal} ${tzLabel}`;
   }
   if (day === 5 && hours >= 17) {
-    return 'Dimanche 18h00 ET (minuit heure FR)';
+    return `Dimanche ${openingTimeLocal} ${tzLabel}`;
   }
   if (totalMinutes >= 17 * 60 && totalMinutes < 18 * 60) {
-    return "Aujourd'hui 18h00 ET";
+    return `Aujourd'hui ${convertETToLocal(18, 0)} ${tzLabel}`;
   }
 
   return 'Marché ouvert presque 24h/24';

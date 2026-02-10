@@ -841,7 +841,7 @@ const AccountManagement = () => {
                   <span className={styles.detailValue}>{account.market}</span>
                 </div>
                 <div className={styles.detail}>
-                  <span className={styles.detailLabel}>Capital Initial:</span>
+                  <span className={styles.detailLabel}>Capital de Départ:</span>
                   <span className={styles.detailValue}>
                     {account.capital.toFixed(2)} {account.currency || 'USD'}
                   </span>
@@ -873,8 +873,8 @@ const AccountManagement = () => {
                   <h4 className={styles.statsTitle}>📊 Statistiques de Trading</h4>
                   <div className={styles.statsGrid}>
                     <div className={styles.statCard}>
-                      <div className={styles.statLabel}>💰 Balance Actuelle</div>
-                      <div className={styles.statValue}>
+                      <div className={styles.statLabel}>💰 Balance</div>
+                      <div className={styles.statValue} title={`Capital de départ: ${account.capital.toFixed(2)} ${account.currency || 'USD'} + PnL: ${account.stats.totalPnl >= 0 ? '+' : ''}${account.stats.totalPnl.toFixed(2)} ${account.currency || 'USD'}`}>
                         {(account.capital + account.stats.totalPnl).toFixed(2)} {account.currency || 'USD'}
                       </div>
                     </div>

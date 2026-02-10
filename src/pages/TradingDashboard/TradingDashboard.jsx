@@ -1816,8 +1816,8 @@ const TradingDashboard = () => {
           <div className={styles.accountInfo}>
             <span className={styles.accountLabel}>📊 COMPTE ACTIF:</span>
             <span className={styles.accountName}>{activeAccount.name || `${activeAccount.market} - ${activeAccount.platform}`}</span>
-            <span className={styles.accountDetails}>
-              💰 Capital: {activeAccount.currency === 'EUR' ? '€' : '$'}{parseFloat(activeAccount.capital).toFixed(2)}
+            <span className={styles.accountDetails} title="Capital de départ (montant initial fixe)">
+              💰 Capital de Départ: {activeAccount.currency === 'EUR' ? '€' : '$'}{parseFloat(activeAccount.capital).toFixed(2)}
             </span>
             <span className={styles.accountDetails}>
               🎯 Risque: {parseFloat(activeAccount.risk_per_trade_percent).toFixed(2)}%
@@ -2206,8 +2206,8 @@ const TradingDashboard = () => {
         {!statsBarCollapsed && (
           <div className={styles.statsBar}>
             <div className={styles.statItem}>
-              <span className={styles.statLabel}>💰 Balance</span>
-              <span className={styles.statValue}>
+              <span className={styles.statLabel} title="Balance = Capital de départ + PnL réalisé">💰 Balance</span>
+              <span className={styles.statValue} title={`Capital: ${activeAccount?.capital.toFixed(2)} + PnL: ${stats.pnl >= 0 ? '+' : ''}${stats.pnl.toFixed(2)}`}>
                 {activeAccount?.currency === 'EUR' ? '€' : '$'}{stats.balance.toFixed(2)}
               </span>
             </div>

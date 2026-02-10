@@ -29,7 +29,7 @@ export async function calculateRealStats(accountId) {
     .eq('status', 'OPEN')
     .maybeSingle();
 
-  const initialBalance = parseFloat(account.initial_balance || account.capital || 0);
+  const startingCapital = parseFloat(account.capital || 0);
   let realizedPnL = 0;
   let totalGains = 0;
   let totalLosses = 0;
@@ -56,7 +56,7 @@ export async function calculateRealStats(accountId) {
     unrealizedPnL = parseFloat(openPosition.unrealized_pnl || 0);
   }
 
-  const currentBalance = initialBalance + realizedPnL;
+  const currentBalance = startingCapital + realizedPnL;
   const equity = currentBalance + unrealizedPnL;
   const totalTrades = closedPositions ? closedPositions.length : 0;
   const winrate = totalTrades > 0 ? (winCount / totalTrades) * 100 : 0;
@@ -72,7 +72,7 @@ export async function calculateRealStats(accountId) {
 
   return {
     accountId,
-    initialBalance,
+    startingCapital,
     currentBalance,
     equity,
     realizedPnL,

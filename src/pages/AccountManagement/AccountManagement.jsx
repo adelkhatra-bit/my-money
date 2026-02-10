@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabaseClient';
+import { positionService } from '../../services/positionService';
+import { userPreferencesService } from '../../services/userPreferences';
 import styles from './AccountManagement.module.css';
 
 const AccountManagement = () => {
@@ -7,6 +9,10 @@ const AccountManagement = () => {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingAccount, setEditingAccount] = useState(null);
+  const [userProfileId, setUserProfileId] = useState(null);
+  const [activeAccountId, setActiveAccountId] = useState(null);
+  const [filterStatus, setFilterStatus] = useState('all');
+  const [filterMarket, setFilterMarket] = useState('all');
   const [newAccount, setNewAccount] = useState({
     name: '',
     platform: 'binance',
@@ -141,6 +147,14 @@ const AccountManagement = () => {
         profile = newProfile;
       }
 
+      setUserProfileId(profile.id);
+
+      const prefs = await userPreferencesService.getPreferences(profile.id);
+      if (prefs && prefs.active_account_id) {
+        setActiveAccountId(prefs.active_account_id);
+        console.log('✅ Compte actif chargé depuis préférences:', prefs.active_account_id);
+      }
+
       const { data: accountsData } = await supabase
         .from('trading_accounts')
         .select('*')
@@ -168,43 +182,26 @@ const AccountManagement = () => {
 
   const calculateAccountStats = async (userId, accountId) => {
     try {
-      const { data: positions } = await supabase
-        .from('positions')
-        .select('*')
-        .eq('user_id', userId)
-        .eq('trading_account_id', accountId);
+      const stats = await positionService.getAccountStats(userId, accountId);
 
-      if (!positions || positions.length === 0) {
-        return {
-          totalPnl: 0,
-          wins: 0,
-          losses: 0,
-          totalTrades: 0,
-          winrate: 0
-        };
-      }
-
-      const closedPositions = positions.filter(p =>
-        p.status === 'TP1_HIT' || p.status === 'TP2_HIT' || p.status === 'SL_HIT'
-      );
-      const openPositions = positions.filter(p => p.status === 'OPEN');
-
-      const wins = closedPositions.filter(p => p.status === 'TP1_HIT' || p.status === 'TP2_HIT').length;
-      const losses = closedPositions.filter(p => p.status === 'SL_HIT').length;
-
-      const closedPnl = closedPositions.reduce((sum, p) => sum + (p.pnl || 0), 0);
-      const openPnl = openPositions.reduce((sum, p) => sum + (p.pnl || 0), 0);
-      const totalPnl = closedPnl + openPnl;
+      console.log('📊 [AccountManagement] Stats loaded from DB:', {
+        accountId,
+        totalTrades: stats.total_trades,
+        wins: stats.wins,
+        losses: stats.losses,
+        realizedPnl: stats.realized_pnl,
+        winrate: stats.winrate
+      });
 
       return {
-        totalPnl,
-        wins,
-        losses,
-        totalTrades: positions.length,
-        winrate: closedPositions.length > 0 ? (wins / closedPositions.length) * 100 : 0
+        totalPnl: stats.realized_pnl,
+        wins: stats.wins,
+        losses: stats.losses,
+        totalTrades: stats.total_trades,
+        winrate: stats.winrate
       };
     } catch (error) {
-      console.error('Error calculating account stats:', error);
+      console.error('Error loading account stats:', error);
       return {
         totalPnl: 0,
         wins: 0,
@@ -392,6 +389,36 @@ const AccountManagement = () => {
     });
   };
 
+  const handleSetActiveAccount = async (accountId, market, platform) => {
+    try {
+      if (!userProfileId) {
+        alert('Erreur: Profil utilisateur non chargé');
+        return;
+      }
+
+      await userPreferencesService.setActiveAccount(userProfileId, accountId, market, platform);
+      setActiveAccountId(accountId);
+
+      console.log('✅ [AccountManagement] Compte actif défini:', {
+        accountId,
+        market,
+        platform
+      });
+
+      alert('Compte actif défini avec succès !');
+    } catch (error) {
+      console.error('Error setting active account:', error);
+      alert('Erreur lors de la définition du compte actif: ' + error.message);
+    }
+  };
+
+  const filteredAccounts = accounts.filter(account => {
+    if (filterStatus !== 'all' && filterStatus === 'active' && !account.is_active) return false;
+    if (filterStatus !== 'all' && filterStatus === 'inactive' && account.is_active) return false;
+    if (filterMarket !== 'all' && account.market !== filterMarket) return false;
+    return true;
+  });
+
   if (loading) {
     return <div className={styles.loading}>Chargement...</div>;
   }
@@ -410,6 +437,40 @@ const AccountManagement = () => {
           {showForm ? 'Annuler' : '+ Ajouter un compte'}
         </button>
       </div>
+
+      {!showForm && !editingAccount && accounts.length > 0 && (
+        <div className={styles.filterBar}>
+          <div className={styles.filterGroup}>
+            <label>Statut:</label>
+            <select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+              className={styles.filterSelect}
+            >
+              <option value="all">Tous</option>
+              <option value="active">Actifs</option>
+              <option value="inactive">Inactifs</option>
+            </select>
+          </div>
+          <div className={styles.filterGroup}>
+            <label>Marché:</label>
+            <select
+              value={filterMarket}
+              onChange={(e) => setFilterMarket(e.target.value)}
+              className={styles.filterSelect}
+            >
+              <option value="all">Tous</option>
+              <option value="BTC">BTC</option>
+              <option value="ETH">ETH</option>
+              <option value="NASDAQ">NASDAQ</option>
+              <option value="GOLD">GOLD</option>
+            </select>
+          </div>
+          <div className={styles.filterInfo}>
+            {filteredAccounts.length} compte{filteredAccounts.length > 1 ? 's' : ''} affiché{filteredAccounts.length > 1 ? 's' : ''}
+          </div>
+        </div>
+      )}
 
       {editingAccount && (
         <form onSubmit={handleUpdateAccount} className={styles.form}>
@@ -723,12 +784,30 @@ const AccountManagement = () => {
           <div className={styles.empty}>
             Aucun compte configuré. Créez-en un pour commencer.
           </div>
+        ) : filteredAccounts.length === 0 ? (
+          <div className={styles.empty}>
+            Aucun compte ne correspond aux filtres sélectionnés.
+          </div>
         ) : (
-          accounts.map((account) => (
-            <div key={account.id} className={`${styles.accountCard} ${!account.is_active ? styles.inactive : ''}`}>
+          filteredAccounts.map((account) => (
+            <div key={account.id} className={`${styles.accountCard} ${!account.is_active ? styles.inactive : ''} ${activeAccountId === account.id ? styles.activeAccount : ''}`}>
               <div className={styles.accountHeader}>
-                <h3>{account.name}</h3>
+                <div className={styles.accountTitleRow}>
+                  <h3>{account.name}</h3>
+                  {activeAccountId === account.id && (
+                    <span className={styles.activeBadge}>⭐ COMPTE ACTIF</span>
+                  )}
+                </div>
                 <div className={styles.headerActions}>
+                  {activeAccountId !== account.id && account.is_active && (
+                    <button
+                      className={styles.setActiveBtn}
+                      onClick={() => handleSetActiveAccount(account.id, account.market, account.platform)}
+                      title="Définir comme compte actif"
+                    >
+                      ⭐ Définir actif
+                    </button>
+                  )}
                   <button
                     className={styles.toggleBtn}
                     onClick={() => toggleAccountStatus(account.id, account.is_active)}

@@ -561,19 +561,27 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
       )}
       {showProofMode && metadata && (
         <div className={styles.proofModeBar}>
-          <div className={styles.proofModeTitle}>🔍 MODE PREUVE</div>
+          <div className={styles.proofModeTitle}>🔍 MODE PREUVE - {metadata.symbol || 'N/A'} / {metadata.platform || 'N/A'} / {metadata.market || 'N/A'}</div>
           <div className={styles.proofModeGrid}>
             <div className={styles.proofModeItem}>
               <span className={styles.proofModeLabel}>Source:</span>
               <span className={styles.proofModeValue}>{metadata.source}</span>
             </div>
             <div className={styles.proofModeItem}>
+              <span className={styles.proofModeLabel}>Timeframe:</span>
+              <span className={styles.proofModeValue}>{metadata.timeframe || 'N/A'}</span>
+            </div>
+            <div className={styles.proofModeItem}>
               <span className={styles.proofModeLabel}>Baseline 1m:</span>
               <span className={styles.proofModeValue}>{metadata.baseline1mCount} bougies</span>
             </div>
             <div className={styles.proofModeItem}>
-              <span className={styles.proofModeLabel}>Agrégation:</span>
+              <span className={styles.proofModeLabel}>Agrégées:</span>
               <span className={styles.proofModeValue}>{metadata.aggregatedCount} bougies</span>
+            </div>
+            <div className={styles.proofModeItem}>
+              <span className={styles.proofModeLabel}>Doublons retirés:</span>
+              <span className={styles.proofModeValue}>{metadata.duplicatesRemoved || 0}</span>
             </div>
             <div className={styles.proofModeItem}>
               <span className={styles.proofModeLabel}>Prix baseline:</span>

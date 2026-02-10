@@ -9,19 +9,29 @@
   ],
   "host_permissions": [
     "https://trader.tradovate.com/*",
+    "http://trader.tradovate.com/*",
     "https://live.tradovate.com/*",
-    "https://demo.tradovate.com/*"
+    "http://live.tradovate.com/*",
+    "https://demo.tradovate.com/*",
+    "http://demo.tradovate.com/*",
+    "https://*.tradovate.com/*",
+    "http://*.tradovate.com/*"
   ],
   "content_scripts": [
     {
       "matches": [
         "https://trader.tradovate.com/*",
+        "http://trader.tradovate.com/*",
         "https://live.tradovate.com/*",
-        "https://demo.tradovate.com/*"
+        "http://live.tradovate.com/*",
+        "https://demo.tradovate.com/*",
+        "http://demo.tradovate.com/*",
+        "https://*.tradovate.com/*",
+        "http://*.tradovate.com/*"
       ],
       "js": ["content-script.js"],
       "css": ["overlay-styles.css"],
-      "run_at": "document_end"
+      "run_at": "document_idle"
     }
   ],
   "icons": {

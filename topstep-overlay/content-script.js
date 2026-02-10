@@ -1,5 +1,4 @@
-console.log('[TOPSTEPOVERLAY] script injected');
-alert('TopstepOverlay injecté - attente du chart Tradovate...');
+console.log('[TOPSTEPOVERLAY] ✅ Script injected - URL:', window.location.href);
 
 class TopstepOverlay {
   constructor() {
@@ -18,6 +17,14 @@ class TopstepOverlay {
       chartHeight: 0,
       chartWidth: 0,
       priceRange: { min: 0, max: 0 }
+    };
+    this.debugInfo = {
+      url: window.location.href,
+      injected: true,
+      priceFound: false,
+      selectorUsed: '',
+      priceValue: '',
+      contextAround: ''
     };
 
     this.init();
@@ -82,7 +89,6 @@ class TopstepOverlay {
     this.createCanvasOverlay();
     this.startPriceMonitoring();
     console.log('[TOPSTEPOVERLAY] ✅ overlay activé');
-    alert('TopstepOverlay activé - switch BOT ON pour démarrer');
   }
 
 
@@ -105,6 +111,17 @@ class TopstepOverlay {
           <span class="slider"></span>
         </label>
         <span id="bot-status" class="status-off">OFF</span>
+      </div>
+
+      <div class="overlay-debug">
+        <div class="debug-row">
+          <span>📍 URL détectée: <strong>${window.location.hostname}</strong></span>
+        </div>
+        <div class="debug-row">
+          <span id="debug-injection">✅ Injected</span>
+          <span id="debug-price">⏳ Searching price...</span>
+        </div>
+        <button id="debug-copy-btn" class="btn-debug">📋 Copy Debug</button>
       </div>
 
       <div class="overlay-controls">
@@ -179,6 +196,10 @@ class TopstepOverlay {
       this.runScan();
     });
 
+    document.getElementById('debug-copy-btn').addEventListener('click', () => {
+      this.copyDebugInfo();
+    });
+
     console.log('[TOPSTEPOVERLAY] event listeners attachés');
   }
 
@@ -239,7 +260,11 @@ class TopstepOverlay {
       '[class*="last"]',
       '[class*="quote"]',
       '.price-display',
-      '.last-price'
+      '.last-price',
+      '[data-price]',
+      '[aria-label*="price"]',
+      '.market-price',
+      '#last-price'
     ];
 
     for (const selector of priceSelectors) {
@@ -251,6 +276,11 @@ class TopstepOverlay {
           const price = parseFloat(match[1].replace(',', ''));
           if (price > 1000 && price < 100000) {
             this.priceData.lastPrice = price;
+            this.debugInfo.priceFound = true;
+            this.debugInfo.selectorUsed = selector;
+            this.debugInfo.priceValue = price;
+            this.debugInfo.contextAround = text.substring(0, 200);
+            this.updateDebugUI();
             return;
           }
         }
@@ -261,7 +291,55 @@ class TopstepOverlay {
     const priceMatch = allText.match(/(\d{4,5}\.\d{2})/);
     if (priceMatch) {
       this.priceData.lastPrice = parseFloat(priceMatch[1]);
+      this.debugInfo.priceFound = true;
+      this.debugInfo.selectorUsed = 'body.innerText';
+      this.debugInfo.priceValue = parseFloat(priceMatch[1]);
+      this.debugInfo.contextAround = allText.substring(allText.indexOf(priceMatch[1]) - 50, allText.indexOf(priceMatch[1]) + 150);
+      this.updateDebugUI();
+    } else {
+      this.debugInfo.priceFound = false;
+      this.updateDebugUI();
     }
+  }
+
+  updateDebugUI() {
+    const debugPriceEl = document.getElementById('debug-price');
+    if (debugPriceEl) {
+      if (this.debugInfo.priceFound) {
+        debugPriceEl.innerHTML = `✅ Price found: <strong>${this.debugInfo.priceValue}</strong>`;
+        debugPriceEl.style.color = '#10b981';
+      } else {
+        debugPriceEl.innerHTML = '❌ Price not found - trying...';
+        debugPriceEl.style.color = '#ef4444';
+      }
+    }
+  }
+
+  copyDebugInfo() {
+    const debugText = `
+=== TOPSTEP OVERLAY DEBUG ===
+URL: ${this.debugInfo.url}
+Injected: ${this.debugInfo.injected ? 'YES' : 'NO'}
+Price Found: ${this.debugInfo.priceFound ? 'YES' : 'NO'}
+Selector Used: ${this.debugInfo.selectorUsed}
+Price Value: ${this.debugInfo.priceValue}
+Context Around Price:
+${this.debugInfo.contextAround}
+
+Chart Container: ${this.chartContainer ? 'FOUND' : 'NOT FOUND'}
+Canvas Created: ${this.canvas ? 'YES' : 'NO'}
+
+Timestamp: ${new Date().toISOString()}
+    `.trim();
+
+    navigator.clipboard.writeText(debugText).then(() => {
+      alert('Debug info copied to clipboard!');
+      console.log('[TOPSTEPOVERLAY] Debug info:', debugText);
+    }).catch(err => {
+      console.error('[TOPSTEPOVERLAY] Failed to copy debug info:', err);
+      console.log('[TOPSTEPOVERLAY] Debug info:', debugText);
+      alert('Failed to copy. Check console for debug info.');
+    });
   }
 
   toggleBot(enabled) {

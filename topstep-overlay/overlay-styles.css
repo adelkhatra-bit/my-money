@@ -87,6 +87,54 @@ input:checked + .slider:before {
   color: #10b981;
 }
 
+.overlay-debug {
+  background: rgba(31, 41, 55, 0.5);
+  border: 1px solid #374151;
+  border-radius: 8px;
+  padding: 10px;
+  margin-bottom: 12px;
+  font-size: 12px;
+}
+
+.debug-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+  gap: 8px;
+}
+
+.debug-row:last-child {
+  margin-bottom: 0;
+}
+
+.debug-row span {
+  color: #d1d5db;
+}
+
+.debug-row strong {
+  color: #10b981;
+}
+
+.btn-debug {
+  background: #374151;
+  color: #f3f4f6;
+  border: 1px solid #4b5563;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  width: 100%;
+  margin-top: 6px;
+}
+
+.btn-debug:hover {
+  background: #4b5563;
+  border-color: #6b7280;
+}
+
 .overlay-controls {
   display: flex;
   flex-direction: column;

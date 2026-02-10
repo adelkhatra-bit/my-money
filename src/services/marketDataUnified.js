@@ -130,6 +130,8 @@ function createAggregatedCandle(candles) {
   return { time, open, high, low, close, volume };
 }
 
+const MINIMUM_CANDLES = 300;
+
 export async function getUnifiedMarketData(market, platform, timeframe) {
   const symbol = getSymbolMapping(market, platform);
   const cacheKey = `${platform}_${market}_${symbol}`;
@@ -140,7 +142,8 @@ export async function getUnifiedMarketData(market, platform, timeframe) {
     symbol,
     requestedTimeframe: timeframe,
     baseTimeframe,
-    dataSource: 'deterministic'
+    dataSource: 'deterministic',
+    minimumRequired: MINIMUM_CANDLES
   });
 
   let candles1m = dataCache[cacheKey];
@@ -152,6 +155,15 @@ export async function getUnifiedMarketData(market, platform, timeframe) {
     console.log(`✅ [Market Data] Baseline generated: ${candles1m.length} candles, lastPrice: ${candles1m[candles1m.length - 1]?.close.toFixed(2)}`);
   }
 
+  if (candles1m.length < MINIMUM_CANDLES) {
+    console.error(`❌ [Market Data] DONNÉES INSUFFISANTES: ${candles1m.length} bougies (minimum ${MINIMUM_CANDLES} requis)`);
+    return {
+      error: true,
+      message: `Données insuffisantes: ${candles1m.length} bougies disponibles (minimum ${MINIMUM_CANDLES} requis)`,
+      candles: []
+    };
+  }
+
   const lastPrice1m = candles1m[candles1m.length - 1]?.close;
 
   if (timeframe === '1m') {
@@ -160,6 +172,16 @@ export async function getUnifiedMarketData(market, platform, timeframe) {
   }
 
   const aggregated = aggregateCandles(candles1m, timeframe);
+
+  if (aggregated.length < MINIMUM_CANDLES) {
+    console.warn(`⚠️ [Market Data] Agrégation insuffisante: ${aggregated.length} bougies ${timeframe} (minimum ${MINIMUM_CANDLES} requis)`);
+    return {
+      error: true,
+      message: `Données insuffisantes après agrégation: ${aggregated.length} bougies ${timeframe} (minimum ${MINIMUM_CANDLES} requis)`,
+      candles: []
+    };
+  }
+
   const lastPriceAggregated = aggregated[aggregated.length - 1]?.close;
   const priceMatch = Math.abs(lastPrice1m - lastPriceAggregated) < 0.01;
 

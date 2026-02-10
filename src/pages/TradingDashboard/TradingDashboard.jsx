@@ -81,11 +81,21 @@ const TradingDashboard = () => {
   const [marketHealth, setMarketHealth] = useState({ status: 'STABLE', message: '' });
   const [showMarketBlockedPopup, setShowMarketBlockedPopup] = useState(false);
   const [marketBlockReason, setMarketBlockReason] = useState('');
+  const [statsBarCollapsed, setStatsBarCollapsed] = useState(() => {
+    const saved = localStorage.getItem('trading_statsbar_collapsed');
+    return saved === 'true';
+  });
 
   const addActivityLog = (message, type = 'info') => {
     if (activityLogCallback) {
       activityLogCallback({ message, type });
     }
+  };
+
+  const toggleStatsBar = () => {
+    const newState = !statsBarCollapsed;
+    setStatsBarCollapsed(newState);
+    localStorage.setItem('trading_statsbar_collapsed', newState.toString());
   };
 
   const handleMarketChange = async (newMarket) => {
@@ -828,7 +838,15 @@ const TradingDashboard = () => {
 
     try {
       const data = await getUnifiedMarketData(market, platform, timeframe);
-      if (data && data.length > 0) {
+
+      if (data && data.error) {
+        setCandles(data);
+        setScanStatus(data.message || 'Erreur de chargement des données');
+        console.error('❌ [Load Data] Erreur retournée:', data.message);
+        return;
+      }
+
+      if (data && Array.isArray(data) && data.length >= 300) {
         setCandles(data);
         setScanStatus('');
         console.log('✅ [Load Data] Données chargées avec succès:', {
@@ -838,11 +856,24 @@ const TradingDashboard = () => {
           dataSource: 'deterministic'
         });
       } else {
-        setScanStatus('Erreur de chargement des données');
-        console.error('❌ [Load Data] Aucune donnée retournée');
+        const candleCount = Array.isArray(data) ? data.length : 0;
+        const errorData = {
+          error: true,
+          message: `Données insuffisantes: ${candleCount} bougies (minimum 300 requis)`,
+          candles: []
+        };
+        setCandles(errorData);
+        setScanStatus(errorData.message);
+        console.error('❌ [Load Data] Données insuffisantes:', candleCount);
       }
     } catch (error) {
       console.error('❌ [Load Data] Erreur lors du chargement:', error);
+      const errorData = {
+        error: true,
+        message: 'Erreur de chargement des données',
+        candles: []
+      };
+      setCandles(errorData);
       setScanStatus('Erreur de chargement des données');
     }
   };
@@ -1857,7 +1888,7 @@ const TradingDashboard = () => {
             message={marketHealth.message}
           />
         </div>
-        {candles.length === 0 ? (
+        {(!candles || (Array.isArray(candles) && candles.length === 0) || (candles.error && !candles.candles)) ? (
           <div className={styles.loadingChart}>
             <div className={styles.loadingSpinner}></div>
             <p>Chargement des données de marché...</p>
@@ -1996,37 +2027,47 @@ const TradingDashboard = () => {
         )}
       </div>
 
-      <div className={styles.statsBar}>
-        <div className={styles.statItem}>
-          <span className={styles.statLabel}>💰 Balance</span>
-          <span className={styles.statValue}>
-            {activeAccount?.currency === 'EUR' ? '€' : '$'}{stats.balance.toFixed(2)}
-          </span>
+      <div className={styles.statsBarContainer}>
+        <div className={styles.statsBarHeader}>
+          <div className={styles.statsBarTitle}>Statistiques</div>
+          <button onClick={toggleStatsBar} className={styles.statsBarToggle}>
+            {statsBarCollapsed ? '▲ Afficher' : '▼ Masquer'}
+          </button>
         </div>
-        <div className={styles.statItem}>
-          <span className={styles.statLabel}>📊 PnL Total</span>
-          <span className={`${styles.statValue} ${stats.pnl >= 0 ? styles.positive : styles.negative}`}>
-            {stats.pnl >= 0 ? '+' : ''}{activeAccount?.currency === 'EUR' ? '€' : '$'}{stats.pnl.toFixed(2)}
-          </span>
-        </div>
-        <div className={styles.statItem}>
-          <span className={styles.statLabel}>📈 Total Trades</span>
-          <span className={styles.statValue}>{stats.totalTrades}</span>
-        </div>
-        <div className={styles.statItem}>
-          <span className={styles.statLabel}>✅ Gains</span>
-          <span className={`${styles.statValue} ${styles.positive}`}>{stats.wins}</span>
-        </div>
-        <div className={styles.statItem}>
-          <span className={styles.statLabel}>❌ Pertes</span>
-          <span className={`${styles.statValue} ${styles.negative}`}>{stats.losses}</span>
-        </div>
-        <div className={styles.statItem}>
-          <span className={styles.statLabel}>🎯 Winrate</span>
-          <span className={`${styles.statValue} ${stats.winrate >= 50 ? styles.positive : stats.winrate > 0 ? '' : styles.neutral}`}>
-            {stats.winrate.toFixed(1)}%
-          </span>
-        </div>
+        {!statsBarCollapsed && (
+          <div className={styles.statsBar}>
+            <div className={styles.statItem}>
+              <span className={styles.statLabel}>💰 Balance</span>
+              <span className={styles.statValue}>
+                {activeAccount?.currency === 'EUR' ? '€' : '$'}{stats.balance.toFixed(2)}
+              </span>
+            </div>
+            <div className={styles.statItem}>
+              <span className={styles.statLabel}>📊 PnL Total</span>
+              <span className={`${styles.statValue} ${stats.pnl >= 0 ? styles.positive : styles.negative}`}>
+                {stats.pnl >= 0 ? '+' : ''}{activeAccount?.currency === 'EUR' ? '€' : '$'}{stats.pnl.toFixed(2)}
+              </span>
+            </div>
+            <div className={styles.statItem}>
+              <span className={styles.statLabel}>📈 Total Trades</span>
+              <span className={styles.statValue}>{stats.totalTrades}</span>
+            </div>
+            <div className={styles.statItem}>
+              <span className={styles.statLabel}>✅ Gains</span>
+              <span className={`${styles.statValue} ${styles.positive}`}>{stats.wins}</span>
+            </div>
+            <div className={styles.statItem}>
+              <span className={styles.statLabel}>❌ Pertes</span>
+              <span className={`${styles.statValue} ${styles.negative}`}>{stats.losses}</span>
+            </div>
+            <div className={styles.statItem}>
+              <span className={styles.statLabel}>🎯 Winrate</span>
+              <span className={`${styles.statValue} ${stats.winrate >= 50 ? styles.positive : stats.winrate > 0 ? '' : styles.neutral}`}>
+                {stats.winrate.toFixed(1)}%
+              </span>
+            </div>
+          </div>
+        )}
       </div>
 
       {showMarketBlockedPopup && (

@@ -110,3 +110,47 @@
   line-height: 1.5;
   font-weight: 500;
 }
+
+.dataErrorOverlay {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 320px;
+  padding: 2rem;
+}
+
+.dataErrorMessage {
+  background: linear-gradient(135deg, #ff1744 0%, #c62828 100%);
+  padding: 2rem 3rem;
+  border-radius: 16px;
+  text-align: center;
+  box-shadow: 0 8px 32px rgba(255, 23, 68, 0.4);
+  border: 2px solid #ff5252;
+  backdrop-filter: blur(10px);
+  max-width: 500px;
+}
+
+.dataErrorMessage h3 {
+  font-size: 1.5rem;
+  margin: 0 0 1rem 0;
+  color: #fff;
+  font-weight: 700;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.dataErrorMessage p {
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.95);
+  margin: 0.5rem 0;
+  line-height: 1.6;
+  font-weight: 500;
+}
+
+.dataErrorHint {
+  margin-top: 1rem !important;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  font-size: 0.9rem !important;
+  font-style: italic;
+  opacity: 0.9;
+}

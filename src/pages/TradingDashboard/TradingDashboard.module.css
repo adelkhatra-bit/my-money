@@ -349,20 +349,57 @@
   overflow: hidden;
 }
 
-.statsBar {
+.statsBarContainer {
+  position: sticky;
+  bottom: 0;
+  z-index: 100;
   background: linear-gradient(135deg, #1a1a1a 0%, #252525 100%);
   border-top: 2px solid #00e676;
+  box-shadow: 0 -4px 20px rgba(0, 230, 118, 0.1);
+}
+
+.statsBarHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 20px;
+  background: rgba(0, 230, 118, 0.05);
+  border-bottom: 1px solid rgba(0, 230, 118, 0.1);
+}
+
+.statsBarTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: #00e676;
+  letter-spacing: 0.5px;
+}
+
+.statsBarToggle {
+  background: rgba(0, 230, 118, 0.1);
+  border: 1px solid rgba(0, 230, 118, 0.2);
+  color: #00e676;
+  padding: 6px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.statsBarToggle:hover {
+  background: rgba(0, 230, 118, 0.2);
+  border-color: #00e676;
+  transform: translateY(-1px);
+}
+
+.statsBar {
   padding: 16px 20px;
   display: flex;
   justify-content: space-evenly;
   align-items: center;
   gap: 20px;
   flex-wrap: wrap;
-  position: sticky;
-  bottom: 0;
-  z-index: 100;
   min-height: 70px;
-  box-shadow: 0 -4px 20px rgba(0, 230, 118, 0.1);
 }
 
 .statItem {

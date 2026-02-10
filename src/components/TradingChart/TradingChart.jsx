@@ -17,6 +17,8 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
   const candleSeriesRef = useRef(null);
   const priceLines = useRef([]);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [dataError, setDataError] = useState(null);
+  const isInitialized = useRef(false);
 
   const clearPriceLines = useCallback(() => {
     if (candleSeriesRef.current && priceLines.current.length > 0) {
@@ -30,7 +32,23 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
   }, []);
 
   useEffect(() => {
+    if (candles && candles.error) {
+      setDataError(candles.message || 'Données insuffisantes');
+      return;
+    }
+
+    if (!Array.isArray(candles) || candles.length < 300) {
+      setDataError(`Données insuffisantes: ${Array.isArray(candles) ? candles.length : 0} bougies (minimum 300 requis)`);
+      return;
+    }
+
+    setDataError(null);
+  }, [candles]);
+
+  useEffect(() => {
     if (!chartContainerRef.current) return;
+    if (dataError) return;
+    if (!Array.isArray(candles) || candles.length === 0) return;
 
     const chart = createChart(chartContainerRef.current, {
       layout: {
@@ -87,16 +105,16 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
       wickDownColor: '#ef5350',
     });
 
-    if (candles.length > 0) {
-      candleSeries.setData(candles);
-      setTimeout(() => {
-        try {
-          if (chart && chart.timeScale) {
-            chart.timeScale().fitContent();
-          }
-        } catch (e) {}
-      }, 100);
-    }
+    candleSeries.setData(candles);
+    isInitialized.current = true;
+
+    setTimeout(() => {
+      try {
+        if (chart && chart.timeScale) {
+          chart.timeScale().fitContent();
+        }
+      } catch (e) {}
+    }, 100);
 
     chartRef.current = chart;
     candleSeriesRef.current = candleSeries;
@@ -122,22 +140,22 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
         } catch (e) {}
         chartRef.current = null;
         candleSeriesRef.current = null;
+        isInitialized.current = false;
       }
     };
-  }, [isFullscreen]);
+  }, [isFullscreen, dataError]);
 
   useEffect(() => {
-    if (!candleSeriesRef.current || candles.length === 0) return;
+    if (!candleSeriesRef.current || !Array.isArray(candles) || candles.length === 0 || dataError) return;
+    if (!isInitialized.current) return;
 
     try {
-      candleSeriesRef.current.setData(candles);
-      if (chartRef.current && chartRef.current.timeScale) {
-        chartRef.current.timeScale().fitContent();
-      }
+      const lastCandle = candles[candles.length - 1];
+      candleSeriesRef.current.update(lastCandle);
     } catch (e) {
       console.warn('Chart update error:', e);
     }
-  }, [candles]);
+  }, [candles, dataError]);
 
   useEffect(() => {
     if (!candleSeriesRef.current) return;
@@ -431,6 +449,22 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
       chartRef.current.timeScale().fitContent();
     }
   };
+
+  if (dataError) {
+    return (
+      <div className={`${styles.chartWrapper}`}>
+        <div className={styles.dataErrorOverlay}>
+          <div className={styles.dataErrorMessage}>
+            <h3>Données insuffisantes</h3>
+            <p>{dataError}</p>
+            <p className={styles.dataErrorHint}>
+              Le graphique nécessite au minimum 300 bougies pour s'afficher correctement.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`${styles.chartWrapper} ${isFullscreen ? styles.fullscreen : ''}`}>

@@ -11,6 +11,7 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
   const priceLines = useRef([]);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [dataError, setDataError] = useState(null);
+  const [copied, setCopied] = useState(false);
   const isInitialized = useRef(false);
   const lastCandleTimeRef = useRef(null);
 
@@ -535,6 +536,35 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
     }
   };
 
+  const handleCopyProof = () => {
+    if (!metadata) return;
+
+    const proofData = {
+      ts: new Date().toISOString(),
+      platform: metadata.platform || 'N/A',
+      market: metadata.market || 'N/A',
+      symbol: metadata.symbol || 'N/A',
+      timeframe: metadata.timeframe || 'N/A',
+      baseline1mCount: metadata.baseline1mCount || 0,
+      aggregatedCount: metadata.aggregatedCount || 0,
+      duplicatesRemoved: metadata.duplicatesRemoved || 0,
+      lastPriceBaseline: metadata.lastPriceBaseline || 0,
+      lastPriceAggregated: metadata.lastPriceAggregated || 0,
+      priceDiff: metadata.priceDiff || 0,
+      status: metadata.status || 'BLOCKED',
+      reason: metadata.reason || null
+    };
+
+    const jsonString = JSON.stringify(proofData, null, 2);
+
+    navigator.clipboard.writeText(jsonString).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }).catch(err => {
+      console.error('Erreur copie:', err);
+    });
+  };
+
   if (dataError) {
     return (
       <div className={`${styles.chartWrapper}`}>
@@ -608,6 +638,9 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
               </div>
             )}
           </div>
+          <button onClick={handleCopyProof} className={styles.copyProofButton}>
+            📋 Copier preuve {copied && <span className={styles.copiedIndicator}>✅ Copié</span>}
+          </button>
         </div>
       )}
       {!hasCredits && (

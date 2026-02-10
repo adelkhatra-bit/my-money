@@ -1296,6 +1296,11 @@ const TradingDashboard = () => {
   };
 
   const handleTestSignal = () => {
+    if (!gateStatus.allowed) {
+      alert(`🚫 APERÇU BLOQUÉ\n\n${gateStatus.reason}\n\nL'aperçu est désactivé tant que les données ne sont pas validées.`);
+      return;
+    }
+
     if (currentPosition && currentPosition.status === 'OPEN') {
       const dir = currentPosition.direction === 'LONG' ? '🟢 LONG' : '🔴 SHORT';
       alert(`🔒 POSITION DÉJÀ ACTIVE\n\n${dir} sur ${currentPosition.market}\nPrix d'entrée: ${parseFloat(currentPosition.entry_price).toFixed(2)}\n\nAPERÇU BLOQUÉ: Vous ne pouvez pas utiliser l'aperçu pendant qu'une position est ouverte.\n\nLe bot surveille automatiquement votre position en temps réel.`);

@@ -10,59 +10,103 @@
 .card {
   background: white;
   border-radius: 16px;
-  padding: 48px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-  max-width: 500px;
-  width: 100%;
+  padding: 40px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
   text-align: center;
+  max-width: 600px;
+  width: 100%;
 }
 
 .title {
   font-size: 48px;
-  font-weight: 800;
+  margin-bottom: 30px;
   color: #10b981;
-  margin: 0 0 32px 0;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .info {
-  background: #f3f4f6;
-  border-radius: 12px;
-  padding: 24px;
-  margin-bottom: 32px;
   text-align: left;
+  background: #f9fafb;
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 20px;
 }
 
 .info p {
-  margin: 12px 0;
-  font-size: 16px;
+  margin: 10px 0;
+  font-size: 14px;
   color: #374151;
+  word-break: break-all;
 }
 
 .info strong {
   color: #1f2937;
+}
+
+.warning {
+  background: #fef3c7;
+  border: 2px solid #f59e0b;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 20px;
+  text-align: left;
+}
+
+.warning strong {
+  color: #92400e;
+  display: block;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.warning p {
+  color: #78350f;
+  margin: 0;
+  font-size: 13px;
+}
+
+.actions {
+  margin-bottom: 20px;
+}
+
+.primaryBtn {
+  background: #667eea;
+  color: white;
+  border: none;
+  padding: 14px 24px;
+  border-radius: 8px;
+  font-size: 16px;
   font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  width: 100%;
+}
+
+.primaryBtn:hover {
+  background: #5568d3;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
 }
 
 .links {
   display: flex;
-  flex-direction: column;
-  gap: 12px;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
 }
 
 .links a {
-  display: block;
-  background: #3b82f6;
-  color: white;
-  padding: 14px 24px;
-  border-radius: 8px;
+  padding: 10px 16px;
+  background: #f3f4f6;
+  color: #374151;
   text-decoration: none;
+  border-radius: 8px;
   font-weight: 600;
-  transition: all 0.2s;
+  transition: all 0.3s ease;
+  border: 2px solid #d1d5db;
+  font-size: 14px;
 }
 
 .links a:hover {
-  background: #2563eb;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+  background: #e5e7eb;
+  border-color: #9ca3af;
 }

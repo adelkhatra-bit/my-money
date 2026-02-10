@@ -10,6 +10,7 @@ import Referral from './pages/Referral/Referral';
 import SuperAdmin from './pages/SuperAdmin/SuperAdmin';
 import Profil from './pages/Profil/Profil';
 import Health from './pages/Health/Health';
+import SafeBoot from './pages/SafeBoot/SafeBoot';
 import LegalDisclaimer from './components/LegalDisclaimer/LegalDisclaimer';
 import Navbar from './components/Navbar/Navbar';
 import ErrorBoundary from './components/ErrorBoundary/ErrorBoundary';
@@ -122,6 +123,10 @@ function App() {
       <BrowserRouter>
         {user && <Navbar isSuperAdmin={isSuperAdmin} />}
         <Routes>
+        <Route
+          path="/safeboot"
+          element={<SafeBoot />}
+        />
         <Route
           path="/health"
           element={<Health />}

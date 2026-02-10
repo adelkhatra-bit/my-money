@@ -1880,10 +1880,9 @@ const TradingDashboard = () => {
           <div className={styles.controlGroup}>
             <label>Marché:</label>
             <select value={market} onChange={(e) => handleMarketChange(e.target.value)}>
-              <option value="BTC">BTC</option>
-              <option value="ETH">ETH</option>
-              <option value="NASDAQ">NASDAQ</option>
-              <option value="GOLD">GOLD</option>
+              <option value="NASDAQ">NASDAQ (MNQ - Micro Nasdaq)</option>
+              <option value="GOLD">GOLD (MGC - Micro Gold)</option>
+              <option value="BTC">BTC (Test 24/7)</option>
             </select>
           </div>
 
@@ -1911,14 +1910,16 @@ const TradingDashboard = () => {
             <button
               className={`${styles.toggleBtn} ${autoMode ? styles.active : ''} ${currentPosition && currentPosition.status === 'OPEN' ? styles.locked : ''}`}
               onClick={handleToggleBot}
-              disabled={currentPosition && currentPosition.status === 'OPEN'}
+              disabled={!marketStatus.open || (currentPosition && currentPosition.status === 'OPEN')}
               title={
-                currentPosition && currentPosition.status === 'OPEN'
+                !marketStatus.open
+                  ? `⛔ Marché fermé - ${marketStatus.message}`
+                  : currentPosition && currentPosition.status === 'OPEN'
                   ? '🔒 ROBOT VERROUILLÉ - Position en cours'
                   : autoMode ? 'Robot activé - Scan automatique toutes les 30s' : 'Robot désactivé - Scan manuel uniquement'
               }
             >
-              {currentPosition && currentPosition.status === 'OPEN' ? '🔒 ROBOT VERROUILLÉ' : autoMode ? '🤖 ROBOT ON' : '⏸️ ROBOT OFF'}
+              {!marketStatus.open ? '⛔ MARCHÉ FERMÉ' : currentPosition && currentPosition.status === 'OPEN' ? '🔒 ROBOT VERROUILLÉ' : autoMode ? '🤖 ROBOT ON' : '⏸️ ROBOT OFF'}
             </button>
           </div>
 

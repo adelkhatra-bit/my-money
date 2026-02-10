@@ -672,9 +672,6 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
               </div>
             )}
           </div>
-          <button onClick={handleCopyProof} className={styles.copyProofButton}>
-            📋 Copier preuve {copied && <span className={styles.copiedIndicator}>✅ Copié</span>}
-          </button>
         </div>
       )}
       {!hasCredits && (

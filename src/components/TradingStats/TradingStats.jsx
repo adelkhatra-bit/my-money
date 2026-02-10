@@ -67,7 +67,7 @@ export default function TradingStats({ accountId, market, currency = 'USD' }) {
             {symbol}{formatPrice(stats.currentBalance, market)}
           </div>
           <div className={styles.statSubtext}>
-            Initial: {symbol}{formatPrice(stats.initialBalance, market)}
+            Capital initial: {symbol}{formatPrice(stats.startingCapital, market)}
           </div>
         </div>
 

@@ -10,6 +10,7 @@ import ScanOpportunity from '../../components/ScanOpportunity/ScanOpportunity';
 import MarketHealthIndicator from '../../components/MarketHealthIndicator/MarketHealthIndicator';
 import MarketBlockedPopup from '../../components/MarketBlockedPopup/MarketBlockedPopup';
 import ConnectTopstep from '../../components/ConnectTopstep/ConnectTopstep';
+import TradingViewAlerts from '../../components/TradingViewAlerts/TradingViewAlerts';
 import { marketDataProvider } from '../../services/MarketDataProvider';
 import { generateSignal } from '../../services/signalEngine';
 import { calculatePositionSize } from '../../services/riskCalculator';
@@ -2199,6 +2200,16 @@ const TradingDashboard = () => {
           onClose={() => setShowMarketBlockedPopup(false)}
         />
       )}
+
+      <div style={{ margin: '20px', maxWidth: '100%' }}>
+        <TradingViewAlerts
+          userId={userId}
+          onAlertConfirm={(alert) => {
+            console.log('[TradingDashboard] Alert confirmed:', alert);
+            addActivityLog(`TradingView alert confirmed: ${alert.symbol} ${alert.side}`, 'success');
+          }}
+        />
+      </div>
     </div>
   );
 };

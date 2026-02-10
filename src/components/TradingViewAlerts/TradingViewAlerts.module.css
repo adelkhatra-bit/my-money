@@ -1,0 +1,260 @@
+.container {
+  background: #1a1a1a;
+  border-radius: 8px;
+  padding: 20px;
+  border: 1px solid #2a2a2a;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.title h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.count {
+  background: #2a2a2a;
+  color: #888888;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+}
+
+.listenBtn {
+  padding: 8px 16px;
+  background: #2a2a2a;
+  color: #ffffff;
+  border: 1px solid #3a3a3a;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.listenBtn:hover {
+  background: #3a3a3a;
+}
+
+.listenBtn.active {
+  background: #22c55e;
+  border-color: #22c55e;
+  color: #000000;
+  font-weight: 600;
+}
+
+.webhookInfo {
+  background: #0a0a0a;
+  padding: 12px;
+  border-radius: 6px;
+  margin-bottom: 16px;
+  border: 1px solid #2a2a2a;
+}
+
+.webhookLabel {
+  font-size: 12px;
+  color: #888888;
+  margin-bottom: 4px;
+}
+
+.webhookUrl {
+  display: block;
+  font-size: 11px;
+  color: #22c55e;
+  font-family: 'Monaco', 'Courier New', monospace;
+  word-break: break-all;
+}
+
+.alertsList {
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+.empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: #666666;
+  font-size: 14px;
+}
+
+.alert {
+  background: #0a0a0a;
+  border: 1px solid #2a2a2a;
+  border-radius: 6px;
+  padding: 16px;
+  margin-bottom: 12px;
+  transition: all 0.2s ease;
+}
+
+.alert:hover {
+  border-color: #3a3a3a;
+}
+
+.alert.pending {
+  border-left: 3px solid #f59e0b;
+}
+
+.alert.confirmed {
+  border-left: 3px solid #22c55e;
+}
+
+.alert.rejected {
+  border-left: 3px solid #ef4444;
+  opacity: 0.6;
+}
+
+.alertHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.symbolSide {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.symbol {
+  font-size: 16px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.side {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.side.long {
+  background: rgba(34, 197, 94, 0.2);
+  color: #22c55e;
+}
+
+.side.short {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+}
+
+.timeframe {
+  font-size: 12px;
+  color: #888888;
+  background: #1a1a1a;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.status {
+  font-size: 12px;
+  text-transform: uppercase;
+  color: #888888;
+  font-weight: 600;
+}
+
+.prices {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.priceItem {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.priceItem .label {
+  font-size: 11px;
+  color: #666666;
+  text-transform: uppercase;
+}
+
+.priceItem .value {
+  font-size: 14px;
+  color: #ffffff;
+  font-weight: 600;
+  font-family: 'Monaco', 'Courier New', monospace;
+}
+
+.botResponse {
+  background: #1a1a1a;
+  padding: 12px;
+  border-radius: 4px;
+  margin-bottom: 12px;
+}
+
+.decision {
+  font-size: 13px;
+  font-weight: 600;
+  color: #ffffff;
+  margin-bottom: 4px;
+}
+
+.reason {
+  font-size: 12px;
+  color: #888888;
+  margin-bottom: 8px;
+}
+
+.metrics {
+  font-size: 11px;
+  color: #666666;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.confirmBtn,
+.rejectBtn {
+  flex: 1;
+  padding: 8px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.confirmBtn {
+  background: #22c55e;
+  color: #000000;
+}
+
+.confirmBtn:hover {
+  background: #16a34a;
+}
+
+.rejectBtn {
+  background: #2a2a2a;
+  color: #ffffff;
+}
+
+.rejectBtn:hover {
+  background: #3a3a3a;
+}
+
+.time {
+  font-size: 11px;
+  color: #666666;
+  text-align: right;
+}

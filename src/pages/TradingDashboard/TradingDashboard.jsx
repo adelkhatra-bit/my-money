@@ -24,12 +24,15 @@ import { userPreferencesService } from '../../services/userPreferences';
 import { validateMarketPlatformCompatibility } from '../../services/marketDataUnified';
 import { getCompatiblePlatforms, getDefaultPlatformForMarket, isPlatformCompatible } from '../../services/platformFilter';
 import tradingGate, { simpleGate } from '../../services/tradingGate';
+import { antoMarketEngine } from '../../services/antoMarketEngine';
 import { supabase } from '../../lib/supabaseClient';
 import styles from './TradingDashboard.module.css';
 
 const TradingDashboard = () => {
   console.log('🚀 [TradingDashboard] Initialisation du composant');
 
+  const [sandboxMode, setSandboxMode] = useState(true);
+  const [antoScenario, setAntoScenario] = useState('calm');
   const [market, setMarket] = useState('BTC');
   const [platform, setPlatform] = useState('binance');
   const [timeframe, setTimeframe] = useState('5m');
@@ -335,7 +338,7 @@ const TradingDashboard = () => {
     }, 60000);
 
     return () => clearInterval(interval);
-  }, [market, platform, timeframe]);
+  }, [sandboxMode, market, platform, timeframe, antoScenario]);
 
   useEffect(() => {
     loadUserData();
@@ -880,11 +883,23 @@ const TradingDashboard = () => {
   };
 
   const loadHistoricalData = async () => {
-    console.log('📥 [Load Data] Chargement données historiques:', { market, platform, timeframe });
+    console.log('📥 [Load Data] Chargement données historiques:', { sandboxMode, market, platform, timeframe, scenario: antoScenario });
     setScanStatus('Chargement des données...');
 
     try {
-      const data = await getUnifiedMarketData(market, platform, timeframe);
+      let data;
+
+      if (sandboxMode) {
+        console.log('🔶 [Load Data] Mode ANTØ Sandbox activé');
+        data = antoMarketEngine.getMarketData({
+          market,
+          timeframe,
+          seed: userId || 'demo',
+          scenario: antoScenario
+        });
+      } else {
+        data = await getUnifiedMarketData(market, platform, timeframe);
+      }
 
       if (data && data.metadata) {
         setDataMetadata(data.metadata);
@@ -907,7 +922,7 @@ const TradingDashboard = () => {
           candleCount: candlesArray.length,
           lastPrice: lastPrice.toFixed(2),
           timeframe,
-          dataSource: 'deterministic'
+          dataSource: sandboxMode ? 'ANTO Sandbox' : 'deterministic'
         });
       } else {
         const candleCount = candlesArray.length;
@@ -1874,39 +1889,80 @@ const TradingDashboard = () => {
         <div className={styles.titleRow}>
           <h1>AI Trading Platform</h1>
           <div className={styles.paperTradingBadge} style={{
-            background: 'linear-gradient(135deg, #ff9800 0%, #f57c00 100%)',
+            background: sandboxMode ? 'linear-gradient(135deg, #ff6b35 0%, #f7931e 100%)' : 'linear-gradient(135deg, #ff9800 0%, #f57c00 100%)',
             color: '#fff',
             padding: '8px 16px',
             borderRadius: '8px',
             fontSize: '14px',
             fontWeight: 'bold',
-            border: '2px solid #ffb74d',
-            boxShadow: '0 4px 12px rgba(255, 152, 0, 0.4)',
+            border: sandboxMode ? '2px solid #ff8c42' : '2px solid #ffb74d',
+            boxShadow: sandboxMode ? '0 4px 12px rgba(255, 107, 53, 0.4)' : '0 4px 12px rgba(255, 152, 0, 0.4)',
             animation: 'pulse 2s infinite'
           }}>
-            📊 SIMULATION - Données Déterministes (Paper Trading)
+            {sandboxMode ? '🔶 ANTØ SANDBOX - Marché interne (tests)' : '📊 SIMULATION - Données Déterministes (Paper Trading)'}
           </div>
         </div>
 
         <div className={styles.controls}>
           <div className={styles.controlGroup}>
-            <label>Marché:</label>
-            <select value={market} onChange={(e) => handleMarketChange(e.target.value)}>
-              <option value="BTC">BTC</option>
-              <option value="ETH">ETH</option>
-              <option value="NASDAQ">NASDAQ</option>
-              <option value="GOLD">GOLD</option>
+            <label>Mode:</label>
+            <select value={sandboxMode ? 'sandbox' : 'real'} onChange={(e) => {
+              const isSandbox = e.target.value === 'sandbox';
+              setSandboxMode(isSandbox);
+              if (isSandbox) {
+                setMarket('ANTO_NASDAQ');
+                setPlatform('ANTO');
+              } else {
+                setMarket('BTC');
+                setPlatform('binance');
+              }
+            }}>
+              <option value="sandbox">✅ ANTØ Sandbox</option>
+              <option value="real" disabled style={{ color: '#888' }}>Réel (bientôt)</option>
             </select>
           </div>
 
+          {sandboxMode && (
+            <div className={styles.controlGroup}>
+              <label>Scénario:</label>
+              <select value={antoScenario} onChange={(e) => setAntoScenario(e.target.value)}>
+                <option value="calm">Calme</option>
+                <option value="news_spike">News Spike</option>
+                <option value="trend">Tendance</option>
+                <option value="chop">Chop</option>
+              </select>
+            </div>
+          )}
+
           <div className={styles.controlGroup}>
-            <label>Plateforme:</label>
-            <select value={platform} onChange={(e) => handlePlatformChange(e.target.value)}>
-              {getCompatiblePlatforms(market).map(p => (
-                <option key={p.value} value={p.value}>{p.label}</option>
-              ))}
+            <label>Marché:</label>
+            <select value={market} onChange={(e) => handleMarketChange(e.target.value)}>
+              {sandboxMode ? (
+                <>
+                  <option value="ANTO_NASDAQ">ANTO_NASDAQ</option>
+                  <option value="ANTO_BTC">ANTO_BTC</option>
+                </>
+              ) : (
+                <>
+                  <option value="BTC">BTC</option>
+                  <option value="ETH">ETH</option>
+                  <option value="NASDAQ">NASDAQ</option>
+                  <option value="GOLD">GOLD</option>
+                </>
+              )}
             </select>
           </div>
+
+          {!sandboxMode && (
+            <div className={styles.controlGroup}>
+              <label>Plateforme:</label>
+              <select value={platform} onChange={(e) => handlePlatformChange(e.target.value)}>
+                {getCompatiblePlatforms(market).map(p => (
+                  <option key={p.value} value={p.value}>{p.label}</option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <div className={styles.controlGroup}>
             <label>Timeframe:</label>

@@ -1,13 +1,13 @@
 const ANTO_MARKETS = {
   ANTO_NASDAQ: {
     name: 'ANTO_NASDAQ',
-    basePrice: 21000,
+    basePrice: 25000,
     tickSize: 0.25,
     volatility: 0.0008,
   },
   ANTO_BTC: {
     name: 'ANTO_BTC',
-    basePrice: 50000,
+    basePrice: 95000,
     tickSize: 0.01,
     volatility: 0.002,
   },

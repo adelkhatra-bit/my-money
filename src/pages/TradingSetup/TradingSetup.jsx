@@ -7,8 +7,8 @@ export default function TradingSetup() {
   const navigate = useNavigate();
   const [showSetup, setShowSetup] = useState(false);
 
-  const webhookUrl = import.meta.env.VITE_SUPABASE_URL
-    ? `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/tradingview-webhook`
+  const webhookUrl = process.env.REACT_APP_SUPABASE_URL
+    ? `${process.env.REACT_APP_SUPABASE_URL}/functions/v1/tradingview-webhook`
     : 'https://alsftpbjneityeyzwyzz.supabase.co/functions/v1/tradingview-webhook';
 
   if (showSetup) {

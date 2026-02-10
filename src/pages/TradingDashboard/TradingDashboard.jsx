@@ -9,7 +9,7 @@ import BotActivityLog from '../../components/BotActivityLog/BotActivityLog';
 import ScanOpportunity from '../../components/ScanOpportunity/ScanOpportunity';
 import MarketHealthIndicator from '../../components/MarketHealthIndicator/MarketHealthIndicator';
 import MarketBlockedPopup from '../../components/MarketBlockedPopup/MarketBlockedPopup';
-import { getUnifiedMarketData, getCurrentPrice } from '../../services/marketDataUnified';
+import { marketDataProvider } from '../../services/MarketDataProvider';
 import { generateSignal } from '../../services/signalEngine';
 import { calculatePositionSize } from '../../services/riskCalculator';
 import { audioAlerts } from '../../services/audioAlerts';
@@ -607,7 +607,7 @@ const TradingDashboard = () => {
 
       for (const position of positions) {
         if (position.status === 'OPEN') {
-          const currentPrice = await getCurrentPrice(position.market, position.platform);
+          const currentPrice = await marketDataProvider.getCurrentPrice(position.market, position.platform);
 
           if (!currentPrice) continue;
 
@@ -838,7 +838,7 @@ const TradingDashboard = () => {
     setScanStatus('Chargement des données...');
 
     try {
-      const data = await getUnifiedMarketData(market, platform, timeframe);
+      const data = await marketDataProvider.getOHLC({ market, platform, timeframe });
 
       if (data && data.error) {
         setCandles(data);

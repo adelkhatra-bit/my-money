@@ -1,5 +1,5 @@
 import { getUnifiedMarketData, getCurrentPrice as getUnifiedCurrentPrice } from './marketDataUnified';
-import { initializeAntoMarket, getAntoMarketData } from './antoMarketEngine';
+import { initializeAntoMarket, getAntoPriceHistory, getAntoCurrentPrice } from './antoMarketEngine';
 
 class MarketDataProvider {
   constructor() {
@@ -173,7 +173,7 @@ class MarketDataProvider {
     }
 
     if (platform.toLowerCase() === 'anto') {
-      return await getAntoMarketData(market, timeframe);
+      return await getAntoPriceHistory(market, timeframe, 500);
     }
 
     return await getUnifiedMarketData(market, platform, timeframe);
@@ -194,8 +194,7 @@ class MarketDataProvider {
   }
 
   getAntoCurrentPrice(market) {
-    const config = this.platformConfigs.anto.markets[market];
-    return config?.baselinePrice || 18500.00;
+    return getAntoCurrentPrice(market);
   }
 
   getTickSize(market, platform) {

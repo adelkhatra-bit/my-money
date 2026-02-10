@@ -85,6 +85,8 @@ const TradingDashboard = () => {
     const saved = localStorage.getItem('trading_statsbar_collapsed');
     return saved === 'true';
   });
+  const [showProofMode, setShowProofMode] = useState(false);
+  const [dataMetadata, setDataMetadata] = useState(null);
 
   const addActivityLog = (message, type = 'info') => {
     if (activityLogCallback) {
@@ -839,6 +841,10 @@ const TradingDashboard = () => {
     try {
       const data = await getUnifiedMarketData(market, platform, timeframe);
 
+      if (data && data.metadata) {
+        setDataMetadata(data.metadata);
+      }
+
       if (data && data.error) {
         setCandles(data);
         setScanStatus(data.message || 'Erreur de chargement des données');
@@ -846,17 +852,20 @@ const TradingDashboard = () => {
         return;
       }
 
-      if (data && Array.isArray(data) && data.length >= 300) {
-        setCandles(data);
+      const candlesArray = data?.candles || (Array.isArray(data) ? data : []);
+      const lastPrice = data?.lastPrice || (candlesArray.length > 0 ? candlesArray[candlesArray.length - 1]?.close : 0);
+
+      if (candlesArray && candlesArray.length >= 300) {
+        setCandles(candlesArray);
         setScanStatus('');
         console.log('✅ [Load Data] Données chargées avec succès:', {
-          candleCount: data.length,
-          lastPrice: data[data.length - 1]?.close.toFixed(2),
+          candleCount: candlesArray.length,
+          lastPrice: lastPrice.toFixed(2),
           timeframe,
           dataSource: 'deterministic'
         });
       } else {
-        const candleCount = Array.isArray(data) ? data.length : 0;
+        const candleCount = candlesArray.length;
         const errorData = {
           error: true,
           message: `Données insuffisantes: ${candleCount} bougies (minimum 300 requis)`,
@@ -1891,11 +1900,57 @@ const TradingDashboard = () => {
           <div style={{ fontSize: '14px', color: 'rgba(255,255,255,0.7)' }}>
             {market} - {platform}
           </div>
-          <MarketHealthIndicator
-            status={marketHealth.status}
-            message={marketHealth.message}
-          />
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+            <button
+              className={styles.proofModeToggle}
+              onClick={() => setShowProofMode(!showProofMode)}
+              title="Afficher/masquer les métriques de données"
+            >
+              🔍 Mode Preuve
+            </button>
+            <MarketHealthIndicator
+              status={marketHealth.status}
+              message={marketHealth.message}
+            />
+          </div>
         </div>
+
+        {showProofMode && dataMetadata && (
+          <div className={`${styles.proofModeBar} ${dataMetadata.status === 'OK' ? styles.proofOk : styles.proofBlocked}`}>
+            <div className={styles.proofRow}>
+              <strong>🔍 SOURCE:</strong> {dataMetadata.source}
+            </div>
+            <div className={styles.proofRow}>
+              <strong>📍 Marché:</strong> {market} | Plateforme: {platform} | Timeframe: {timeframe}
+            </div>
+            <div className={styles.proofRow}>
+              <strong>📊 Données reçues:</strong>
+              <span className={styles.proofDetail}>
+                Bougies 1m: {dataMetadata.baseline1mCount} → Agrégées: {dataMetadata.aggregatedCount}
+                {dataMetadata.duplicatesRemoved > 0 && ` (${dataMetadata.duplicatesRemoved} doublons supprimés)`}
+              </span>
+            </div>
+            <div className={styles.proofRow}>
+              <strong>💰 Prix:</strong>
+              <span className={styles.proofDetail}>
+                Baseline: {dataMetadata.lastPriceBaseline.toFixed(2)} |
+                Agrégé: {dataMetadata.lastPriceAggregated.toFixed(2)} |
+                Diff: {dataMetadata.priceDiff.toFixed(4)}
+              </span>
+            </div>
+            <div className={styles.proofRow}>
+              <strong>{dataMetadata.status === 'OK' ? '✅ STATUT: OK' : '❌ STATUT: BLOQUÉ'}</strong>
+              {dataMetadata.reason && (
+                <span className={styles.proofReason}>{dataMetadata.reason}</span>
+              )}
+            </div>
+            {dataMetadata.status === 'BLOCKED' && (
+              <div className={styles.proofRow}>
+                <span className={styles.proofWarning}>→ Scan et trading désactivés</span>
+              </div>
+            )}
+          </div>
+        )}
         {(!candles || (Array.isArray(candles) && candles.length === 0) || (candles.error && !candles.candles)) ? (
           <div className={styles.loadingChart}>
             <div className={styles.loadingSpinner}></div>

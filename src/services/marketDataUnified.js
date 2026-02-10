@@ -70,7 +70,23 @@ export function getSymbolMapping(market, platform) {
 
 export function aggregateCandles(candles1m, targetTimeframe) {
   if (targetTimeframe === '1m') {
-    return candles1m;
+    const metadata = {
+      source: 'marketDataUnified',
+      baseline1mCount: candles1m.length,
+      aggregatedCount: candles1m.length,
+      duplicatesRemoved: 0,
+      candlesAfterClean: candles1m.length,
+      lastPriceBaseline: candles1m[candles1m.length - 1]?.close || 0,
+      lastPriceAggregated: candles1m[candles1m.length - 1]?.close || 0,
+      priceDiff: 0,
+      status: candles1m.length >= 300 ? 'OK' : 'BLOCKED',
+      reason: candles1m.length < 300 ? `Données insuffisantes (${candles1m.length} / 300 requises)` : null
+    };
+    return {
+      candles: candles1m,
+      lastPrice: candles1m[candles1m.length - 1]?.close || 0,
+      metadata
+    };
   }
 
   const minutesMap = {
@@ -182,33 +198,71 @@ export async function getUnifiedMarketData(market, platform, timeframe) {
 
   if (timeframe === '1m') {
     console.log(`✅ [Market Data] Returning ${candles1m.length} candles (1m base), lastPrice: ${lastPrice1m.toFixed(2)}`);
-    return candles1m;
+    const metadata = {
+      source: 'marketDataUnified',
+      baseline1mCount: candles1m.length,
+      aggregatedCount: candles1m.length,
+      duplicatesRemoved: 0,
+      candlesAfterClean: candles1m.length,
+      lastPriceBaseline: lastPrice1m,
+      lastPriceAggregated: lastPrice1m,
+      priceDiff: 0,
+      status: candles1m.length >= MINIMUM_CANDLES ? 'OK' : 'BLOCKED',
+      reason: candles1m.length < MINIMUM_CANDLES ? `Données insuffisantes (${candles1m.length} / ${MINIMUM_CANDLES} requises)` : null
+    };
+    return {
+      candles: candles1m,
+      lastPrice: lastPrice1m,
+      metadata
+    };
   }
 
-  const aggregated = aggregateCandles(candles1m, timeframe);
+  const result = aggregateCandles(candles1m, timeframe);
+  const aggregated = result.candles || result;
+
+  const lastPriceAggregated = aggregated[aggregated.length - 1]?.close || 0;
+  const priceDiff = Math.abs(lastPrice1m - lastPriceAggregated);
+  const priceMatch = priceDiff < 0.01;
+
+  const metadata = {
+    source: 'marketDataUnified',
+    baseline1mCount: candles1m.length,
+    aggregatedCount: aggregated.length,
+    duplicatesRemoved: 0,
+    candlesAfterClean: candles1m.length,
+    lastPriceBaseline: lastPrice1m,
+    lastPriceAggregated: lastPriceAggregated,
+    priceDiff: priceDiff,
+    status: aggregated.length >= MINIMUM_CANDLES ? 'OK' : 'BLOCKED',
+    reason: aggregated.length < MINIMUM_CANDLES
+      ? `Données insuffisantes (${aggregated.length} / ${MINIMUM_CANDLES} requises)`
+      : null
+  };
 
   if (aggregated.length < MINIMUM_CANDLES) {
     console.warn(`⚠️ [Market Data] Agrégation insuffisante: ${aggregated.length} bougies ${timeframe} (minimum ${MINIMUM_CANDLES} requis)`);
     return {
       error: true,
       message: `Données insuffisantes après agrégation: ${aggregated.length} bougies ${timeframe} (minimum ${MINIMUM_CANDLES} requis)`,
-      candles: []
+      candles: [],
+      metadata
     };
   }
-
-  const lastPriceAggregated = aggregated[aggregated.length - 1]?.close;
-  const priceMatch = Math.abs(lastPrice1m - lastPriceAggregated) < 0.01;
 
   console.log(`✅ [Market Data] Aggregated to ${timeframe}: ${aggregated.length} candles from ${candles1m.length} 1m candles`);
   console.log(`📈 [PRIX COHÉRENT] ${priceMatch ? '✅' : '❌'} Prix identique sur tous timeframes:`, {
     baseline1m: lastPrice1m.toFixed(2),
     aggregated: lastPriceAggregated.toFixed(2),
-    difference: Math.abs(lastPrice1m - lastPriceAggregated).toFixed(4),
+    difference: priceDiff.toFixed(4),
     match: priceMatch,
     rule: 'Timeframe change = granularité SEULEMENT, pas le prix'
   });
 
-  return aggregated;
+  return {
+    candles: aggregated,
+    lastPrice: lastPrice1m,
+    metadata
+  };
 }
 
 function generateDeterministicData(symbol, count = 500) {

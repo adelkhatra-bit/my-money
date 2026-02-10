@@ -1,9 +1,17 @@
 const baseTimeframe = '1m';
 let dataCache = {};
+let isSimulationMode = false;
+
+const SUPABASE_URL = process.env.REACT_APP_SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+const SUPABASE_ANON_KEY = process.env.REACT_APP_SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
 
 export function clearDataCache() {
   dataCache = {};
   console.log('🗑️ [Market Data] Cache vidé - régénération des données');
+}
+
+export function isInSimulationMode() {
+  return isSimulationMode;
 }
 
 console.log('🔄 [Market Data] Vidage automatique du cache au démarrage (timestamps corrigés)');
@@ -211,6 +219,52 @@ function createAggregatedCandle(candles) {
   return { time, open, high, low, close, volume };
 }
 
+async function fetchRealMarketData(symbol, timeframe, limit = 500) {
+  try {
+    const url = `${SUPABASE_URL}/functions/v1/market-data-proxy/candles?symbol=${symbol}&timeframe=${timeframe}&limit=${limit}`;
+
+    const response = await fetch(url, {
+      headers: {
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+      }
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.warn('⚠️ [Market Data] Edge function returned error:', errorData);
+
+      if (errorData.isSimulation) {
+        isSimulationMode = true;
+        console.warn('🔴 [Market Data] API not configured - falling back to SIMULATION');
+        return null;
+      }
+
+      throw new Error(`Market data fetch failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    if (data.isSimulation === false && data.candles && data.candles.length > 0) {
+      isSimulationMode = false;
+      console.log(`✅ [Market Data] LIVE DATA from ${data.provider}:`, {
+        symbol: data.symbol,
+        candles: data.candles.length,
+        lastPrice: data.candles[data.candles.length - 1]?.close
+      });
+      return data.candles;
+    }
+
+    console.warn('⚠️ [Market Data] No valid data returned - falling back to SIMULATION');
+    isSimulationMode = true;
+    return null;
+  } catch (error) {
+    console.error('❌ [Market Data] Failed to fetch real data:', error.message);
+    isSimulationMode = true;
+    return null;
+  }
+}
+
 const MINIMUM_CANDLES = 300;
 
 export async function getUnifiedMarketData(market, platform, timeframe) {
@@ -244,10 +298,21 @@ export async function getUnifiedMarketData(market, platform, timeframe) {
   let candles1m = dataCache[cacheKey];
 
   if (!candles1m || candles1m.length < requiredCandles1m) {
-    console.log(`🔄 [Market Data] Generating deterministic baseline (1m) for ${symbol}: ${requiredCandles1m} candles`);
-    candles1m = generateDeterministicData(symbol, requiredCandles1m);
+    console.log(`🔄 [Market Data] Fetching baseline (1m) for ${symbol}: ${requiredCandles1m} candles`);
+
+    const realData = await fetchRealMarketData(symbol, '1m', requiredCandles1m);
+
+    if (realData && realData.length > 0) {
+      candles1m = realData;
+      isSimulationMode = false;
+      console.log(`✅ [Market Data] LIVE DATA fetched: ${candles1m.length} candles, lastPrice: ${candles1m[candles1m.length - 1]?.close.toFixed(2)}`);
+    } else {
+      isSimulationMode = true;
+      candles1m = generateDeterministicData(symbol, requiredCandles1m);
+      console.log(`⚠️ [Market Data] SIMULATION DATA generated: ${candles1m.length} candles, lastPrice: ${candles1m[candles1m.length - 1]?.close.toFixed(2)}`);
+    }
+
     dataCache[cacheKey] = candles1m;
-    console.log(`✅ [Market Data] Baseline generated: ${candles1m.length} candles, lastPrice: ${candles1m[candles1m.length - 1]?.close.toFixed(2)}`);
   }
 
   if (candles1m.length < MINIMUM_CANDLES) {

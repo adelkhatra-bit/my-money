@@ -21,7 +21,7 @@ import { calculateTrailingStop, shouldUpdateTrailingStop } from '../../services/
 import { positionManager } from '../../services/positionManager';
 import { positionService } from '../../services/positionService';
 import { userPreferencesService } from '../../services/userPreferences';
-import { validateMarketPlatformCompatibility } from '../../services/marketDataUnified';
+import { validateMarketPlatformCompatibility, isInSimulationMode } from '../../services/marketDataUnified';
 import { getCompatiblePlatforms, getDefaultPlatformForMarket, isPlatformCompatible } from '../../services/platformFilter';
 import tradingGate from '../../services/tradingGate';
 import { supabase } from '../../lib/supabaseClient';
@@ -86,6 +86,7 @@ const TradingDashboard = () => {
     const saved = localStorage.getItem('trading_statsbar_collapsed');
     return saved === 'true';
   });
+  const [isSimulation, setIsSimulation] = useState(true);
 
   const addActivityLog = (message, type = 'info') => {
     if (activityLogCallback) {
@@ -850,11 +851,13 @@ const TradingDashboard = () => {
       if (data && Array.isArray(data) && data.length >= 300) {
         setCandles(data);
         setScanStatus('');
+        setIsSimulation(isInSimulationMode());
         console.log('✅ [Load Data] Données chargées avec succès:', {
           candleCount: data.length,
           lastPrice: data[data.length - 1]?.close.toFixed(2),
           timeframe,
-          dataSource: 'deterministic'
+          dataSource: isInSimulationMode() ? 'SIMULATION' : 'LIVE',
+          isSimulation: isInSimulationMode()
         });
       } else {
         const candleCount = Array.isArray(data) ? data.length : 0;
@@ -1042,6 +1045,7 @@ const TradingDashboard = () => {
         setSupports(result.analysis.supports || []);
         setResistances(result.analysis.resistances || []);
         setOrderBlocks(result.analysis.orderBlocks || { bullish: [], bearish: [] });
+        setShowAnalysis(true);
 
         if (result.analysis.potentialEntry) {
           setPotentialEntry(result.analysis.potentialEntry);
@@ -1188,11 +1192,6 @@ const TradingDashboard = () => {
         setTimeout(() => {
           setPotentialEntry(null);
         }, 10000);
-
-        setTimeout(() => {
-          setShowAnalysis(false);
-          setScanStatus('');
-        }, 5000);
       }
     } catch (error) {
       console.error('Scan error:', error);
@@ -1803,17 +1802,21 @@ const TradingDashboard = () => {
         <div className={styles.titleRow}>
           <h1>AI Trading Platform</h1>
           <div className={styles.paperTradingBadge} style={{
-            background: 'linear-gradient(135deg, #ff9800 0%, #f57c00 100%)',
+            background: isSimulation
+              ? 'linear-gradient(135deg, #ff1744 0%, #c62828 100%)'
+              : 'linear-gradient(135deg, #00e676 0%, #00c853 100%)',
             color: '#fff',
             padding: '8px 16px',
             borderRadius: '8px',
             fontSize: '14px',
             fontWeight: 'bold',
-            border: '2px solid #ffb74d',
-            boxShadow: '0 4px 12px rgba(255, 152, 0, 0.4)',
-            animation: 'pulse 2s infinite'
+            border: isSimulation ? '2px solid #ff5252' : '2px solid #69f0ae',
+            boxShadow: isSimulation
+              ? '0 4px 12px rgba(255, 23, 68, 0.4)'
+              : '0 4px 12px rgba(0, 230, 118, 0.4)',
+            animation: isSimulation ? 'pulse 2s infinite' : 'none'
           }}>
-            📊 SIMULATION - Données Déterministes (Paper Trading)
+            {isSimulation ? '⚠️ SIMULATION - Données déterministes' : '✅ LIVE - Données temps réel'}
           </div>
         </div>
 

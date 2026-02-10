@@ -19,6 +19,7 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [dataError, setDataError] = useState(null);
   const isInitialized = useRef(false);
+  const lastCandleTimeRef = useRef(null);
 
   const clearPriceLines = useCallback(() => {
     if (candleSeriesRef.current && priceLines.current.length > 0) {
@@ -31,24 +32,85 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
     }
   }, []);
 
+  const cleanAndValidateCandles = useCallback((rawCandles) => {
+    if (!Array.isArray(rawCandles) || rawCandles.length === 0) {
+      return { error: true, message: 'Aucune donnée disponible', data: [] };
+    }
+
+    const validCandles = rawCandles.filter(c =>
+      c &&
+      typeof c.time === 'number' &&
+      typeof c.open === 'number' &&
+      typeof c.high === 'number' &&
+      typeof c.low === 'number' &&
+      typeof c.close === 'number' &&
+      !isNaN(c.time) &&
+      !isNaN(c.open) &&
+      !isNaN(c.high) &&
+      !isNaN(c.low) &&
+      !isNaN(c.close)
+    );
+
+    const uniqueCandles = [];
+    const seenTimes = new Set();
+
+    for (const candle of validCandles) {
+      if (!seenTimes.has(candle.time)) {
+        seenTimes.add(candle.time);
+        uniqueCandles.push(candle);
+      }
+    }
+
+    uniqueCandles.sort((a, b) => a.time - b.time);
+
+    if (uniqueCandles.length < 300) {
+      return {
+        error: true,
+        message: `Données insuffisantes: ${uniqueCandles.length}/300 bougies (${rawCandles.length - uniqueCandles.length} doublons supprimés)`,
+        data: uniqueCandles
+      };
+    }
+
+    console.log('✅ [TradingChart] Données nettoyées:', {
+      bougiesOriginales: rawCandles.length,
+      doublonsSupprimés: rawCandles.length - uniqueCandles.length,
+      bougiesFinales: uniqueCandles.length,
+      premièreBougie: new Date(uniqueCandles[0].time * 1000).toISOString(),
+      dernièreBougie: new Date(uniqueCandles[uniqueCandles.length - 1].time * 1000).toISOString()
+    });
+
+    return { error: false, data: uniqueCandles };
+  }, []);
+
   useEffect(() => {
     if (candles && candles.error) {
       setDataError(candles.message || 'Données insuffisantes');
       return;
     }
 
-    if (!Array.isArray(candles) || candles.length < 300) {
-      setDataError(`Données insuffisantes: ${Array.isArray(candles) ? candles.length : 0} bougies (minimum 300 requis)`);
+    const cleaned = cleanAndValidateCandles(candles);
+
+    if (cleaned.error) {
+      setDataError(cleaned.message);
       return;
     }
 
     setDataError(null);
-  }, [candles]);
+  }, [candles, cleanAndValidateCandles]);
 
   useEffect(() => {
     if (!chartContainerRef.current) return;
     if (dataError) return;
     if (!Array.isArray(candles) || candles.length === 0) return;
+
+    const cleaned = cleanAndValidateCandles(candles);
+    if (cleaned.error || cleaned.data.length === 0) return;
+
+    const cleanedCandles = cleaned.data;
+
+    const chartHeight = isFullscreen
+      ? window.innerHeight - 100
+      : Math.max(450, window.innerHeight * 0.5);
 
     const chart = createChart(chartContainerRef.current, {
       layout: {
@@ -60,7 +122,7 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
         horzLines: { color: '#2b2b2b' },
       },
       width: chartContainerRef.current.clientWidth,
-      height: isFullscreen ? window.innerHeight - 100 : 320,
+      height: chartHeight,
       rightPriceScale: {
         borderColor: '#3a3a3a',
       },
@@ -105,15 +167,24 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
       wickDownColor: '#ef5350',
     });
 
-    candleSeries.setData(candles);
+    candleSeries.setData(cleanedCandles);
+    lastCandleTimeRef.current = cleanedCandles[cleanedCandles.length - 1].time;
     isInitialized.current = true;
+
+    console.log('✅ [TradingChart] Graphique initialisé avec setData():', {
+      bougies: cleanedCandles.length,
+      dernièreBougie: lastCandleTimeRef.current,
+      date: new Date(lastCandleTimeRef.current * 1000).toISOString()
+    });
 
     setTimeout(() => {
       try {
         if (chart && chart.timeScale) {
           chart.timeScale().fitContent();
         }
-      } catch (e) {}
+      } catch (e) {
+        console.error('Erreur fitContent:', e);
+      }
     }, 100);
 
     chartRef.current = chart;
@@ -122,11 +193,16 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
     const handleResize = () => {
       if (chartRef.current && chartContainerRef.current) {
         try {
+          const newHeight = isFullscreen
+            ? window.innerHeight - 100
+            : Math.max(450, window.innerHeight * 0.5);
           chartRef.current.applyOptions({
             width: chartContainerRef.current.clientWidth,
-            height: isFullscreen ? window.innerHeight - 100 : 320,
+            height: newHeight,
           });
-        } catch (e) {}
+        } catch (e) {
+          console.error('Erreur resize:', e);
+        }
       }
     };
 
@@ -141,9 +217,10 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
         chartRef.current = null;
         candleSeriesRef.current = null;
         isInitialized.current = false;
+        lastCandleTimeRef.current = null;
       }
     };
-  }, [isFullscreen, dataError]);
+  }, [isFullscreen, dataError, cleanAndValidateCandles]);
 
   useEffect(() => {
     if (!candleSeriesRef.current || !Array.isArray(candles) || candles.length === 0 || dataError) return;
@@ -151,9 +228,24 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
 
     try {
       const lastCandle = candles[candles.length - 1];
-      candleSeriesRef.current.update(lastCandle);
+
+      if (!lastCandle || typeof lastCandle.time !== 'number') {
+        console.warn('⚠️ [TradingChart] Dernière bougie invalide, ignorée');
+        return;
+      }
+
+      if (lastCandleTimeRef.current !== lastCandle.time) {
+        console.log('🔄 [TradingChart] Mise à jour avec update():', {
+          ancienTime: lastCandleTimeRef.current,
+          nouveauTime: lastCandle.time,
+          date: new Date(lastCandle.time * 1000).toISOString(),
+          prix: lastCandle.close
+        });
+        candleSeriesRef.current.update(lastCandle);
+        lastCandleTimeRef.current = lastCandle.time;
+      }
     } catch (e) {
-      console.warn('Chart update error:', e);
+      console.error('❌ [TradingChart] Erreur update:', e.message);
     }
   }, [candles, dataError]);
 

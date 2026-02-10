@@ -27,7 +27,8 @@
 
 .chartContainer {
   width: 100%;
-  height: 320px;
+  min-height: 450px;
+  height: 100%;
 }
 
 .chartControls {
@@ -115,7 +116,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 320px;
+  min-height: 450px;
   padding: 2rem;
 }
 

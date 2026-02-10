@@ -121,7 +121,7 @@ export function aggregateCandles(candles1m, targetTimeframe, metadata = {}) {
   let bucketStartTime = null;
 
   for (const candle of candles1m) {
-    const candleTime = new Date(candle.time).getTime();
+    const candleTime = candle.time * 1000;
 
     if (!bucketStartTime) {
       bucketStartTime = Math.floor(candleTime / (intervalMinutes * 60 * 1000)) * (intervalMinutes * 60 * 1000);

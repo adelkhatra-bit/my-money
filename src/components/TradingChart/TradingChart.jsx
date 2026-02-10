@@ -553,10 +553,10 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
 
   return (
     <div className={`${styles.chartWrapper} ${isFullscreen ? styles.fullscreen : ''}`}>
-      {platform && platform.toLowerCase() === 'topstep' && (
+      {metadata && metadata.source === 'marketDataUnified' && (
         <div className={styles.simulationBadge}>
-          <span className={styles.simulationIcon}>🎮</span>
-          <span className={styles.simulationText}>SIMULATION</span>
+          <span className={styles.simulationIcon}>🔶</span>
+          <span className={styles.simulationText}>SIMULATION — Données fictives calibrées</span>
         </div>
       )}
       {showProofMode && metadata && (

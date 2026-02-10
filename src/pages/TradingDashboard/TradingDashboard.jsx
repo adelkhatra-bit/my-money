@@ -1972,6 +1972,67 @@ const TradingDashboard = () => {
         etaMinutes={etaMinutes || 5}
       />
 
+      <div className={styles.proofBarFixed}>
+        <div className={styles.proofBarTitle}>🔍 PREUVE RUNTIME</div>
+        <div className={styles.proofBarButtons}>
+          <button
+            className={styles.proofButton}
+            onClick={() => {
+              const proofJson = JSON.stringify({
+                ts: dataMetadata?.ts || new Date().toISOString(),
+                dataProviderFile: dataMetadata?.dataProviderFile || 'N/A',
+                dataProviderFn: dataMetadata?.dataProviderFn || 'N/A',
+                requestId: dataMetadata?.requestId || 'N/A',
+                platform: platform,
+                market: market,
+                symbol: dataMetadata?.symbol || 'N/A',
+                timeframeRequested: dataMetadata?.timeframeRequested || timeframe,
+                baseline1mCount: dataMetadata?.baseline1mCount || 0,
+                aggregatedCount: dataMetadata?.aggregatedCount || 0,
+                baselineFirstTime: dataMetadata?.baselineFirstTime || 0,
+                baselineLastTime: dataMetadata?.baselineLastTime || 0,
+                aggregatedFirstTime: dataMetadata?.aggregatedFirstTime || 0,
+                aggregatedLastTime: dataMetadata?.aggregatedLastTime || 0,
+                baselineLastClose: dataMetadata?.baselineLastClose || 0,
+                aggregatedLastClose: dataMetadata?.aggregatedLastClose || 0,
+                priceDiff: dataMetadata?.priceDiff || 0,
+                status: dataMetadata?.status || 'UNKNOWN',
+                reason: dataMetadata?.reason || null
+              }, null, 2);
+              navigator.clipboard.writeText(proofJson);
+              addActivityLog('📋 Preuve Data copiée', 'success');
+            }}
+          >
+            📋 Copier preuve
+          </button>
+          <button
+            className={styles.proofButton}
+            onClick={() => {
+              const gateProof = JSON.stringify({
+                ts: new Date().toISOString(),
+                allowed: gateStatus.allowed,
+                reason: gateStatus.reason,
+                platform: platform,
+                market: market,
+                rule300: dataMetadata?.baseline1mCount >= 300 ? 'OK' : 'BLOCKED',
+                baseline1mCount: dataMetadata?.baseline1mCount || 0,
+                aggregatedCount: dataMetadata?.aggregatedCount || 0,
+                duplicatesRemoved: dataMetadata?.duplicatesRemoved || 0,
+                priceDiff: dataMetadata?.priceDiff || 0,
+                scanAllowed: gateStatus.allowed && !autoMode,
+                botAllowed: gateStatus.allowed && autoMode,
+                popupsAllowed: gateStatus.allowed,
+                previewAllowed: gateStatus.allowed
+              }, null, 2);
+              navigator.clipboard.writeText(gateProof);
+              addActivityLog('📋 Gate Proof copié', 'success');
+            }}
+          >
+            📋 Copier Gate Proof
+          </button>
+        </div>
+      </div>
+
       {signalState.isScanning && (
         <div className={styles.scanningIndicator}>
           <div className={styles.scanningPulse}></div>

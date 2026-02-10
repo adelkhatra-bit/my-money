@@ -86,6 +86,32 @@
   transform: scale(0.98);
 }
 
+.openBtn {
+  background: #2563eb;
+  color: #ffffff;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.openBtn:hover {
+  background: #1d4ed8;
+}
+
+.openBtn:active {
+  transform: scale(0.98);
+}
+
+.hint {
+  color: #666666;
+  font-size: 11px;
+  font-style: italic;
+}
+
 .externalLink {
   color: #22c55e;
   text-decoration: none;

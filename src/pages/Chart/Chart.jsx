@@ -32,6 +32,10 @@ export default function Chart() {
     }
   };
 
+  const handleOpenInNewTab = () => {
+    window.open(chartUrl, '_blank', 'noopener,noreferrer');
+  };
+
   return (
     <div className={styles.chartPage}>
       <div className={styles.header}>
@@ -48,18 +52,14 @@ export default function Chart() {
           <button onClick={handleLoadChart} className={styles.loadBtn}>
             Charger
           </button>
+          <button onClick={handleOpenInNewTab} className={styles.openBtn}>
+            Ouvrir →
+          </button>
         </div>
         <div className={styles.info}>
-          <span>Graphique actuel: {extractChartId(chartUrl) || 'jI9UoWYW'}</span>
+          <span>Graphique: {extractChartId(chartUrl) || 'jI9UoWYW'}</span>
           <span className={styles.separator}>•</span>
-          <a
-            href={chartUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={styles.externalLink}
-          >
-            Ouvrir dans un nouvel onglet →
-          </a>
+          <span className={styles.hint}>Si le graphique ne s'affiche pas, clique sur "Ouvrir"</span>
         </div>
       </div>
 
@@ -77,6 +77,10 @@ export default function Chart() {
         frameBorder="0"
         allowFullScreen
         onLoad={() => setLoading(false)}
+        onError={() => {
+          setLoading(false);
+          console.error('Erreur de chargement iframe');
+        }}
       />
     </div>
   );

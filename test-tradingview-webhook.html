@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test TradingView Webhook</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0a0a;
+            color: #ffffff;
+            padding: 40px 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+            color: #22c55e;
+        }
+
+        .subtitle {
+            color: #888;
+            margin-bottom: 40px;
+        }
+
+        .section {
+            background: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+
+        h2 {
+            font-size: 20px;
+            margin-bottom: 16px;
+            color: #ffffff;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        label {
+            display: block;
+            font-size: 12px;
+            color: #888;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            background: #0a0a0a;
+            border: 1px solid #2a2a2a;
+            border-radius: 6px;
+            color: #ffffff;
+            font-size: 14px;
+            font-family: 'Monaco', 'Courier New', monospace;
+        }
+
+        textarea {
+            min-height: 200px;
+            font-size: 12px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 24px;
+        }
+
+        button {
+            flex: 1;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: #22c55e;
+            color: #000000;
+        }
+
+        .btn-primary:hover {
+            background: #16a34a;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: #2563eb;
+            color: #ffffff;
+        }
+
+        .btn-secondary:hover {
+            background: #1d4ed8;
+        }
+
+        .btn-danger {
+            background: #ef4444;
+            color: #ffffff;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+
+        .response {
+            margin-top: 20px;
+            padding: 16px;
+            background: #0a0a0a;
+            border: 2px solid #2a2a2a;
+            border-radius: 8px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .response.success {
+            border-color: #22c55e;
+            color: #22c55e;
+        }
+
+        .response.error {
+            border-color: #ef4444;
+            color: #ef4444;
+        }
+
+        .quick-tests {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+        }
+
+        .quick-test {
+            padding: 12px;
+            background: #0a0a0a;
+            border: 1px solid #2a2a2a;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .quick-test:hover {
+            border-color: #22c55e;
+            background: #1a1a1a;
+        }
+
+        .quick-test h3 {
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+
+        .quick-test p {
+            font-size: 11px;
+            color: #666;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .badge.long {
+            background: rgba(34, 197, 94, 0.2);
+            color: #22c55e;
+        }
+
+        .badge.short {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Test TradingView Webhook</h1>
+        <p class="subtitle">Testez votre webhook avant de configurer TradingView</p>
+
+        <div class="section">
+            <h2>Tests Rapides</h2>
+            <div class="quick-tests">
+                <div class="quick-test" onclick="loadTest('long')">
+                    <h3><span class="badge long">LONG</span> MNQ 5m</h3>
+                    <p>Signal LONG valide</p>
+                </div>
+                <div class="quick-test" onclick="loadTest('short')">
+                    <h3><span class="badge short">SHORT</span> MNQ 5m</h3>
+                    <p>Signal SHORT valide</p>
+                </div>
+                <div class="quick-test" onclick="loadTest('long-invalid')">
+                    <h3><span class="badge long">LONG</span> Invalide</h3>
+                    <p>Prix incohérents</p>
+                </div>
+                <div class="quick-test" onclick="loadTest('short-invalid')">
+                    <h3><span class="badge short">SHORT</span> Invalide</h3>
+                    <p>Prix incohérents</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Configuration Manuelle</h2>
+
+            <div class="form-group">
+                <label>Webhook URL</label>
+                <input type="text" id="webhookUrl" value="https://xvqjynhbgdlqmapqtxdi.supabase.co/functions/v1/tradingview-webhook" />
+            </div>
+
+            <div class="form-group">
+                <label>Message JSON</label>
+                <textarea id="jsonPayload">{
+  "symbol": "CME_MINI:MNQ1!",
+  "timeframe": "5m",
+  "direction": "LONG",
+  "entry": 21450.50,
+  "stop_loss": 21400.00,
+  "take_profit_1": 21500.00,
+  "take_profit_2": 21550.00,
+  "platform": "topstep",
+  "market": "NASDAQ"
+}</textarea>
+            </div>
+
+            <div class="button-group">
+                <button class="btn-primary" onclick="sendWebhook()">
+                    Envoyer Webhook
+                </button>
+                <button class="btn-secondary" onclick="formatJson()">
+                    Formater JSON
+                </button>
+                <button class="btn-danger" onclick="clearResponse()">
+                    Effacer
+                </button>
+            </div>
+
+            <div id="response"></div>
+        </div>
+    </div>
+
+    <script>
+        const tests = {
+            'long': {
+                symbol: "CME_MINI:MNQ1!",
+                timeframe: "5m",
+                direction: "LONG",
+                entry: 21450.50,
+                stop_loss: 21400.00,
+                take_profit_1: 21500.00,
+                take_profit_2: 21550.00,
+                platform: "topstep",
+                market: "NASDAQ"
+            },
+            'short': {
+                symbol: "CME_MINI:MNQ1!",
+                timeframe: "5m",
+                direction: "SHORT",
+                entry: 21450.50,
+                stop_loss: 21500.00,
+                take_profit_1: 21400.00,
+                take_profit_2: 21350.00,
+                platform: "topstep",
+                market: "NASDAQ"
+            },
+            'long-invalid': {
+                symbol: "CME_MINI:MNQ1!",
+                timeframe: "5m",
+                direction: "LONG",
+                entry: 21450.50,
+                stop_loss: 21460.00,
+                take_profit_1: 21500.00,
+                platform: "topstep",
+                market: "NASDAQ"
+            },
+            'short-invalid': {
+                symbol: "CME_MINI:MNQ1!",
+                timeframe: "5m",
+                direction: "SHORT",
+                entry: 21450.50,
+                stop_loss: 21440.00,
+                take_profit_1: 21400.00,
+                platform: "topstep",
+                market: "NASDAQ"
+            }
+        };
+
+        function loadTest(testName) {
+            const test = tests[testName];
+            if (test) {
+                document.getElementById('jsonPayload').value = JSON.stringify(test, null, 2);
+            }
+        }
+
+        function formatJson() {
+            try {
+                const payload = document.getElementById('jsonPayload').value;
+                const parsed = JSON.parse(payload);
+                document.getElementById('jsonPayload').value = JSON.stringify(parsed, null, 2);
+            } catch (e) {
+                alert('JSON invalide: ' + e.message);
+            }
+        }
+
+        function clearResponse() {
+            document.getElementById('response').innerHTML = '';
+            document.getElementById('response').className = 'response';
+        }
+
+        async function sendWebhook() {
+            const url = document.getElementById('webhookUrl').value;
+            const payloadText = document.getElementById('jsonPayload').value;
+            const responseDiv = document.getElementById('response');
+
+            try {
+                const payload = JSON.parse(payloadText);
+
+                responseDiv.innerHTML = 'Envoi en cours...';
+                responseDiv.className = 'response';
+
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    responseDiv.className = 'response success';
+                    responseDiv.innerHTML = '✅ SUCCÈS\n\n' + JSON.stringify(data, null, 2);
+                } else {
+                    responseDiv.className = 'response error';
+                    responseDiv.innerHTML = '❌ ERREUR\n\n' + JSON.stringify(data, null, 2);
+                }
+            } catch (e) {
+                responseDiv.className = 'response error';
+                responseDiv.innerHTML = '❌ ERREUR\n\n' + e.message;
+            }
+        }
+    </script>
+</body>
+</html>

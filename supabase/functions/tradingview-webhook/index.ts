@@ -9,12 +9,21 @@ const corsHeaders = {
 interface TradingViewAlert {
   symbol: string;
   timeframe: string;
-  side: "LONG" | "SHORT";
-  entry: number;
-  sl: number;
+  direction?: "LONG" | "SHORT";
+  side?: "LONG" | "SHORT";
+  entry?: number;
+  entry_min?: number;
+  entry_max?: number;
+  sl?: number;
+  stop_loss?: number;
   tp1?: number;
   tp2?: number;
+  take_profit_1?: number;
+  take_profit_2?: number;
   user_id?: string;
+  platform?: string;
+  market?: string;
+  timestamp?: string;
 }
 
 Deno.serve(async (req: Request) => {
@@ -42,11 +51,18 @@ Deno.serve(async (req: Request) => {
 
     const payload: TradingViewAlert = await req.json();
 
-    if (!payload.symbol || !payload.timeframe || !payload.side || !payload.entry || !payload.sl) {
+    const direction = payload.direction || payload.side;
+    const entry = payload.entry || payload.entry_min || payload.entry_max;
+    const sl = payload.sl || payload.stop_loss;
+    const tp1 = payload.tp1 || payload.take_profit_1;
+    const tp2 = payload.tp2 || payload.take_profit_2;
+
+    if (!payload.symbol || !payload.timeframe || !direction || !entry || !sl) {
       return new Response(
         JSON.stringify({
           error: "Missing required fields",
-          required: ["symbol", "timeframe", "side", "entry", "sl"]
+          required: ["symbol", "timeframe", "direction/side", "entry", "sl/stop_loss"],
+          received: payload
         }),
         {
           status: 400,
@@ -55,9 +71,30 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    if (!["LONG", "SHORT"].includes(payload.side)) {
+    if (!["LONG", "SHORT"].includes(direction)) {
       return new Response(
-        JSON.stringify({ error: "Invalid side. Must be LONG or SHORT" }),
+        JSON.stringify({ error: "Invalid direction. Must be LONG or SHORT" }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    const isLong = direction === "LONG";
+    const validPrice = isLong
+      ? (tp1 ? tp1 > entry && entry > sl : entry > sl)
+      : (tp1 ? sl > entry && entry > tp1 : sl > entry);
+
+    if (!validPrice) {
+      return new Response(
+        JSON.stringify({
+          error: "Invalid price logic",
+          message: isLong
+            ? "For LONG: TP must be above Entry, Entry must be above SL"
+            : "For SHORT: SL must be above Entry, Entry must be above TP",
+          received: { direction, entry, sl, tp1 }
+        }),
         {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -71,11 +108,11 @@ Deno.serve(async (req: Request) => {
         user_id: payload.user_id || null,
         symbol: payload.symbol,
         timeframe: payload.timeframe,
-        side: payload.side,
-        entry: payload.entry,
-        sl: payload.sl,
-        tp1: payload.tp1 || null,
-        tp2: payload.tp2 || null,
+        side: direction,
+        entry: entry,
+        sl: sl,
+        tp1: tp1 || null,
+        tp2: tp2 || null,
         status: "pending",
         raw_payload: payload,
       })
@@ -96,8 +133,8 @@ Deno.serve(async (req: Request) => {
     console.log("TradingView alert received:", {
       id: data.id,
       symbol: payload.symbol,
-      side: payload.side,
-      entry: payload.entry,
+      direction: direction,
+      entry: entry,
     });
 
     return new Response(
@@ -108,11 +145,11 @@ Deno.serve(async (req: Request) => {
         data: {
           symbol: payload.symbol,
           timeframe: payload.timeframe,
-          side: payload.side,
-          entry: payload.entry,
-          sl: payload.sl,
-          tp1: payload.tp1,
-          tp2: payload.tp2,
+          direction: direction,
+          entry: entry,
+          sl: sl,
+          tp1: tp1,
+          tp2: tp2,
         },
       }),
       {

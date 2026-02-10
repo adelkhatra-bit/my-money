@@ -3,6 +3,10 @@ import { createRoot } from 'react-dom/client';
 import App from './App.jsx';
 import './index.css';
 
+console.log('✅ [DIAGNOSTIC] index.js loaded at', new Date().toISOString());
+console.log('✅ [DIAGNOSTIC] React version:', React.version);
+console.log('✅ [DIAGNOSTIC] App component:', typeof App);
+
 window.onerror = function(message, source, lineno, colno, error) {
   console.error('❌ [window.onerror]', { message, source, lineno, colno, error });
 
@@ -72,9 +76,40 @@ window.addEventListener('unhandledrejection', function(event) {
   document.body.appendChild(errorDiv);
 });
 
-const root = createRoot(document.getElementById('root'));
+console.log('✅ [DIAGNOSTIC] Checking root element...');
+const rootElement = document.getElementById('root');
+console.log('✅ [DIAGNOSTIC] Root element found:', !!rootElement);
+
+if (!rootElement) {
+  document.body.innerHTML = `
+    <div style="
+      position: fixed;
+      inset: 0;
+      background: #ef4444;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: monospace;
+      font-size: 24px;
+      text-align: center;
+      padding: 40px;
+    ">
+      ❌ ERREUR CRITIQUE<br/>
+      <small style="font-size: 16px; margin-top: 20px;">Élément #root introuvable dans le DOM</small>
+    </div>
+  `;
+  throw new Error('Root element not found');
+}
+
+console.log('✅ [DIAGNOSTIC] Creating React root...');
+const root = createRoot(rootElement);
+console.log('✅ [DIAGNOSTIC] React root created successfully');
+
+console.log('✅ [DIAGNOSTIC] Rendering App component...');
 root.render(
   <React.StrictMode>
     <App />
   </React.StrictMode>
 );
+console.log('✅ [DIAGNOSTIC] App component rendered - check browser!');

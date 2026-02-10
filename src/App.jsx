@@ -16,10 +16,13 @@ import ErrorBoundary from './components/ErrorBoundary/ErrorBoundary';
 import './App.css';
 
 function App() {
+  console.log('✅ [APP] App component rendering...');
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showDisclaimer, setShowDisclaimer] = useState(false);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+
+  console.log('[APP] State:', { user: !!user, loading, showDisclaimer, isSuperAdmin });
 
   useEffect(() => {
     const initTimeout = setTimeout(() => {
@@ -99,6 +102,7 @@ function App() {
   };
 
   if (loading) {
+    console.log('[APP] Showing loading screen...');
     return (
       <div className="loading-screen">
         <div className="spinner"></div>
@@ -106,6 +110,8 @@ function App() {
       </div>
     );
   }
+
+  console.log('[APP] Loading complete, rendering main app');
 
   if (showDisclaimer) {
     return <LegalDisclaimer onAccept={acceptDisclaimer} />;

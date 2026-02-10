@@ -1373,27 +1373,35 @@ const TradingDashboard = () => {
   };
 
   useEffect(() => {
+    console.log('🤖 [Bot Service] useEffect déclenché:', { autoMode, marketOpen: marketStatus.open });
+
     const scanCallback = () => {
-      if (!scanning && marketStatus.open) {
+      console.log('🔍 [Bot Service] scanCallback appelé:', { autoMode, scanning, marketOpen: marketStatus.open });
+      if (!scanning && marketStatus.open && autoMode) {
+        console.log('✅ [Bot Service] Conditions OK - performScan() lancé');
         performScan();
+      } else {
+        console.log('⏸️ [Bot Service] Scan bloqué:', { autoMode, scanning, marketOpen: marketStatus.open });
       }
     };
 
     if (autoMode && marketStatus.open) {
+      console.log('🟢 [Bot Service] Démarrage bot automatique');
       botService.addCallback(scanCallback);
       botService.start(scanCallback, 30000);
     } else {
+      console.log('🔴 [Bot Service] Arrêt bot automatique');
       botService.removeCallback(scanCallback);
-      if (!autoMode) {
-        botService.stop();
-        setSignalState({ isScanning: false, preAlert: null, signal: null });
-        setScanStatus('');
-        setBotState('idle');
-      }
+      botService.stop();
+      setSignalState({ isScanning: false, preAlert: null, signal: null });
+      setScanStatus('');
+      setBotState('idle');
     }
 
     return () => {
+      console.log('🧹 [Bot Service] Cleanup - Arrêt total du bot');
       botService.removeCallback(scanCallback);
+      botService.stop();
     };
   }, [autoMode, marketStatus.open]);
 

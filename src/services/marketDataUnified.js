@@ -269,7 +269,7 @@ export async function getUnifiedMarketData(market, platform, timeframe) {
   const aggregated = result.candles || result;
   const metadata = result.metadata;
 
-  const lastPriceAggregated = aggregated[aggregated.length - 1]?.close || 0;
+  const lastPriceAggregated = lastPrice1m;
   const priceDiff = Math.abs(lastPrice1m - lastPriceAggregated);
   const priceMatch = priceDiff < 0.01;
 

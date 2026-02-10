@@ -839,6 +839,11 @@ const TradingDashboard = () => {
   const checkMarketStatus = () => {
     const status = getMarketStatus(market);
     setMarketStatus(status);
+
+    if (!status.open && autoMode) {
+      setAutoMode(false);
+      addActivityLog(`🔒 Robot désactivé automatiquement - Marché ${market} fermé`, 'warning');
+    }
   };
 
   const loadHistoricalData = async () => {
@@ -1237,6 +1242,11 @@ const TradingDashboard = () => {
   };
 
   const handleTestSignal = () => {
+    if (!marketStatus.open) {
+      alert(`❌ MARCHÉ FERMÉ\n\nLe marché ${market} est actuellement fermé.\n${marketStatus.message}\n\nAucune action de trading n'est possible tant que le marché est fermé.`);
+      return;
+    }
+
     if (currentPosition && currentPosition.status === 'OPEN') {
       const dir = currentPosition.direction === 'LONG' ? '🟢 LONG' : '🔴 SHORT';
       alert(`🔒 POSITION DÉJÀ ACTIVE\n\n${dir} sur ${currentPosition.market}\nPrix d'entrée: ${parseFloat(currentPosition.entry_price).toFixed(2)}\n\nAPERÇU BLOQUÉ: Vous ne pouvez pas utiliser l'aperçu pendant qu'une position est ouverte.\n\nLe bot surveille automatiquement votre position en temps réel.`);
@@ -1330,6 +1340,12 @@ const TradingDashboard = () => {
   };
 
   const handleToggleBot = () => {
+    if (!marketStatus.open && !autoMode) {
+      alert(`❌ MARCHÉ FERMÉ\n\nLe marché ${market} est actuellement fermé.\n${marketStatus.message}\n\nLe robot ne peut pas être activé tant que le marché est fermé.`);
+      addActivityLog('❌ Tentative activation robot - Marché fermé', 'error');
+      return;
+    }
+
     const newState = !autoMode;
     setAutoMode(newState);
     if (newState) {
@@ -1913,79 +1929,6 @@ const TradingDashboard = () => {
             title={currentPosition && currentPosition.status === 'OPEN' ? '🔒 Scan bloqué - Position en cours' : 'Lancer un scan manuel'}
           >
             {scanning ? '🔍 Analyse...' : '🎯 Scan Manuel'}
-          </button>
-
-          <button
-            className={styles.testBtn}
-            onClick={handleTestSignal}
-            disabled={credits.remaining === 0 || (currentPosition && currentPosition.status === 'OPEN')}
-            title={currentPosition && currentPosition.status === 'OPEN' ? '🔒 Aperçu bloqué - Position en cours' : 'Aperçu du système de signal'}
-          >
-            📊 Aperçu
-          </button>
-        </div>
-
-        <div style={{
-          display: 'flex',
-          gap: '10px',
-          marginTop: '15px',
-          padding: '12px',
-          background: 'rgba(0, 255, 136, 0.1)',
-          borderRadius: '8px',
-          border: '2px solid rgba(0, 255, 136, 0.3)',
-          flexWrap: 'wrap',
-          justifyContent: 'center'
-        }}>
-          <button
-            onClick={() => handleCopyAntoProof('1m')}
-            style={{
-              padding: '10px 16px',
-              background: 'linear-gradient(135deg, #00e676 0%, #00c853 100%)',
-              color: '#000',
-              border: 'none',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontWeight: 'bold',
-              fontSize: '14px',
-              boxShadow: '0 4px 12px rgba(0, 230, 118, 0.3)'
-            }}
-            title="Copier la preuve de compatibilité ANTØ pour timeframe 1m"
-          >
-            📋 Copier preuve ANTO / ANTO_NASDAQ - 1m
-          </button>
-          <button
-            onClick={() => handleCopyAntoProof('5m')}
-            style={{
-              padding: '10px 16px',
-              background: 'linear-gradient(135deg, #00e676 0%, #00c853 100%)',
-              color: '#000',
-              border: 'none',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontWeight: 'bold',
-              fontSize: '14px',
-              boxShadow: '0 4px 12px rgba(0, 230, 118, 0.3)'
-            }}
-            title="Copier la preuve de compatibilité ANTØ pour timeframe 5m"
-          >
-            📋 Copier preuve ANTO / ANTO_NASDAQ - 5m
-          </button>
-          <button
-            onClick={handleCopyAntoGateProof}
-            style={{
-              padding: '10px 16px',
-              background: 'linear-gradient(135deg, #ffeb3b 0%, #fbc02d 100%)',
-              color: '#000',
-              border: 'none',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontWeight: 'bold',
-              fontSize: '14px',
-              boxShadow: '0 4px 12px rgba(255, 235, 59, 0.3)'
-            }}
-            title="Copier la preuve de trading gate ANTØ"
-          >
-            📋 Copier Gate Proof ANTO_NASDAQ
           </button>
         </div>
 

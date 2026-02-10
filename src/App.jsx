@@ -11,6 +11,7 @@ import SuperAdmin from './pages/SuperAdmin/SuperAdmin';
 import Profil from './pages/Profil/Profil';
 import Health from './pages/Health/Health';
 import SafeBoot from './pages/SafeBoot/SafeBoot';
+import Chart from './pages/Chart/Chart';
 import LegalDisclaimer from './components/LegalDisclaimer/LegalDisclaimer';
 import Navbar from './components/Navbar/Navbar';
 import ErrorBoundary from './components/ErrorBoundary/ErrorBoundary';
@@ -130,6 +131,10 @@ function App() {
         <Route
           path="/health"
           element={<Health />}
+        />
+        <Route
+          path="/chart"
+          element={<Chart />}
         />
         <Route
           path="/login"

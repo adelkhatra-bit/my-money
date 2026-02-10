@@ -1,0 +1,32 @@
+{
+  "manifest_version": 3,
+  "name": "AI Trading Bot Overlay",
+  "version": "1.0.0",
+  "description": "Overlay AI Trading Bot sur Topstep/Tradovate - Scan et tracés en temps réel",
+  "permissions": [
+    "storage",
+    "activeTab"
+  ],
+  "host_permissions": [
+    "https://trader.tradovate.com/*",
+    "https://live.tradovate.com/*",
+    "https://demo.tradovate.com/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://trader.tradovate.com/*",
+        "https://live.tradovate.com/*",
+        "https://demo.tradovate.com/*"
+      ],
+      "js": ["content-script.js"],
+      "css": ["overlay-styles.css"],
+      "run_at": "document_end"
+    }
+  ],
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}

@@ -176,7 +176,13 @@ class MarketDataProvider {
       return await getAntoPriceHistory(market, timeframe, 500);
     }
 
-    return await getUnifiedMarketData(market, platform, timeframe);
+    const result = await getUnifiedMarketData(market, platform, timeframe);
+
+    if (result && result.error) {
+      return result;
+    }
+
+    return result.candles || [];
   }
 
   getCurrentPrice(market, platform) {

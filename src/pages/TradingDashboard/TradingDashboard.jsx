@@ -31,9 +31,9 @@ import styles from './TradingDashboard.module.css';
 const TradingDashboard = () => {
   console.log('🚀 [TradingDashboard] Initialisation du composant');
 
-  const [market, setMarket] = useState('BTC');
-  const [platform, setPlatform] = useState('binance');
-  const [timeframe, setTimeframe] = useState('5m');
+  const [market, setMarket] = useState('NASDAQ');
+  const [platform, setPlatform] = useState('topstep');
+  const [timeframe, setTimeframe] = useState('1m');
   const [autoMode, setAutoMode] = useState(false);
   const [candles, setCandles] = useState([]);
   const [currentSignal, setCurrentSignal] = useState(null);
@@ -838,7 +838,7 @@ const TradingDashboard = () => {
     setScanStatus('Chargement des données...');
 
     try {
-      const data = await marketDataProvider.getOHLC({ market, platform, timeframe });
+      const data = await marketDataProvider.getOHLC(market, platform, timeframe);
 
       if (data && data.error) {
         setCandles(data);

@@ -213,7 +213,7 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
         lastCandleTimeRef.current = null;
       }
     };
-  }, [isFullscreen, dataError, cleanAndValidateCandles]);
+  }, [candles, isFullscreen, dataError, cleanAndValidateCandles]);
 
   useEffect(() => {
     if (!candleSeriesRef.current || !Array.isArray(candles) || candles.length === 0 || dataError) return;

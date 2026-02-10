@@ -1,4 +1,5 @@
-console.log('🤖 AI Trading Bot Overlay - Initialisation...');
+console.log('[TOPSTEPOVERLAY] script injected');
+alert('TopstepOverlay injecté - attente du chart Tradovate...');
 
 class TopstepOverlay {
   constructor() {
@@ -23,44 +24,77 @@ class TopstepOverlay {
   }
 
   init() {
-    setTimeout(() => {
-      this.detectChartContainer();
-      this.createOverlayUI();
-      this.createCanvasOverlay();
-      this.startPriceMonitoring();
-      console.log('✅ AI Trading Bot Overlay activé');
-    }, 2000);
+    console.log('[TOPSTEPOVERLAY] init() appelé');
+    this.waitForChart();
   }
 
-  detectChartContainer() {
-    const selectors = [
-      '.chart-container',
-      '[class*="chart"]',
-      '[class*="Chart"]',
-      '#chart-area',
-      'canvas[class*="chart"]'
-    ];
+  waitForChart() {
+    console.log('[TOPSTEPOVERLAY] attente du chart via MutationObserver...');
 
-    for (const selector of selectors) {
-      const element = document.querySelector(selector);
-      if (element) {
-        this.chartContainer = element.parentElement || element;
-        console.log('📊 Chart container trouvé:', selector);
-        return;
+    const checkChart = () => {
+      const selectors = [
+        'canvas',
+        '[class*="chart"]',
+        '[class*="Chart"]',
+        '[id*="chart"]',
+        '[data-chart]',
+        '.trading-chart',
+        '#trading-view'
+      ];
+
+      for (const selector of selectors) {
+        const element = document.querySelector(selector);
+        if (element) {
+          console.log('[TOPSTEPOVERLAY] chart détecté:', selector);
+          this.chartContainer = element.parentElement || element;
+          this.onChartReady();
+          return true;
+        }
       }
-    }
+      return false;
+    };
 
-    const canvases = document.querySelectorAll('canvas');
-    if (canvases.length > 0) {
-      this.chartContainer = canvases[0].parentElement;
-      console.log('📊 Chart container trouvé via canvas');
-    } else {
-      console.warn('⚠️ Chart container non trouvé, utilisation du body');
-      this.chartContainer = document.body;
-    }
+    if (checkChart()) return;
+
+    const observer = new MutationObserver(() => {
+      if (checkChart()) {
+        observer.disconnect();
+      }
+    });
+
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true
+    });
+
+    setTimeout(() => {
+      if (!this.chartContainer) {
+        console.warn('[TOPSTEPOVERLAY] timeout - chart non trouvé, injection forcée sur body');
+        this.chartContainer = document.body;
+        this.onChartReady();
+      }
+    }, 10000);
   }
+
+  onChartReady() {
+    console.log('[TOPSTEPOVERLAY] chart ready - création overlay');
+    this.createOverlayUI();
+    this.createCanvasOverlay();
+    this.startPriceMonitoring();
+    console.log('[TOPSTEPOVERLAY] ✅ overlay activé');
+    alert('TopstepOverlay activé - switch BOT ON pour démarrer');
+  }
+
 
   createOverlayUI() {
+    console.log('[TOPSTEPOVERLAY] création de l\'overlay UI...');
+
+    const existing = document.getElementById('ai-trading-overlay');
+    if (existing) {
+      console.log('[TOPSTEPOVERLAY] overlay déjà existant, suppression');
+      existing.remove();
+    }
+
     const overlay = document.createElement('div');
     overlay.id = 'ai-trading-overlay';
     overlay.innerHTML = `
@@ -135,6 +169,7 @@ class TopstepOverlay {
     `;
 
     document.body.appendChild(overlay);
+    console.log('[TOPSTEPOVERLAY] overlay UI ajouté au DOM');
 
     document.getElementById('bot-toggle').addEventListener('change', (e) => {
       this.toggleBot(e.target.checked);
@@ -143,10 +178,17 @@ class TopstepOverlay {
     document.getElementById('scan-btn').addEventListener('click', () => {
       this.runScan();
     });
+
+    console.log('[TOPSTEPOVERLAY] event listeners attachés');
   }
 
   createCanvasOverlay() {
-    if (!this.chartContainer) return;
+    console.log('[TOPSTEPOVERLAY] création canvas overlay...');
+
+    if (!this.chartContainer) {
+      console.warn('[TOPSTEPOVERLAY] pas de chart container, canvas non créé');
+      return;
+    }
 
     this.canvas = document.createElement('canvas');
     this.canvas.id = 'trading-overlay-canvas';
@@ -175,13 +217,20 @@ class TopstepOverlay {
     this.chartContainer.appendChild(this.canvas);
     this.ctx = this.canvas.getContext('2d');
 
-    console.log('🎨 Canvas overlay créé');
+    console.log('[TOPSTEPOVERLAY] canvas overlay créé et ajouté au chart');
   }
 
   startPriceMonitoring() {
+    console.log('[TOPSTEPOVERLAY] monitoring prix démarré');
+    let lastLoggedPrice = 0;
+
     setInterval(() => {
       this.updatePriceData();
-    }, 100);
+      if (this.priceData.lastPrice !== lastLoggedPrice && this.priceData.lastPrice > 0) {
+        console.log('[TOPSTEPOVERLAY] prix détecté:', this.priceData.lastPrice);
+        lastLoggedPrice = this.priceData.lastPrice;
+      }
+    }, 1000);
   }
 
   updatePriceData() {
@@ -248,7 +297,7 @@ class TopstepOverlay {
   }
 
   runScan() {
-    console.log('🔍 Scan en cours...');
+    console.log('[TOPSTEPOVERLAY] scan en cours...');
 
     const now = new Date();
     this.lastScanTime = now;
@@ -261,9 +310,9 @@ class TopstepOverlay {
       this.currentSignal = signal;
       this.displaySignal(signal);
       this.drawSignalOnChart(signal);
-      console.log('✅ Signal généré:', signal);
+      console.log('[TOPSTEPOVERLAY] signal généré:', signal);
     } else {
-      console.log('⚠️ Aucun signal détecté');
+      console.log('[TOPSTEPOVERLAY] aucun signal détecté');
     }
   }
 

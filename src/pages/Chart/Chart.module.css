@@ -39,6 +39,64 @@
   color: #444444;
 }
 
+.urlInput {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.input {
+  flex: 1;
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  color: #ffffff;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  outline: none;
+  transition: all 0.2s;
+}
+
+.input:focus {
+  border-color: #22c55e;
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
+}
+
+.input::placeholder {
+  color: #666666;
+}
+
+.loadBtn {
+  background: #22c55e;
+  color: #000000;
+  border: none;
+  padding: 10px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.loadBtn:hover {
+  background: #16a34a;
+}
+
+.loadBtn:active {
+  transform: scale(0.98);
+}
+
+.externalLink {
+  color: #22c55e;
+  text-decoration: none;
+  font-size: 12px;
+  transition: color 0.2s;
+}
+
+.externalLink:hover {
+  color: #16a34a;
+}
+
 .openExternal {
   color: #22c55e;
   text-decoration: none;
@@ -59,6 +117,14 @@
   width: 100%;
   height: 100%;
   background: #131722;
+}
+
+.chartIframe {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  background: #131722;
+  border: none;
 }
 
 .loadingOverlay {

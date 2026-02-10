@@ -13,6 +13,7 @@ import Profil from './pages/Profil/Profil';
 import Health from './pages/Health/Health';
 import SafeBoot from './pages/SafeBoot/SafeBoot';
 import Chart from './pages/Chart/Chart';
+import Signals from './pages/Signals/Signals';
 import LegalDisclaimer from './components/LegalDisclaimer/LegalDisclaimer';
 import Navbar from './components/Navbar/Navbar';
 import ErrorBoundary from './components/ErrorBoundary/ErrorBoundary';
@@ -136,6 +137,10 @@ function App() {
         <Route
           path="/chart"
           element={<Chart />}
+        />
+        <Route
+          path="/signals"
+          element={user ? <Signals /> : <Navigate to="/login" />}
         />
         <Route
           path="/login"

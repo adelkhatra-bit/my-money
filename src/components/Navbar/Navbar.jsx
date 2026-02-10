@@ -54,10 +54,19 @@ const Navbar = ({ isSuperAdmin }) => {
           className={`${styles.navButton} ${location.pathname === '/setup' ? styles.active : ''}`}
         >
           <svg className={styles.icon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <polyline points="3 17 9 11 13 15 21 7"/>
-            <polyline points="14 7 21 7 21 14"/>
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M12 1v6m0 6v6m-9-9h6m6 0h6"/>
           </svg>
           <span>Configuration</span>
+        </Link>
+        <Link
+          to="/signals"
+          className={`${styles.navButton} ${location.pathname === '/signals' ? styles.active : ''}`}
+        >
+          <svg className={styles.icon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+          </svg>
+          <span>Signaux</span>
         </Link>
         <Link
           to="/accounts"

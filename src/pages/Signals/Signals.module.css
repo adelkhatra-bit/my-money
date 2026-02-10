@@ -1,0 +1,173 @@
+.page {
+  min-height: 100vh;
+  background: #0a0a0a;
+  padding: 24px;
+}
+
+.header {
+  max-width: 1400px;
+  margin: 0 auto 32px;
+}
+
+.header h1 {
+  font-size: 32px;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0 0 8px 0;
+}
+
+.header p {
+  font-size: 16px;
+  color: #888888;
+  margin: 0;
+}
+
+.content {
+  max-width: 1400px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 400px 1fr;
+  gap: 24px;
+}
+
+.testSection {
+  background: #1a1a1a;
+  border: 2px solid #2a2a2a;
+  border-radius: 12px;
+  padding: 24px;
+  height: fit-content;
+  position: sticky;
+  top: 24px;
+}
+
+.testSection h2 {
+  font-size: 20px;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0 0 8px 0;
+}
+
+.testSection > p {
+  font-size: 14px;
+  color: #888888;
+  margin: 0 0 24px 0;
+}
+
+.webhookInfo {
+  margin-bottom: 24px;
+}
+
+.webhookInfo label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: #888888;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.urlBox {
+  display: flex;
+  gap: 8px;
+}
+
+.urlBox input {
+  flex: 1;
+  background: #0a0a0a;
+  border: 1px solid #2a2a2a;
+  border-radius: 6px;
+  padding: 12px;
+  color: #22c55e;
+  font-family: 'Monaco', 'Courier New', monospace;
+  font-size: 12px;
+}
+
+.urlBox button {
+  background: #2563eb;
+  color: #ffffff;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+
+.urlBox button:hover {
+  background: #1d4ed8;
+}
+
+.testBtn {
+  width: 100%;
+  background: #22c55e;
+  color: #000000;
+  border: none;
+  padding: 16px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: 24px;
+}
+
+.testBtn:hover {
+  background: #16a34a;
+  transform: translateY(-2px);
+}
+
+.info {
+  background: #0a0a0a;
+  border: 1px solid #2a2a2a;
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  gap: 12px;
+}
+
+.info svg {
+  width: 24px;
+  height: 24px;
+  color: #2563eb;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.info div {
+  flex: 1;
+}
+
+.info strong {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 8px;
+}
+
+.info ol {
+  margin: 0;
+  padding-left: 20px;
+  color: #888888;
+  font-size: 12px;
+}
+
+.info li {
+  margin-bottom: 4px;
+}
+
+.signalsSection {
+  overflow: auto;
+}
+
+@media (max-width: 1024px) {
+  .content {
+    grid-template-columns: 1fr;
+  }
+
+  .testSection {
+    position: static;
+  }
+}

@@ -136,6 +136,19 @@ export async function getUnifiedMarketData(market, platform, timeframe) {
   const symbol = getSymbolMapping(market, platform);
   const cacheKey = `${platform}_${market}_${symbol}`;
 
+  const timeframeMultipliers = {
+    '1m': 1,
+    '5m': 5,
+    '15m': 15,
+    '30m': 30,
+    '1h': 60,
+    '4h': 240,
+    '1d': 1440
+  };
+
+  const multiplier = timeframeMultipliers[timeframe] || 1;
+  const requiredCandles1m = Math.max(500, MINIMUM_CANDLES * multiplier + 100);
+
   console.log(`📊 [Market Data] Fetching unified market data:`, {
     market,
     platform,
@@ -143,14 +156,15 @@ export async function getUnifiedMarketData(market, platform, timeframe) {
     requestedTimeframe: timeframe,
     baseTimeframe,
     dataSource: 'deterministic',
-    minimumRequired: MINIMUM_CANDLES
+    minimumRequired: MINIMUM_CANDLES,
+    requiredCandles1m
   });
 
   let candles1m = dataCache[cacheKey];
 
-  if (!candles1m || candles1m.length === 0) {
-    console.log(`🔄 [Market Data] No cache found, generating deterministic baseline (1m) for ${symbol}`);
-    candles1m = generateDeterministicData(symbol, 500);
+  if (!candles1m || candles1m.length < requiredCandles1m) {
+    console.log(`🔄 [Market Data] Generating deterministic baseline (1m) for ${symbol}: ${requiredCandles1m} candles`);
+    candles1m = generateDeterministicData(symbol, requiredCandles1m);
     dataCache[cacheKey] = candles1m;
     console.log(`✅ [Market Data] Baseline generated: ${candles1m.length} candles, lastPrice: ${candles1m[candles1m.length - 1]?.close.toFixed(2)}`);
   }
@@ -216,7 +230,7 @@ function generateDeterministicData(symbol, count = 500) {
   let currentPrice = basePrice;
 
   for (let i = count - 1; i >= 0; i--) {
-    const time = new Date(now - i * 60 * 1000).toISOString().split('T')[0];
+    const time = new Date(now - i * 60 * 1000).toISOString();
     const changePercent = (Math.random() - 0.5) * 0.003;
     const volatility = basePrice * 0.001;
 

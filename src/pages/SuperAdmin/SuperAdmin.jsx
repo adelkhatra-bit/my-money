@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabaseClient';
+import TradingViewConfig from '../../components/TradingViewConfig/TradingViewConfig';
 import styles from './SuperAdmin.module.css';
 
 const SuperAdmin = () => {
@@ -363,6 +364,12 @@ const SuperAdmin = () => {
         >
           Demandes de Test ({trialRequests.length})
         </button>
+        <button
+          className={`${styles.tab} ${activeTab === 'tradingview' ? styles.activeTab : ''}`}
+          onClick={() => setActiveTab('tradingview')}
+        >
+          TradingView Config
+        </button>
       </div>
 
       {selectedUser && (
@@ -605,6 +612,10 @@ const SuperAdmin = () => {
             </tbody>
           </table>
         </div>
+      )}
+
+      {activeTab === 'tradingview' && (
+        <TradingViewConfig />
       )}
     </div>
   );

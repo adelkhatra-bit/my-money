@@ -1968,6 +1968,10 @@ const TradingDashboard = () => {
               hasCredits={credits.remaining > 0}
               showAnalysis={credits.remaining > 0 && showAnalysis}
               potentialEntry={credits.remaining > 0 ? potentialEntry : null}
+              platform={platform}
+              market={market}
+              metadata={dataMetadata}
+              showProofMode={showProofMode}
             />
             {currentPosition && currentPosition.status === 'OPEN' && (
               <div className={styles.positionLevels}>

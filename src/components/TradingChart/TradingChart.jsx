@@ -1,17 +1,10 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { createChart } from 'lightweight-charts';
 import DebugSnapshot from '../DebugSnapshot/DebugSnapshot';
+import { displayPrice } from '../../utils/priceFormatter';
 import styles from './TradingChart.module.css';
 
-const formatPrice = (price, market) => {
-  if (market === 'BTC' || market === 'ETH') {
-    return price.toFixed(2);
-  } else {
-    return price.toFixed(2);
-  }
-};
-
-const TradingChart = ({ candles, signal, position, supports, resistances, orderBlocks, hasCredits = false, showAnalysis = false, potentialEntry = null }) => {
+const TradingChart = ({ candles, signal, position, supports, resistances, orderBlocks, hasCredits = false, showAnalysis = false, potentialEntry = null, platform = null, market = null, metadata = null, showProofMode = false }) => {
   const chartContainerRef = useRef(null);
   const chartRef = useRef(null);
   const candleSeriesRef = useRef(null);
@@ -261,9 +254,9 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
         id: position.id,
         market: position.market,
         direction: position.direction,
-        entry: formatPrice(position.entry_price, position.market),
-        sl: formatPrice(position.stop_loss, position.market),
-        tp1: formatPrice(position.take_profit_1, position.market),
+        entry: displayPrice(position.entry_price, position.market),
+        sl: displayPrice(position.stop_loss, position.market),
+        tp1: displayPrice(position.take_profit_1, position.market),
         pnl: position.pnl?.toFixed(2) || '0.00',
         debugSnapshot: position.debugSnapshot
       });
@@ -274,7 +267,7 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
         lineWidth: 3,
         lineStyle: 0,
         axisLabelVisible: true,
-        title: `${isLong ? '🟢 LONG ↑' : '🔴 SHORT ↓'} - ${formatPrice(position.entry_price, position.market)}`,
+        title: `${isLong ? '🟢 LONG ↑' : '🔴 SHORT ↓'} - ${displayPrice(position.entry_price, position.market)}`,
       });
 
       const distanceToSL = isLong
@@ -287,7 +280,7 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
         lineWidth: 4,
         lineStyle: 0,
         axisLabelVisible: true,
-        title: `🛑 STOP LOSS - ${formatPrice(position.stop_loss, position.market)} (-${distanceToSL.toFixed(2)}%)`,
+        title: `🛑 STOP LOSS - ${displayPrice(position.stop_loss, position.market)} (-${distanceToSL.toFixed(2)}%)`,
       });
 
       const gainTP1 = isLong
@@ -300,7 +293,7 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
         lineWidth: 4,
         lineStyle: 0,
         axisLabelVisible: true,
-        title: `🎯 TP1 - ${formatPrice(position.take_profit_1, position.market)} (+${gainTP1.toFixed(2)}%)`,
+        title: `🎯 TP1 - ${displayPrice(position.take_profit_1, position.market)} (+${gainTP1.toFixed(2)}%)`,
       });
 
       priceLines.current.push(lineEntry, lineSL, lineTP1);
@@ -316,7 +309,7 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
           lineWidth: 3,
           lineStyle: 2,
           axisLabelVisible: true,
-          title: `🎯 TP2 - ${formatPrice(position.take_profit_2, position.market)} (+${gainTP2.toFixed(2)}%)`,
+          title: `🎯 TP2 - ${displayPrice(position.take_profit_2, position.market)} (+${gainTP2.toFixed(2)}%)`,
         });
         priceLines.current.push(lineTP2);
       }
@@ -331,22 +324,22 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
         console.warn('⚠️ DIRECTION INCORRECTE DÉTECTÉE ET CORRIGÉE', {
           signalDirection: signal.direction,
           correctDirection,
-          entry: formatPrice(entryPrice, signal.market),
-          tp1: formatPrice(signal.take_profit_1, signal.market),
-          sl: formatPrice(signal.stop_loss, signal.market)
+          entry: displayPrice(entryPrice, signal.market),
+          tp1: displayPrice(signal.take_profit_1, signal.market),
+          sl: displayPrice(signal.stop_loss, signal.market)
         });
       }
 
       console.log('📊 CHART DRAWING SIGNAL:', {
         direction: correctDirection,
-        entry: formatPrice(entryPrice, signal.market),
-        sl: formatPrice(signal.stop_loss, signal.market),
-        tp1: formatPrice(signal.take_profit_1, signal.market),
-        tp2: signal.take_profit_2 ? formatPrice(signal.take_profit_2, signal.market) : 'N/A',
+        entry: displayPrice(entryPrice, signal.market),
+        sl: displayPrice(signal.stop_loss, signal.market),
+        tp1: displayPrice(signal.take_profit_1, signal.market),
+        tp2: signal.take_profit_2 ? displayPrice(signal.take_profit_2, signal.market) : 'N/A',
         isLong,
         validation: isLong
-          ? `TP1(${formatPrice(signal.take_profit_1, signal.market)}) > Entry(${formatPrice(entryPrice, signal.market)}) > SL(${formatPrice(signal.stop_loss, signal.market)})`
-          : `SL(${formatPrice(signal.stop_loss, signal.market)}) > Entry(${formatPrice(entryPrice, signal.market)}) > TP1(${formatPrice(signal.take_profit_1, signal.market)})`
+          ? `TP1(${displayPrice(signal.take_profit_1, signal.market)}) > Entry(${displayPrice(entryPrice, signal.market)}) > SL(${displayPrice(signal.stop_loss, signal.market)})`
+          : `SL(${displayPrice(signal.stop_loss, signal.market)}) > Entry(${displayPrice(entryPrice, signal.market)}) > TP1(${displayPrice(signal.take_profit_1, signal.market)})`
       });
 
       const lineEntry = candleSeriesRef.current.createPriceLine({
@@ -355,7 +348,7 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
         lineWidth: 3,
         lineStyle: 0,
         axisLabelVisible: true,
-        title: `${isLong ? '🟢 LONG ↑' : '🔴 SHORT ↓'} - ${formatPrice(entryPrice, signal.market)}`,
+        title: `${isLong ? '🟢 LONG ↑' : '🔴 SHORT ↓'} - ${displayPrice(entryPrice, signal.market)}`,
       });
 
       const signalDistanceToSL = isLong
@@ -368,7 +361,7 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
         lineWidth: 4,
         lineStyle: 0,
         axisLabelVisible: true,
-        title: `🛑 STOP LOSS - ${formatPrice(signal.stop_loss, signal.market)} (-${signalDistanceToSL.toFixed(2)}%)`,
+        title: `🛑 STOP LOSS - ${displayPrice(signal.stop_loss, signal.market)} (-${signalDistanceToSL.toFixed(2)}%)`,
       });
 
       const signalGainTP1 = isLong
@@ -381,7 +374,7 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
         lineWidth: 4,
         lineStyle: 0,
         axisLabelVisible: true,
-        title: `🎯 TP1 - ${formatPrice(signal.take_profit_1, signal.market)} (+${signalGainTP1.toFixed(2)}%)`,
+        title: `🎯 TP1 - ${displayPrice(signal.take_profit_1, signal.market)} (+${signalGainTP1.toFixed(2)}%)`,
       });
 
       priceLines.current.push(lineEntry, lineSL, lineTP1);
@@ -397,7 +390,7 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
           lineWidth: 3,
           lineStyle: 2,
           axisLabelVisible: true,
-          title: `🎯 TP2 - ${formatPrice(signal.take_profit_2, signal.market)} (+${signalGainTP2.toFixed(2)}%)`,
+          title: `🎯 TP2 - ${displayPrice(signal.take_profit_2, signal.market)} (+${signalGainTP2.toFixed(2)}%)`,
         });
         priceLines.current.push(lineTP2);
       }
@@ -409,9 +402,9 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
 
       console.log('📍 GRAPHIQUE - ZONE D\'ENTRÉE POTENTIELLE:', {
         direction: correctDirection,
-        entry: formatPrice(entryPrice, potentialEntry.market),
-        sl: formatPrice(potentialEntry.stop_loss, potentialEntry.market),
-        tp1: formatPrice(potentialEntry.take_profit_1, potentialEntry.market)
+        entry: displayPrice(entryPrice, potentialEntry.market),
+        sl: displayPrice(potentialEntry.stop_loss, potentialEntry.market),
+        tp1: displayPrice(potentialEntry.take_profit_1, potentialEntry.market)
       });
 
       const lineEntry = candleSeriesRef.current.createPriceLine({
@@ -420,7 +413,7 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
         lineWidth: 3,
         lineStyle: 2,
         axisLabelVisible: true,
-        title: `${isLong ? '🟢 ZONE ENTRÉE LONG ↑' : '🔴 ZONE ENTRÉE SHORT ↓'} - ${formatPrice(entryPrice, potentialEntry.market)}`,
+        title: `${isLong ? '🟢 ZONE ENTRÉE LONG ↑' : '🔴 ZONE ENTRÉE SHORT ↓'} - ${displayPrice(entryPrice, potentialEntry.market)}`,
       });
 
       const lineSL = candleSeriesRef.current.createPriceLine({
@@ -429,7 +422,7 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
         lineWidth: 2,
         lineStyle: 2,
         axisLabelVisible: true,
-        title: `🛑 SL - ${formatPrice(potentialEntry.stop_loss, potentialEntry.market)}`,
+        title: `🛑 SL - ${displayPrice(potentialEntry.stop_loss, potentialEntry.market)}`,
       });
 
       const lineTP1 = candleSeriesRef.current.createPriceLine({
@@ -438,7 +431,7 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
         lineWidth: 2,
         lineStyle: 2,
         axisLabelVisible: true,
-        title: `🎯 TP1 - ${formatPrice(potentialEntry.take_profit_1, potentialEntry.market)}`,
+        title: `🎯 TP1 - ${displayPrice(potentialEntry.take_profit_1, potentialEntry.market)}`,
       });
 
       priceLines.current.push(lineEntry, lineSL, lineTP1);
@@ -450,7 +443,7 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
           lineWidth: 2,
           lineStyle: 3,
           axisLabelVisible: true,
-          title: `🎯 TP2 - ${formatPrice(potentialEntry.take_profit_2, potentialEntry.market)}`,
+          title: `🎯 TP2 - ${displayPrice(potentialEntry.take_profit_2, potentialEntry.market)}`,
         });
         priceLines.current.push(lineTP2);
       }
@@ -560,6 +553,55 @@ const TradingChart = ({ candles, signal, position, supports, resistances, orderB
 
   return (
     <div className={`${styles.chartWrapper} ${isFullscreen ? styles.fullscreen : ''}`}>
+      {platform && platform.toLowerCase() === 'topstep' && (
+        <div className={styles.simulationBadge}>
+          <span className={styles.simulationIcon}>🎮</span>
+          <span className={styles.simulationText}>SIMULATION</span>
+        </div>
+      )}
+      {showProofMode && metadata && (
+        <div className={styles.proofModeBar}>
+          <div className={styles.proofModeTitle}>🔍 MODE PREUVE</div>
+          <div className={styles.proofModeGrid}>
+            <div className={styles.proofModeItem}>
+              <span className={styles.proofModeLabel}>Source:</span>
+              <span className={styles.proofModeValue}>{metadata.source}</span>
+            </div>
+            <div className={styles.proofModeItem}>
+              <span className={styles.proofModeLabel}>Baseline 1m:</span>
+              <span className={styles.proofModeValue}>{metadata.baseline1mCount} bougies</span>
+            </div>
+            <div className={styles.proofModeItem}>
+              <span className={styles.proofModeLabel}>Agrégation:</span>
+              <span className={styles.proofModeValue}>{metadata.aggregatedCount} bougies</span>
+            </div>
+            <div className={styles.proofModeItem}>
+              <span className={styles.proofModeLabel}>Prix baseline:</span>
+              <span className={styles.proofModeValue}>{metadata.lastPriceBaseline?.toFixed(2) || 'N/A'}</span>
+            </div>
+            <div className={styles.proofModeItem}>
+              <span className={styles.proofModeLabel}>Prix agrégé:</span>
+              <span className={styles.proofModeValue}>{metadata.lastPriceAggregated?.toFixed(2) || 'N/A'}</span>
+            </div>
+            <div className={styles.proofModeItem}>
+              <span className={styles.proofModeLabel}>Différence:</span>
+              <span className={styles.proofModeValue}>{metadata.priceDiff?.toFixed(4) || '0.0000'}</span>
+            </div>
+            <div className={styles.proofModeItem}>
+              <span className={styles.proofModeLabel}>Statut:</span>
+              <span className={`${styles.proofModeValue} ${styles[`status${metadata.status}`]}`}>
+                {metadata.status === 'OK' ? '✅ OK' : '❌ BLOQUÉ'}
+              </span>
+            </div>
+            {metadata.reason && (
+              <div className={`${styles.proofModeItem} ${styles.fullWidth}`}>
+                <span className={styles.proofModeLabel}>Raison:</span>
+                <span className={styles.proofModeValue}>{metadata.reason}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
       {!hasCredits && (
         <div className={styles.noCreditsOverlay}>
           <div className={styles.noCreditsMessage}>

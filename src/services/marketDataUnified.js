@@ -267,7 +267,7 @@ export async function getUnifiedMarketData(market, platform, timeframe) {
 
 function generateDeterministicData(symbol, count = 500) {
   const basePrices = {
-    'MNQ': 21000,
+    'MNQ': 25000,
     'NQ': 21000,
     'BTCUSDT': 95000,
     'ETHUSDT': 3500,
@@ -277,21 +277,38 @@ function generateDeterministicData(symbol, count = 500) {
     'ES': 6000
   };
 
+  const priceGuardrails = {
+    'MNQ': { min: 23000, max: 27000 },
+    'NQ': { min: 19000, max: 23000 },
+    'BTCUSDT': { min: 80000, max: 110000 },
+    'ETHUSDT': { min: 3000, max: 4000 },
+    'MGC': { min: 2400, max: 2900 },
+    'GC': { min: 2400, max: 2900 },
+    'MES': { min: 5500, max: 6500 },
+    'ES': { min: 5500, max: 6500 }
+  };
+
   const basePrice = basePrices[symbol] || 100;
+  const guardrails = priceGuardrails[symbol];
   const now = Date.now();
   const candles = [];
 
   let currentPrice = basePrice;
+
+  const clampPrice = (price) => {
+    if (!guardrails) return price;
+    return Math.max(guardrails.min, Math.min(guardrails.max, price));
+  };
 
   for (let i = count - 1; i >= 0; i--) {
     const time = new Date(now - i * 60 * 1000).toISOString();
     const changePercent = (Math.random() - 0.5) * 0.003;
     const volatility = basePrice * 0.001;
 
-    const open = currentPrice;
-    const close = currentPrice * (1 + changePercent);
-    const high = Math.max(open, close) + Math.random() * volatility;
-    const low = Math.min(open, close) - Math.random() * volatility;
+    const open = clampPrice(currentPrice);
+    const close = clampPrice(currentPrice * (1 + changePercent));
+    const high = clampPrice(Math.max(open, close) + Math.random() * volatility);
+    const low = clampPrice(Math.min(open, close) - Math.random() * volatility);
     const volume = Math.floor(Math.random() * 1000) + 100;
 
     candles.push({

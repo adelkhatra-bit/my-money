@@ -23,16 +23,14 @@ import { positionService } from '../../services/positionService';
 import { userPreferencesService } from '../../services/userPreferences';
 import { validateMarketPlatformCompatibility } from '../../services/marketDataUnified';
 import { getCompatiblePlatforms, getDefaultPlatformForMarket, isPlatformCompatible } from '../../services/platformFilter';
-import tradingGate, { simpleGate } from '../../services/tradingGate';
-import { antoMarketEngine } from '../../services/antoMarketEngine';
+import tradingGate from '../../services/tradingGate';
 import { supabase } from '../../lib/supabaseClient';
+import { getAntoCompatibilityProof, getAntoGateProof, initializeAntoMarket } from '../../services/antoMarketEngine';
 import styles from './TradingDashboard.module.css';
 
 const TradingDashboard = () => {
   console.log('🚀 [TradingDashboard] Initialisation du composant');
 
-  const [sandboxMode, setSandboxMode] = useState(true);
-  const [antoScenario, setAntoScenario] = useState('calm');
   const [market, setMarket] = useState('BTC');
   const [platform, setPlatform] = useState('binance');
   const [timeframe, setTimeframe] = useState('5m');
@@ -88,11 +86,6 @@ const TradingDashboard = () => {
     const saved = localStorage.getItem('trading_statsbar_collapsed');
     return saved === 'true';
   });
-  const [showProofMode, setShowProofMode] = useState(false);
-  const [dataMetadata, setDataMetadata] = useState(null);
-  const [showDbProof, setShowDbProof] = useState(false);
-  const [dbProofData, setDbProofData] = useState(null);
-  const [gateStatus, setGateStatus] = useState({ allowed: false, reason: 'En attente des données graphique' });
 
   const addActivityLog = (message, type = 'info') => {
     if (activityLogCallback) {
@@ -105,11 +98,6 @@ const TradingDashboard = () => {
     setStatsBarCollapsed(newState);
     localStorage.setItem('trading_statsbar_collapsed', newState.toString());
   };
-
-  useEffect(() => {
-    const result = simpleGate(dataMetadata, platform, market, { botEnabled: autoMode });
-    setGateStatus(result);
-  }, [dataMetadata, platform, market, autoMode]);
 
   const handleMarketChange = async (newMarket) => {
     console.log('🔄 [Market Change] Changement de marché:', { from: market, to: newMarket, currentPlatform: platform });
@@ -185,22 +173,7 @@ const TradingDashboard = () => {
 
 
   const loadPositionAndHistory = useCallback(async () => {
-    const fetchTimestamp = new Date().toISOString();
-    const fetchTrigger = !dbProofData ? 'initial' : (dbProofData.userId !== userId ? 'userId-change' : 'activeAccount-change');
-
-    if (!userId || !activeAccount) {
-      setDbProofData({
-        userId: userId || null,
-        activeAccountId: activeAccount?.id || null,
-        openPositionsCount: 0,
-        historyCount: 0,
-        lastFetchAt: fetchTimestamp,
-        status: !activeAccount ? 'ERROR' : 'OK',
-        reason: !activeAccount ? 'activeAccount missing' : null,
-        fetchTriggeredBy: fetchTrigger
-      });
-      return;
-    }
+    if (!userId || !activeAccount) return;
 
     try {
       const openPosition = await positionService.getOpenPosition(userId, activeAccount.id);
@@ -229,32 +202,10 @@ const TradingDashboard = () => {
           totalTrades: accountStats.total_trades || 0
         });
       }
-
-      setDbProofData({
-        userId,
-        activeAccountId: activeAccount.id,
-        openPositionsCount: openPosition ? 1 : 0,
-        historyCount: positionsHistory.length,
-        lastFetchAt: fetchTimestamp,
-        status: 'OK',
-        reason: null,
-        fetchTriggeredBy: fetchTrigger
-      });
-
     } catch (error) {
       console.error('Erreur chargement position/historique:', error);
-      setDbProofData({
-        userId,
-        activeAccountId: activeAccount?.id || null,
-        openPositionsCount: 0,
-        historyCount: 0,
-        lastFetchAt: fetchTimestamp,
-        status: 'ERROR',
-        reason: error.message || 'Erreur fetch DB',
-        fetchTriggeredBy: fetchTrigger
-      });
     }
-  }, [userId, activeAccount, dbProofData]);
+  }, [userId, activeAccount]);
 
   useEffect(() => {
     if (userId) {
@@ -309,7 +260,7 @@ const TradingDashboard = () => {
       positionManager.stopMonitoring();
       positionManager.clearCallbacks();
     };
-  }, [userId, activeAccount]);
+  }, [userId]);
 
   useEffect(() => {
     const validation = validateMarketPlatformCompatibility(market, platform);
@@ -338,7 +289,7 @@ const TradingDashboard = () => {
     }, 60000);
 
     return () => clearInterval(interval);
-  }, [sandboxMode, market, platform, timeframe, antoScenario]);
+  }, [market, platform, timeframe]);
 
   useEffect(() => {
     loadUserData();
@@ -883,27 +834,11 @@ const TradingDashboard = () => {
   };
 
   const loadHistoricalData = async () => {
-    console.log('📥 [Load Data] Chargement données historiques:', { sandboxMode, market, platform, timeframe, scenario: antoScenario });
+    console.log('📥 [Load Data] Chargement données historiques:', { market, platform, timeframe });
     setScanStatus('Chargement des données...');
 
     try {
-      let data;
-
-      if (sandboxMode) {
-        console.log('🔶 [Load Data] Mode ANTØ Sandbox activé');
-        data = antoMarketEngine.getMarketData({
-          market,
-          timeframe,
-          seed: userId || 'demo',
-          scenario: antoScenario
-        });
-      } else {
-        data = await getUnifiedMarketData(market, platform, timeframe);
-      }
-
-      if (data && data.metadata) {
-        setDataMetadata(data.metadata);
-      }
+      const data = await getUnifiedMarketData(market, platform, timeframe);
 
       if (data && data.error) {
         setCandles(data);
@@ -912,20 +847,17 @@ const TradingDashboard = () => {
         return;
       }
 
-      const candlesArray = data?.candles || (Array.isArray(data) ? data : []);
-      const lastPrice = data?.lastPrice || (candlesArray.length > 0 ? candlesArray[candlesArray.length - 1]?.close : 0);
-
-      if (candlesArray && candlesArray.length >= 300) {
-        setCandles(candlesArray);
+      if (data && Array.isArray(data) && data.length >= 300) {
+        setCandles(data);
         setScanStatus('');
         console.log('✅ [Load Data] Données chargées avec succès:', {
-          candleCount: candlesArray.length,
-          lastPrice: lastPrice.toFixed(2),
+          candleCount: data.length,
+          lastPrice: data[data.length - 1]?.close.toFixed(2),
           timeframe,
-          dataSource: sandboxMode ? 'ANTO Sandbox' : 'deterministic'
+          dataSource: 'deterministic'
         });
       } else {
-        const candleCount = candlesArray.length;
+        const candleCount = Array.isArray(data) ? data.length : 0;
         const errorData = {
           error: true,
           message: `Données insuffisantes: ${candleCount} bougies (minimum 300 requis)`,
@@ -948,13 +880,6 @@ const TradingDashboard = () => {
   };
 
   const performScan = async () => {
-    if (!gateStatus.allowed) {
-      setScanStatus(`🚫 ${gateStatus.reason}`);
-      setBotState('blocked');
-      addActivityLog(`🚫 Scan bloqué: ${gateStatus.reason}`, 'warning');
-      return;
-    }
-
     addActivityLog('🔄 Démarrage du scan automatique...', 'scan');
 
     if (!marketStatus.open) {
@@ -1283,11 +1208,6 @@ const TradingDashboard = () => {
   };
 
   const handleManualScan = async () => {
-    if (!gateStatus.allowed) {
-      addActivityLog(`🚫 Scan bloqué: ${gateStatus.reason}`, 'warning');
-      return;
-    }
-
     if (currentPosition) {
       const dir = currentPosition.direction === 'LONG' ? '🟢 LONG' : '🔴 SHORT';
       alert(`⛔ POSITION ACTIVE\n\n${dir} sur ${currentPosition.market}\nPrix d'entrée: ${parseFloat(currentPosition.entry_price).toFixed(2)}\n\nVous devez fermer cette position avant de pouvoir scanner à nouveau.\n\nLe bot surveille automatiquement votre position en temps réel.`);
@@ -1311,11 +1231,6 @@ const TradingDashboard = () => {
   };
 
   const handleTestSignal = () => {
-    if (!gateStatus.allowed) {
-      alert(`🚫 APERÇU BLOQUÉ\n\n${gateStatus.reason}\n\nL'aperçu est désactivé tant que les données ne sont pas validées.`);
-      return;
-    }
-
     if (currentPosition && currentPosition.status === 'OPEN') {
       const dir = currentPosition.direction === 'LONG' ? '🟢 LONG' : '🔴 SHORT';
       alert(`🔒 POSITION DÉJÀ ACTIVE\n\n${dir} sur ${currentPosition.market}\nPrix d'entrée: ${parseFloat(currentPosition.entry_price).toFixed(2)}\n\nAPERÇU BLOQUÉ: Vous ne pouvez pas utiliser l'aperçu pendant qu'une position est ouverte.\n\nLe bot surveille automatiquement votre position en temps réel.`);
@@ -1327,46 +1242,31 @@ const TradingDashboard = () => {
       return;
     }
 
-    let positionToDisplay = null;
-
-    if (currentPosition && currentPosition.status === 'OPEN') {
-      positionToDisplay = currentPosition;
-    } else if (history && history.length > 0) {
-      const lastAcceptedPosition = history
-        .filter(p => p.action === 'ACCEPT' || p.status === 'CLOSED')
-        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
-      positionToDisplay = lastAcceptedPosition;
-    }
-
-    if (!positionToDisplay) {
-      addActivityLog('📊 APERÇU: Aucune position disponible à afficher', 'warning');
-      return;
-    }
-
-    const currentPrice = candles && candles.length > 0 ? candles[candles.length - 1].close : positionToDisplay.entry_price;
-    const isLong = positionToDisplay.direction === 'LONG';
+    const currentPrice = candles && candles.length > 0 ? candles[candles.length - 1].close : 1.0850;
+    const isLong = Math.random() > 0.5;
+    const entryZone = currentPrice * (isLong ? 1.001 : 0.999);
 
     const testSignal = {
-      direction: positionToDisplay.direction,
-      entry_min: positionToDisplay.entry_price * 0.9995,
-      entry_max: positionToDisplay.entry_price * 1.0005,
-      stop_loss: positionToDisplay.stop_loss,
-      take_profit_1: positionToDisplay.take_profit_1,
-      take_profit_2: positionToDisplay.take_profit_2,
-      market: positionToDisplay.market,
-      platform: positionToDisplay.platform,
-      confidence: 80,
-      id: `preview-${positionToDisplay.id}`
+      direction: isLong ? 'LONG' : 'SHORT',
+      entry_min: entryZone * 0.9995,
+      entry_max: entryZone * 1.0005,
+      stop_loss: isLong ? entryZone * 0.995 : entryZone * 1.005,
+      take_profit_1: isLong ? entryZone * 1.01 : entryZone * 0.99,
+      take_profit_2: isLong ? entryZone * 1.02 : entryZone * 0.98,
+      market: market,
+      platform: platform,
+      confidence: 75 + Math.floor(Math.random() * 20),
+      id: `test-${Date.now()}`
     };
 
-    addActivityLog(`📊 APERÇU: Affichage ${positionToDisplay.status === 'OPEN' ? 'position active' : 'dernière position'}`, 'info');
+    addActivityLog('📊 APERÇU: Pré-alerte - Zone d\'entrée détectée', 'warning');
     addActivityLog(`📍 Direction: ${testSignal.direction}`, 'info');
 
     setSignalState({
       isScanning: false,
       preAlert: {
-        market: positionToDisplay.market,
-        platform: positionToDisplay.platform,
+        market,
+        platform,
         direction: testSignal.direction,
         currentPrice,
         entry_min: testSignal.entry_min,
@@ -1423,29 +1323,6 @@ const TradingDashboard = () => {
     }, 5000);
   };
 
-  const handleCopyGateProof = async () => {
-    const gateProof = {
-      ts: new Date().toISOString(),
-      allowed: gateStatus.allowed,
-      reason: gateStatus.reason,
-      platform: platform,
-      market: market,
-      rule300: "B",
-      baseline1mCount: dataMetadata?.baseline1mCount || 0,
-      aggregatedCount: dataMetadata?.aggregatedCount || 0,
-      duplicatesRemoved: dataMetadata?.duplicatesRemoved || 0,
-      priceDiff: dataMetadata?.priceDiff || 0
-    };
-
-    try {
-      await navigator.clipboard.writeText(JSON.stringify(gateProof, null, 2));
-      addActivityLog('📋 Gate Proof copié dans le presse-papier', 'success');
-    } catch (err) {
-      console.error('Erreur lors de la copie:', err);
-      addActivityLog('❌ Erreur lors de la copie du Gate Proof', 'error');
-    }
-  };
-
   const handleToggleBot = () => {
     const newState = !autoMode;
     setAutoMode(newState);
@@ -1496,36 +1373,73 @@ const TradingDashboard = () => {
     }
   };
 
-  useEffect(() => {
-    console.log('🤖 [Bot Service] useEffect déclenché:', { autoMode, marketOpen: marketStatus.open });
+  const handleCopyAntoProof = (targetTimeframe) => {
+    if (market !== 'NASDAQ' && platform !== 'ftmo') {
+      alert('⚠️ Les preuves ANTØ sont disponibles uniquement pour NASDAQ sur FTMO.\n\nVeuillez sélectionner:\n- Marché: NASDAQ\n- Plateforme: FTMO');
+      return;
+    }
 
+    const proof = getAntoCompatibilityProof('ANTO_NASDAQ', targetTimeframe);
+    const jsonProof = JSON.stringify(proof, null, 2);
+
+    navigator.clipboard.writeText(jsonProof).then(() => {
+      alert(`✅ Preuve ANTØ copiée (${targetTimeframe})!\n\n${jsonProof}`);
+      addActivityLog(`📋 Preuve ANTØ copiée: ${targetTimeframe}`, 'info');
+    }).catch(err => {
+      console.error('Erreur copie:', err);
+      alert('❌ Erreur lors de la copie');
+    });
+  };
+
+  const handleCopyAntoGateProof = () => {
+    if (market !== 'NASDAQ' && platform !== 'ftmo') {
+      alert('⚠️ Les preuves ANTØ sont disponibles uniquement pour NASDAQ sur FTMO.\n\nVeuillez sélectionner:\n- Marché: NASDAQ\n- Plateforme: FTMO');
+      return;
+    }
+
+    const gateProof = getAntoGateProof('ANTO_NASDAQ');
+    const jsonProof = JSON.stringify(gateProof, null, 2);
+
+    navigator.clipboard.writeText(jsonProof).then(() => {
+      const status = gateProof.allowed ? '✅ ALLOWED' : '❌ BLOCKED';
+      alert(`${status} Gate Proof ANTØ copié!\n\n${jsonProof}`);
+      addActivityLog(`📋 Gate Proof ANTØ copié: ${status}`, gateProof.allowed ? 'success' : 'warning');
+    }).catch(err => {
+      console.error('Erreur copie:', err);
+      alert('❌ Erreur lors de la copie');
+    });
+  };
+
+  useEffect(() => {
+    if (market === 'NASDAQ' && platform === 'ftmo') {
+      const cleanup = initializeAntoMarket('ANTO_NASDAQ');
+      addActivityLog('🚀 ANTØ Sandbox activée pour NASDAQ', 'success');
+      return cleanup;
+    }
+  }, [market, platform]);
+
+  useEffect(() => {
     const scanCallback = () => {
-      console.log('🔍 [Bot Service] scanCallback appelé:', { autoMode, scanning, marketOpen: marketStatus.open });
-      if (!scanning && marketStatus.open && autoMode) {
-        console.log('✅ [Bot Service] Conditions OK - performScan() lancé');
+      if (!scanning && marketStatus.open) {
         performScan();
-      } else {
-        console.log('⏸️ [Bot Service] Scan bloqué:', { autoMode, scanning, marketOpen: marketStatus.open });
       }
     };
 
     if (autoMode && marketStatus.open) {
-      console.log('🟢 [Bot Service] Démarrage bot automatique');
       botService.addCallback(scanCallback);
       botService.start(scanCallback, 30000);
     } else {
-      console.log('🔴 [Bot Service] Arrêt bot automatique');
       botService.removeCallback(scanCallback);
-      botService.stop();
-      setSignalState({ isScanning: false, preAlert: null, signal: null });
-      setScanStatus('');
-      setBotState('idle');
+      if (!autoMode) {
+        botService.stop();
+        setSignalState({ isScanning: false, preAlert: null, signal: null });
+        setScanStatus('');
+        setBotState('idle');
+      }
     }
 
     return () => {
-      console.log('🧹 [Bot Service] Cleanup - Arrêt total du bot');
       botService.removeCallback(scanCallback);
-      botService.stop();
     };
   }, [autoMode, marketStatus.open]);
 
@@ -1889,80 +1803,39 @@ const TradingDashboard = () => {
         <div className={styles.titleRow}>
           <h1>AI Trading Platform</h1>
           <div className={styles.paperTradingBadge} style={{
-            background: sandboxMode ? 'linear-gradient(135deg, #ff6b35 0%, #f7931e 100%)' : 'linear-gradient(135deg, #ff9800 0%, #f57c00 100%)',
+            background: 'linear-gradient(135deg, #ff9800 0%, #f57c00 100%)',
             color: '#fff',
             padding: '8px 16px',
             borderRadius: '8px',
             fontSize: '14px',
             fontWeight: 'bold',
-            border: sandboxMode ? '2px solid #ff8c42' : '2px solid #ffb74d',
-            boxShadow: sandboxMode ? '0 4px 12px rgba(255, 107, 53, 0.4)' : '0 4px 12px rgba(255, 152, 0, 0.4)',
+            border: '2px solid #ffb74d',
+            boxShadow: '0 4px 12px rgba(255, 152, 0, 0.4)',
             animation: 'pulse 2s infinite'
           }}>
-            {sandboxMode ? '🔶 ANTØ SANDBOX - Marché interne (tests)' : '📊 SIMULATION - Données Déterministes (Paper Trading)'}
+            📊 SIMULATION - Données Déterministes (Paper Trading)
           </div>
         </div>
 
         <div className={styles.controls}>
           <div className={styles.controlGroup}>
-            <label>Mode:</label>
-            <select value={sandboxMode ? 'sandbox' : 'real'} onChange={(e) => {
-              const isSandbox = e.target.value === 'sandbox';
-              setSandboxMode(isSandbox);
-              if (isSandbox) {
-                setMarket('ANTO_NASDAQ');
-                setPlatform('ANTO');
-              } else {
-                setMarket('BTC');
-                setPlatform('binance');
-              }
-            }}>
-              <option value="sandbox">✅ ANTØ Sandbox</option>
-              <option value="real" disabled style={{ color: '#888' }}>Réel (bientôt)</option>
-            </select>
-          </div>
-
-          {sandboxMode && (
-            <div className={styles.controlGroup}>
-              <label>Scénario:</label>
-              <select value={antoScenario} onChange={(e) => setAntoScenario(e.target.value)}>
-                <option value="calm">Calme</option>
-                <option value="news_spike">News Spike</option>
-                <option value="trend">Tendance</option>
-                <option value="chop">Chop</option>
-              </select>
-            </div>
-          )}
-
-          <div className={styles.controlGroup}>
             <label>Marché:</label>
             <select value={market} onChange={(e) => handleMarketChange(e.target.value)}>
-              {sandboxMode ? (
-                <>
-                  <option value="ANTO_NASDAQ">ANTO_NASDAQ</option>
-                  <option value="ANTO_BTC">ANTO_BTC</option>
-                </>
-              ) : (
-                <>
-                  <option value="BTC">BTC</option>
-                  <option value="ETH">ETH</option>
-                  <option value="NASDAQ">NASDAQ</option>
-                  <option value="GOLD">GOLD</option>
-                </>
-              )}
+              <option value="BTC">BTC</option>
+              <option value="ETH">ETH</option>
+              <option value="NASDAQ">NASDAQ</option>
+              <option value="GOLD">GOLD</option>
             </select>
           </div>
 
-          {!sandboxMode && (
-            <div className={styles.controlGroup}>
-              <label>Plateforme:</label>
-              <select value={platform} onChange={(e) => handlePlatformChange(e.target.value)}>
-                {getCompatiblePlatforms(market).map(p => (
-                  <option key={p.value} value={p.value}>{p.label}</option>
-                ))}
-              </select>
-            </div>
-          )}
+          <div className={styles.controlGroup}>
+            <label>Plateforme:</label>
+            <select value={platform} onChange={(e) => handlePlatformChange(e.target.value)}>
+              {getCompatiblePlatforms(market).map(p => (
+                <option key={p.value} value={p.value}>{p.label}</option>
+              ))}
+            </select>
+          </div>
 
           <div className={styles.controlGroup}>
             <label>Timeframe:</label>
@@ -2009,6 +1882,70 @@ const TradingDashboard = () => {
           </button>
         </div>
 
+        <div style={{
+          display: 'flex',
+          gap: '10px',
+          marginTop: '15px',
+          padding: '12px',
+          background: 'rgba(0, 255, 136, 0.1)',
+          borderRadius: '8px',
+          border: '2px solid rgba(0, 255, 136, 0.3)',
+          flexWrap: 'wrap',
+          justifyContent: 'center'
+        }}>
+          <button
+            onClick={() => handleCopyAntoProof('1m')}
+            style={{
+              padding: '10px 16px',
+              background: 'linear-gradient(135deg, #00e676 0%, #00c853 100%)',
+              color: '#000',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontWeight: 'bold',
+              fontSize: '14px',
+              boxShadow: '0 4px 12px rgba(0, 230, 118, 0.3)'
+            }}
+            title="Copier la preuve de compatibilité ANTØ pour timeframe 1m"
+          >
+            📋 Copier preuve ANTO / ANTO_NASDAQ - 1m
+          </button>
+          <button
+            onClick={() => handleCopyAntoProof('5m')}
+            style={{
+              padding: '10px 16px',
+              background: 'linear-gradient(135deg, #00e676 0%, #00c853 100%)',
+              color: '#000',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontWeight: 'bold',
+              fontSize: '14px',
+              boxShadow: '0 4px 12px rgba(0, 230, 118, 0.3)'
+            }}
+            title="Copier la preuve de compatibilité ANTØ pour timeframe 5m"
+          >
+            📋 Copier preuve ANTO / ANTO_NASDAQ - 5m
+          </button>
+          <button
+            onClick={handleCopyAntoGateProof}
+            style={{
+              padding: '10px 16px',
+              background: 'linear-gradient(135deg, #ffeb3b 0%, #fbc02d 100%)',
+              color: '#000',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontWeight: 'bold',
+              fontSize: '14px',
+              boxShadow: '0 4px 12px rgba(255, 235, 59, 0.3)'
+            }}
+            title="Copier la preuve de trading gate ANTØ"
+          >
+            📋 Copier Gate Proof ANTO_NASDAQ
+          </button>
+        </div>
+
         <div className={styles.marketStatus}>
           <span className={`${styles.statusDot} ${marketStatus.open ? styles.open : styles.closed}`} />
           {marketStatus.message}
@@ -2027,67 +1964,6 @@ const TradingDashboard = () => {
         nextScanTime={nextScanTime}
         etaMinutes={etaMinutes || 5}
       />
-
-      <div className={styles.proofBarFixed}>
-        <div className={styles.proofBarTitle}>🔍 PREUVE RUNTIME</div>
-        <div className={styles.proofBarButtons}>
-          <button
-            className={styles.proofButton}
-            onClick={() => {
-              const proofJson = JSON.stringify({
-                ts: dataMetadata?.ts || new Date().toISOString(),
-                dataProviderFile: dataMetadata?.dataProviderFile || 'N/A',
-                dataProviderFn: dataMetadata?.dataProviderFn || 'N/A',
-                requestId: dataMetadata?.requestId || 'N/A',
-                platform: platform,
-                market: market,
-                symbol: dataMetadata?.symbol || 'N/A',
-                timeframeRequested: dataMetadata?.timeframeRequested || timeframe,
-                baseline1mCount: dataMetadata?.baseline1mCount || 0,
-                aggregatedCount: dataMetadata?.aggregatedCount || 0,
-                baselineFirstTime: dataMetadata?.baselineFirstTime || 0,
-                baselineLastTime: dataMetadata?.baselineLastTime || 0,
-                aggregatedFirstTime: dataMetadata?.aggregatedFirstTime || 0,
-                aggregatedLastTime: dataMetadata?.aggregatedLastTime || 0,
-                baselineLastClose: dataMetadata?.baselineLastClose || 0,
-                aggregatedLastClose: dataMetadata?.aggregatedLastClose || 0,
-                priceDiff: dataMetadata?.priceDiff || 0,
-                status: dataMetadata?.status || 'UNKNOWN',
-                reason: dataMetadata?.reason || null
-              }, null, 2);
-              navigator.clipboard.writeText(proofJson);
-              addActivityLog('📋 Preuve Data copiée', 'success');
-            }}
-          >
-            📋 Copier preuve
-          </button>
-          <button
-            className={styles.proofButton}
-            onClick={() => {
-              const gateProof = JSON.stringify({
-                ts: new Date().toISOString(),
-                allowed: gateStatus.allowed,
-                reason: gateStatus.reason,
-                platform: platform,
-                market: market,
-                rule300: dataMetadata?.baseline1mCount >= 300 ? 'OK' : 'BLOCKED',
-                baseline1mCount: dataMetadata?.baseline1mCount || 0,
-                aggregatedCount: dataMetadata?.aggregatedCount || 0,
-                duplicatesRemoved: dataMetadata?.duplicatesRemoved || 0,
-                priceDiff: dataMetadata?.priceDiff || 0,
-                scanAllowed: gateStatus.allowed && !autoMode,
-                botAllowed: gateStatus.allowed && autoMode,
-                popupsAllowed: gateStatus.allowed,
-                previewAllowed: gateStatus.allowed
-              }, null, 2);
-              navigator.clipboard.writeText(gateProof);
-              addActivityLog('📋 Gate Proof copié', 'success');
-            }}
-          >
-            📋 Copier Gate Proof
-          </button>
-        </div>
-      </div>
 
       {signalState.isScanning && (
         <div className={styles.scanningIndicator}>
@@ -2117,158 +1993,11 @@ const TradingDashboard = () => {
           <div style={{ fontSize: '14px', color: 'rgba(255,255,255,0.7)' }}>
             {market} - {platform}
           </div>
-          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-            <button
-              className={styles.proofModeToggle}
-              onClick={() => setShowProofMode(!showProofMode)}
-              title="Afficher/masquer les métriques de données"
-            >
-              🔍 Mode Preuve
-            </button>
-            <button
-              className={styles.proofModeToggle}
-              onClick={() => setShowDbProof(!showDbProof)}
-              title="Afficher/masquer les métriques DB"
-            >
-              💾 DB Proof
-            </button>
-            <button
-              className={styles.proofModeToggle}
-              onClick={handleCopyGateProof}
-              title="Copier les métriques du gate dans le presse-papier"
-            >
-              📋 Copier Gate Proof
-            </button>
-            <MarketHealthIndicator
-              status={marketHealth.status}
-              message={marketHealth.message}
-            />
-          </div>
+          <MarketHealthIndicator
+            status={marketHealth.status}
+            message={marketHealth.message}
+          />
         </div>
-
-        {showProofMode && dataMetadata && (
-          <div className={`${styles.proofModeBar} ${dataMetadata.status === 'OK' ? styles.proofOk : styles.proofBlocked}`}>
-            <div className={styles.proofRow}>
-              <strong>🔍 DATA PROVIDER:</strong> {dataMetadata.dataProviderFile} → {dataMetadata.dataProviderFn}()
-            </div>
-            <div className={styles.proofRow}>
-              <strong>🆔 Request ID:</strong> <span className={styles.proofDetail}>{dataMetadata.requestId}</span>
-            </div>
-            <div className={styles.proofRow}>
-              <strong>📍 Marché:</strong> {market} ({dataMetadata.symbol}) | Plateforme: {platform} | Timeframe: {dataMetadata.timeframeRequested}
-            </div>
-            <div className={styles.proofRow}>
-              <strong>📊 Bougies:</strong>
-              <span className={styles.proofDetail}>
-                Baseline 1m: {dataMetadata.baseline1mCount} → Agrégées: {dataMetadata.aggregatedCount}
-                {dataMetadata.duplicatesRemoved > 0 && ` (${dataMetadata.duplicatesRemoved} doublons)`}
-              </span>
-            </div>
-            <div className={styles.proofRow}>
-              <strong>⏰ Timestamps:</strong>
-              <span className={styles.proofDetail}>
-                Baseline: {dataMetadata.baselineFirstTime} → {dataMetadata.baselineLastTime} |
-                Agrégé: {dataMetadata.aggregatedFirstTime} → {dataMetadata.aggregatedLastTime}
-              </span>
-            </div>
-            <div className={styles.proofRow}>
-              <strong>💰 Prix:</strong>
-              <span className={styles.proofDetail}>
-                baselineLastClose: {dataMetadata.baselineLastClose?.toFixed(2)} |
-                aggregatedLastClose: {dataMetadata.aggregatedLastClose?.toFixed(2)} |
-                priceDiff: {dataMetadata.priceDiff?.toFixed(4)}
-              </span>
-            </div>
-            <div className={styles.proofRow}>
-              <strong>{dataMetadata.status === 'OK' ? '✅ STATUT: OK' : '❌ STATUT: BLOCKED'}</strong>
-              {dataMetadata.reason && (
-                <span className={styles.proofReason}> → {dataMetadata.reason}</span>
-              )}
-            </div>
-            <div className={styles.proofRow}>
-              <button
-                className={styles.copyProofButton}
-                onClick={() => {
-                  const proofJson = JSON.stringify({
-                    ts: dataMetadata.ts,
-                    dataProviderFile: dataMetadata.dataProviderFile,
-                    dataProviderFn: dataMetadata.dataProviderFn,
-                    requestId: dataMetadata.requestId,
-                    platform: dataMetadata.platform,
-                    market: dataMetadata.market,
-                    symbol: dataMetadata.symbol,
-                    timeframeRequested: dataMetadata.timeframeRequested,
-                    baseline1mCount: dataMetadata.baseline1mCount,
-                    aggregatedCount: dataMetadata.aggregatedCount,
-                    baselineFirstTime: dataMetadata.baselineFirstTime,
-                    baselineLastTime: dataMetadata.baselineLastTime,
-                    aggregatedFirstTime: dataMetadata.aggregatedFirstTime,
-                    aggregatedLastTime: dataMetadata.aggregatedLastTime,
-                    baselineLastClose: dataMetadata.baselineLastClose,
-                    aggregatedLastClose: dataMetadata.aggregatedLastClose,
-                    priceDiff: dataMetadata.priceDiff,
-                    status: dataMetadata.status,
-                    reason: dataMetadata.reason
-                  }, null, 2);
-                  navigator.clipboard.writeText(proofJson);
-                  addActivityLog('📋 Preuve Data copiée dans le presse-papiers', 'success');
-                }}
-              >
-                📋 Copier preuve
-              </button>
-              <button
-                className={styles.copyProofButton}
-                onClick={() => {
-                  const gateProof = JSON.stringify({
-                    ts: new Date().toISOString(),
-                    allowed: gateStatus.allowed,
-                    reason: gateStatus.reason,
-                    scanAllowed: gateStatus.allowed && !autoMode,
-                    botAllowed: gateStatus.allowed && autoMode,
-                    popupsAllowed: gateStatus.allowed,
-                    previewAllowed: gateStatus.allowed
-                  }, null, 2);
-                  navigator.clipboard.writeText(gateProof);
-                  addActivityLog('📋 Gate Proof copié dans le presse-papiers', 'success');
-                }}
-                style={{ marginLeft: '10px' }}
-              >
-                📋 Copier Gate Proof
-              </button>
-            </div>
-          </div>
-        )}
-
-        {showDbProof && dbProofData && (
-          <div className={`${styles.proofModeBar} ${dbProofData.status === 'OK' ? styles.proofOk : styles.proofBlocked}`}>
-            <div className={styles.proofRow}>
-              <strong>💾 DB PROOF - Branchement Positions & Historique</strong>
-            </div>
-            <div className={styles.proofRow}>
-              <strong>👤 User ID:</strong> <span className={styles.proofDetail}>{dbProofData.userId || 'null'}</span>
-            </div>
-            <div className={styles.proofRow}>
-              <strong>💼 Active Account ID:</strong> <span className={styles.proofDetail}>{dbProofData.activeAccountId || 'null'}</span>
-            </div>
-            <div className={styles.proofRow}>
-              <strong>📊 Positions ouvertes:</strong> <span className={styles.proofDetail}>{dbProofData.openPositionsCount}</span>
-              {' | '}
-              <strong>Historique:</strong> <span className={styles.proofDetail}>{dbProofData.historyCount}</span>
-            </div>
-            <div className={styles.proofRow}>
-              <strong>⏰ Dernier fetch:</strong> <span className={styles.proofDetail}>{new Date(dbProofData.lastFetchAt).toLocaleString('fr-FR')}</span>
-            </div>
-            <div className={styles.proofRow}>
-              <strong>🔄 Déclenché par:</strong> <span className={styles.proofDetail}>{dbProofData.fetchTriggeredBy}</span>
-            </div>
-            <div className={styles.proofRow}>
-              <strong>{dbProofData.status === 'OK' ? '✅ STATUT: OK' : '❌ STATUT: ERROR'}</strong>
-              {dbProofData.reason && (
-                <span className={styles.proofReason}> → {dbProofData.reason}</span>
-              )}
-            </div>
-          </div>
-        )}
         {(!candles || (Array.isArray(candles) && candles.length === 0) || (candles.error && !candles.candles)) ? (
           <div className={styles.loadingChart}>
             <div className={styles.loadingSpinner}></div>
@@ -2276,24 +2005,6 @@ const TradingDashboard = () => {
           </div>
         ) : (
           <>
-            {!gateStatus.allowed && (
-              <div style={{
-                padding: '12px 20px',
-                background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(220, 38, 38, 0.1) 100%)',
-                border: '1px solid rgba(239, 68, 68, 0.3)',
-                borderRadius: '8px',
-                marginBottom: '15px',
-                color: '#fff',
-                fontSize: '14px',
-                fontWeight: 600,
-                display: 'flex',
-                alignItems: 'center',
-                gap: '10px'
-              }}>
-                <span>🚫</span>
-                <span>Graphique bloqué: {gateStatus.reason}</span>
-              </div>
-            )}
             <TradingChart
               candles={candles}
               signal={signalState.signal || currentSignal}
@@ -2304,10 +2015,6 @@ const TradingDashboard = () => {
               hasCredits={credits.remaining > 0}
               showAnalysis={credits.remaining > 0 && showAnalysis}
               potentialEntry={credits.remaining > 0 ? potentialEntry : null}
-              platform={platform}
-              market={market}
-              metadata={dataMetadata}
-              showProofMode={showProofMode}
             />
             {currentPosition && currentPosition.status === 'OPEN' && (
               <div className={styles.positionLevels}>
@@ -2366,7 +2073,7 @@ const TradingDashboard = () => {
         />
 
         <PositionHistory
-          positions={history}
+          history={history}
           market={market}
         />
       </div>

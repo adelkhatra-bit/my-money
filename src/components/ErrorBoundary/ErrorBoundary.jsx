@@ -39,22 +39,39 @@ class ErrorBoundary extends React.Component {
           <p style={{ fontSize: '16px', marginBottom: '30px', opacity: 0.8 }}>
             L'application a rencontré un problème technique.
           </p>
-          <button
-            onClick={() => window.location.reload()}
-            style={{
-              padding: '12px 24px',
-              fontSize: '16px',
-              background: '#00ff88',
-              color: '#000',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontWeight: 'bold'
-            }}
-          >
-            Recharger la page
-          </button>
-          {process.env.NODE_ENV === 'development' && this.state.error && (
+          <div style={{ display: 'flex', gap: '12px', marginBottom: '30px' }}>
+            <button
+              onClick={() => window.location.reload()}
+              style={{
+                padding: '12px 24px',
+                fontSize: '16px',
+                background: '#00ff88',
+                color: '#000',
+                border: 'none',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontWeight: 'bold'
+              }}
+            >
+              Recharger la page
+            </button>
+            <button
+              onClick={() => window.location.href = '/health'}
+              style={{
+                padding: '12px 24px',
+                fontSize: '16px',
+                background: '#3b82f6',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontWeight: 'bold'
+              }}
+            >
+              Page de santé
+            </button>
+          </div>
+          {this.state.error && (
             <details style={{
               marginTop: '30px',
               padding: '20px',
@@ -65,7 +82,7 @@ class ErrorBoundary extends React.Component {
               width: '100%'
             }}>
               <summary style={{ cursor: 'pointer', marginBottom: '10px', fontWeight: 'bold' }}>
-                Détails techniques (développement)
+                Détails techniques
               </summary>
               <pre style={{
                 fontSize: '12px',

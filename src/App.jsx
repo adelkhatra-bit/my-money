@@ -9,6 +9,7 @@ import AccountManagement from './pages/AccountManagement/AccountManagement';
 import Referral from './pages/Referral/Referral';
 import SuperAdmin from './pages/SuperAdmin/SuperAdmin';
 import Profil from './pages/Profil/Profil';
+import Health from './pages/Health/Health';
 import LegalDisclaimer from './components/LegalDisclaimer/LegalDisclaimer';
 import Navbar from './components/Navbar/Navbar';
 import ErrorBoundary from './components/ErrorBoundary/ErrorBoundary';
@@ -107,6 +108,10 @@ function App() {
       <BrowserRouter>
         {user && <Navbar isSuperAdmin={isSuperAdmin} />}
         <Routes>
+        <Route
+          path="/health"
+          element={<Health />}
+        />
         <Route
           path="/login"
           element={user ? <Navigate to="/" /> : <Login />}

@@ -133,17 +133,23 @@ const TradingDashboardSimple = () => {
         </div>
 
         <div className={styles.controlGroup}>
-          <label>Timeframe (affichage):</label>
+          <label>Timeframe (graphique uniquement):</label>
           <select value={timeframe} onChange={(e) => handleTimeframeChange(e.target.value)} className={styles.select}>
             <option value="1m">1 minute</option>
-            <option value="5m">5 minutes</option>
+            <option value="5m">5 minutes (par défaut)</option>
             <option value="15m">15 minutes</option>
             <option value="30m">30 minutes</option>
           </select>
+          <span className={styles.helperText}>Le prix de trading reste le même quel que soit le timeframe</span>
         </div>
       </div>
 
       <div className={styles.tradingViewSection}>
+        {(market === 'NASDAQ' || market === 'GOLD') && (
+          <div className={styles.dataDisclaimer}>
+            ℹ️ Graphique TradingView - Les données peuvent être différées de 15 minutes selon votre abonnement TradingView
+          </div>
+        )}
         <TradingViewWidget symbol={mapMarketToPriceEngine(market)} />
       </div>
 

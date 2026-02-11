@@ -144,6 +144,64 @@ export default function TradingViewConfig() {
         </p>
       </div>
 
+      <div className={styles.infoBox}>
+        <h3>🎯 C'est quoi TradingView ?</h3>
+        <p className={styles.infoText}>
+          <strong>TradingView</strong> est la plateforme qui nous envoie les signaux de trading en temps réel.
+        </p>
+        <div className={styles.flowDiagram}>
+          <div className={styles.flowStep}>
+            <div className={styles.flowNumber}>1</div>
+            <div className={styles.flowLabel}>TradingView détecte un signal</div>
+          </div>
+          <div className={styles.flowArrow}>→</div>
+          <div className={styles.flowStep}>
+            <div className={styles.flowNumber}>2</div>
+            <div className={styles.flowLabel}>Signal envoyé via Webhook</div>
+          </div>
+          <div className={styles.flowArrow}>→</div>
+          <div className={styles.flowStep}>
+            <div className={styles.flowNumber}>3</div>
+            <div className={styles.flowLabel}>Notre plateforme reçoit et traite</div>
+          </div>
+          <div className={styles.flowArrow}>→</div>
+          <div className={styles.flowStep}>
+            <div className={styles.flowNumber}>4</div>
+            <div className={styles.flowLabel}>Utilisateurs voient le signal</div>
+          </div>
+        </div>
+      </div>
+
+      <div className={styles.usageBox}>
+        <h3>🔍 Quand DOIS-TU intervenir sur TradingView ?</h3>
+        <div className={styles.scenarioGrid}>
+          <div className={styles.scenarioCard + ' ' + styles.manual}>
+            <h4>✋ Tu DOIS intervenir si:</h4>
+            <ul>
+              <li>Tu veux créer une nouvelle stratégie de signaux</li>
+              <li>Tu veux modifier les conditions d'entrée (EMA, RSI, etc.)</li>
+              <li>Tu veux ajouter un nouveau marché (ex: EUR/USD)</li>
+              <li>Tu veux changer les niveaux de TP/SL</li>
+            </ul>
+            <p className={styles.scenarioAction}>
+              👉 Dans ce cas, tu vas sur TradingView → Créer une alerte → Configurer avec l'URL webhook ci-dessous
+            </p>
+          </div>
+          <div className={styles.scenarioCard + ' ' + styles.auto}>
+            <h4>✅ Tu N'AS RIEN À FAIRE si:</h4>
+            <ul>
+              <li>Les utilisateurs veulent juste trader avec le BOT</li>
+              <li>Les signaux arrivent déjà correctement</li>
+              <li>Tu veux juste voir l'activité des signaux</li>
+              <li>Tu veux gérer les crédits utilisateurs</li>
+            </ul>
+            <p className={styles.scenarioAction}>
+              👉 La plateforme fonctionne en autonomie complète
+            </p>
+          </div>
+        </div>
+      </div>
+
       <div className={styles.section}>
         <h3>Webhook URL</h3>
         <div className={styles.webhookBox}>

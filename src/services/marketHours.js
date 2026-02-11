@@ -1,9 +1,5 @@
 export const getUserTimezone = () => {
-  try {
-    return Intl.DateTimeFormat().resolvedOptions().timeZone;
-  } catch (error) {
-    return 'UTC';
-  }
+  return 'Europe/Paris';
 };
 
 export const convertETToLocal = (etHour, etMinute = 0) => {

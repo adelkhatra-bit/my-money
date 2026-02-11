@@ -6,11 +6,11 @@ const TradingViewWidget = ({ symbol = 'MNQ', theme = 'dark' }) => {
 
   const getSymbolMapping = (symbol) => {
     const mapping = {
-      'MNQ': 'CME_MINI:NQ1!',
-      'MGC': 'COMEX_MINI:MGC1!',
+      'MNQ': 'OANDA:NAS100USD',
+      'MGC': 'OANDA:XAUUSD',
       'BTC': 'BINANCE:BTCUSDT'
     };
-    return mapping[symbol] || 'CME_MINI:NQ1!';
+    return mapping[symbol] || 'OANDA:NAS100USD';
   };
 
   useEffect(() => {
@@ -25,7 +25,7 @@ const TradingViewWidget = ({ symbol = 'MNQ', theme = 'dark' }) => {
           autosize: true,
           symbol: getSymbolMapping(symbol),
           interval: '5',
-          timezone: 'America/New_York',
+          timezone: 'Europe/Paris',
           theme: theme,
           style: '1',
           locale: 'fr',
@@ -74,6 +74,9 @@ const TradingViewWidget = ({ symbol = 'MNQ', theme = 'dark' }) => {
         id="tradingview_widget"
         className={styles.widget}
       />
+      <div className={styles.dataBanner}>
+        ℹ️ Données peuvent être différées selon source TradingView
+      </div>
     </div>
   );
 };

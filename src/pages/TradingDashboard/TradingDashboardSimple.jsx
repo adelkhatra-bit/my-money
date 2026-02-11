@@ -3,7 +3,11 @@ import LivePriceHeader from '../../components/LivePriceHeader/LivePriceHeader';
 import TradingViewWidget from '../../components/TradingViewWidget/TradingViewWidget';
 import PositionMonitor from '../../components/PositionMonitor/PositionMonitor';
 import BotStatus from '../../components/BotStatus/BotStatus';
+import ScanOpportunity from '../../components/ScanOpportunity/ScanOpportunity';
 import { isMarketOpen, getMarketStatus } from '../../services/marketHours';
+import { generateSignal } from '../../services/signalEngine';
+import { marketDataProvider } from '../../services/MarketDataProvider';
+import { positionService } from '../../services/positionService';
 import { supabase } from '../../lib/supabaseClient';
 import styles from './TradingDashboardSimple.module.css';
 
@@ -22,6 +26,12 @@ const TradingDashboardSimple = () => {
   const [marketStatus, setMarketStatus] = useState({ open: true, message: '' });
   const [autoMode, setAutoMode] = useState(false);
   const [activeAccount, setActiveAccount] = useState(null);
+  const [scanning, setScanning] = useState(false);
+  const [scanStatus, setScanStatus] = useState('');
+  const [scanOpportunity, setScanOpportunity] = useState(null);
+  const [candles, setCandles] = useState([]);
+  const [currentPosition, setCurrentPosition] = useState(null);
+  const [userId, setUserId] = useState(null);
 
   useEffect(() => {
     checkMarketStatus();
@@ -31,12 +41,32 @@ const TradingDashboardSimple = () => {
 
   useEffect(() => {
     loadActiveAccount();
+    loadUserId();
   }, [market]);
+
+  useEffect(() => {
+    loadCurrentPosition();
+  }, [userId, activeAccount]);
 
   const checkMarketStatus = () => {
     const open = isMarketOpen(market);
     const status = getMarketStatus(market);
     setMarketStatus({ open, message: status });
+  };
+
+  const loadUserId = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data: profile } = await supabase
+      .from('user_profiles')
+      .select('id')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (profile) {
+      setUserId(profile.id);
+    }
   };
 
   const loadActiveAccount = async () => {
@@ -65,6 +95,17 @@ const TradingDashboardSimple = () => {
     }
   };
 
+  const loadCurrentPosition = async () => {
+    if (!userId || !activeAccount) return;
+
+    try {
+      const openPosition = await positionService.getOpenPosition(userId, activeAccount.id);
+      setCurrentPosition(openPosition);
+    } catch (error) {
+      console.error('Erreur chargement position:', error);
+    }
+  };
+
   const handleMarketChange = (newMarket) => {
     setMarket(newMarket);
   };
@@ -81,12 +122,67 @@ const TradingDashboardSimple = () => {
     setAutoMode(!autoMode);
   };
 
-  const handleScan = () => {
+  const handleScan = async () => {
     if (!marketStatus.open) {
       alert(`⚠️ Marché ${market} fermé - ${marketStatus.message}\n\nLe SCAN ne peut pas être lancé lorsque le marché est fermé.`);
       return;
     }
-    alert('🔍 Fonction SCAN en cours de développement');
+
+    if (!activeAccount) {
+      alert('⚠️ Aucun compte actif - Configurez un compte de trading');
+      return;
+    }
+
+    if (currentPosition) {
+      const dir = currentPosition.direction === 'LONG' ? '🟢 LONG' : '🔴 SHORT';
+      alert(`⛔ POSITION ACTIVE\n\n${dir} sur ${currentPosition.market}\nPrix d'entrée: ${parseFloat(currentPosition.entry_price).toFixed(2)}\n\nVous devez fermer cette position avant de pouvoir scanner à nouveau.`);
+      return;
+    }
+
+    if (scanning) {
+      alert('⏳ Un scan est déjà en cours\n\nVeuillez patienter...');
+      return;
+    }
+
+    setScanning(true);
+    setScanStatus('🔍 Chargement des données...');
+
+    try {
+      const data = await marketDataProvider.getOHLC(market, 'topstep', '5m');
+
+      if (!data || data.error || !Array.isArray(data) || data.length < 100) {
+        setScanStatus('❌ Données insuffisantes');
+        alert('❌ Impossible de charger les données de marché');
+        setScanning(false);
+        return;
+      }
+
+      setCandles(data);
+      setScanStatus('🧠 Analyse du marché...');
+
+      const result = await generateSignal(market, 'topstep', data, activeAccount);
+
+      if (result && result.signal) {
+        console.log('✅ Signal trouvé:', result.signal);
+        setScanStatus('✅ Opportunité détectée!');
+
+        const currentPrice = data[data.length - 1].close;
+        setScanOpportunity({
+          ...result.signal,
+          currentPrice
+        });
+      } else {
+        const reason = result?.reason || 'Aucune opportunité détectée';
+        setScanStatus(`ℹ️ ${reason}`);
+        alert(`ℹ️ Résultat du scan:\n\n${reason}`);
+      }
+    } catch (error) {
+      console.error('Erreur scan:', error);
+      setScanStatus('❌ Erreur lors du scan');
+      alert(`❌ Erreur:\n\n${error.message || 'Erreur inconnue'}`);
+    } finally {
+      setScanning(false);
+    }
   };
 
   const handlePreview = () => {
@@ -95,6 +191,48 @@ const TradingDashboardSimple = () => {
       return;
     }
     alert('👁️ Fonction APERÇU en cours de développement');
+  };
+
+  const handleConfirmOpportunity = async () => {
+    if (!scanOpportunity || !activeAccount || !userId) {
+      alert('❌ Erreur: informations manquantes');
+      return;
+    }
+
+    try {
+      const entryPrice = (scanOpportunity.entry_min + scanOpportunity.entry_max) / 2;
+
+      const positionData = {
+        user_id: userId,
+        account_id: activeAccount.id,
+        market: market.toUpperCase(),
+        platform: 'topstep',
+        direction: scanOpportunity.direction,
+        entry_price: entryPrice,
+        position_size: 1,
+        stop_loss: scanOpportunity.stop_loss,
+        take_profit_1: scanOpportunity.take_profit_1,
+        take_profit_2: scanOpportunity.take_profit_2,
+        status: 'OPEN'
+      };
+
+      const newPosition = await positionService.createPosition(positionData);
+
+      if (newPosition) {
+        alert(`✅ Position ${scanOpportunity.direction} ouverte avec succès!\n\nPrix d'entrée: ${entryPrice.toFixed(2)}\nStop Loss: ${scanOpportunity.stop_loss.toFixed(2)}\nTake Profit 1: ${scanOpportunity.take_profit_1.toFixed(2)}`);
+        setScanOpportunity(null);
+        setScanStatus('');
+        loadCurrentPosition();
+      }
+    } catch (error) {
+      console.error('Erreur ouverture position:', error);
+      alert(`❌ Erreur:\n\n${error.message || 'Impossible d\'ouvrir la position'}`);
+    }
+  };
+
+  const handleDismissOpportunity = () => {
+    setScanOpportunity(null);
+    setScanStatus('');
   };
 
   const isActionDisabled = !marketStatus.open || !activeAccount;
@@ -201,6 +339,22 @@ const TradingDashboardSimple = () => {
         <BotStatus autoMode={autoMode} market={market} />
         <PositionMonitor market={market} />
       </div>
+
+      {scanStatus && (
+        <div className={styles.scanStatusBar}>
+          {scanStatus}
+        </div>
+      )}
+
+      {scanOpportunity && (
+        <div className={styles.opportunityOverlay}>
+          <ScanOpportunity
+            opportunity={scanOpportunity}
+            onConfirm={handleConfirmOpportunity}
+            onDismiss={handleDismissOpportunity}
+          />
+        </div>
+      )}
     </div>
   );
 };

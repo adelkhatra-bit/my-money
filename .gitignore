@@ -5,3 +5,7 @@
 novaluce-bot.log
 C:\novaluce-bot.log
 *.tmp
+
+# Build output and dependencies
+build/
+node_modules/

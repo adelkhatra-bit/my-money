@@ -142,22 +142,23 @@ export function aggregateCandles(candles1m, targetTimeframe, metadata = {}) {
   const aggregated = [];
   let currentBucket = [];
   let bucketStartTime = null;
+  const bucketSizeMs = intervalMinutes * 60 * 1000;
 
   for (const candle of candles1m) {
     const candleTime = candle.time * 1000;
 
     if (!bucketStartTime) {
-      bucketStartTime = Math.floor(candleTime / (intervalMinutes * 60 * 1000)) * (intervalMinutes * 60 * 1000);
+      bucketStartTime = Math.floor(candleTime / bucketSizeMs) * bucketSizeMs;
     }
 
-    const currentBucketEnd = bucketStartTime + (intervalMinutes * 60 * 1000);
+    const currentBucketEnd = bucketStartTime + bucketSizeMs;
 
     if (candleTime >= currentBucketEnd) {
       if (currentBucket.length > 0) {
         aggregated.push(createAggregatedCandle(currentBucket));
       }
       currentBucket = [candle];
-      bucketStartTime = Math.floor(candleTime / (intervalMinutes * 60 * 1000)) * (intervalMinutes * 60 * 1000);
+      bucketStartTime = Math.floor(candleTime / bucketSizeMs) * bucketSizeMs;
     } else {
       currentBucket.push(candle);
     }

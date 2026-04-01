@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import styles from './BotActivityLog.module.css';
 
 export default function BotActivityLog({ isActive, currentState, onActivityUpdate }) {
@@ -7,23 +7,15 @@ export default function BotActivityLog({ isActive, currentState, onActivityUpdat
   const [currentIndicator, setCurrentIndicator] = useState('');
   const logsEndRef = useRef(null);
 
-  const scrollToBottom = () => {
+  const scrollToBottom = useCallback(() => {
     logsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+  }, []);
 
   useEffect(() => {
     scrollToBottom();
-  }, [logs]);
+  }, [logs, scrollToBottom]);
 
-  useEffect(() => {
-    if (onActivityUpdate) {
-      onActivityUpdate((log) => {
-        addLog(log.message, log.type);
-      });
-    }
-  }, [onActivityUpdate]);
-
-  const addLog = (message, type = 'info') => {
+  const addLog = useCallback((message, type = 'info') => {
     const timestamp = new Date().toLocaleTimeString('fr-FR');
     const newLog = {
       id: Date.now() + Math.random(),
@@ -33,7 +25,15 @@ export default function BotActivityLog({ isActive, currentState, onActivityUpdat
     };
 
     setLogs(prev => [...prev.slice(-49), newLog]);
-  };
+  }, []);
+
+  useEffect(() => {
+    if (onActivityUpdate) {
+      onActivityUpdate((log) => {
+        addLog(log.message, log.type);
+      });
+    }
+  }, [onActivityUpdate, addLog]);
 
   useEffect(() => {
     if (currentState === 'scanning') {
@@ -68,7 +68,7 @@ export default function BotActivityLog({ isActive, currentState, onActivityUpdat
     }
   }, [currentState]);
 
-  const getLogIcon = (type) => {
+  const getLogIcon = useCallback((type) => {
     switch(type) {
       case 'success': return '✅';
       case 'warning': return '⚠️';
@@ -78,9 +78,9 @@ export default function BotActivityLog({ isActive, currentState, onActivityUpdat
       case 'position': return '📊';
       default: return '💬';
     }
-  };
+  }, []);
 
-  const getLogClass = (type) => {
+  const getLogClass = useCallback((type) => {
     switch(type) {
       case 'success': return styles.logSuccess;
       case 'warning': return styles.logWarning;
@@ -90,7 +90,7 @@ export default function BotActivityLog({ isActive, currentState, onActivityUpdat
       case 'position': return styles.logPosition;
       default: return styles.logInfo;
     }
-  };
+  }, []);
 
   return (
     <div className={styles.container}>

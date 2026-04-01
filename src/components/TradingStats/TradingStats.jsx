@@ -3,9 +3,14 @@ import { calculateRealStats, getDailyStats } from '../../services/accountingServ
 import { formatPrice, formatPercentage } from '../../services/priceFormatting';
 import styles from './TradingStats.module.css';
 
+const getCurrencySymbol = (curr) => {
+  if (curr === 'USD') return '$';
+  if (curr === 'EUR') return '€';
+  return curr;
+};
+
 export default function TradingStats({ accountId, market, currency = 'USD' }) {
-  const [stats, setStats] = useState(null);
-  const [dailyStats, setDailyStats] = useState(null);
+  const [statsState, setStatsState] = useState({ stats: null, dailyStats: null });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -25,14 +30,15 @@ export default function TradingStats({ accountId, market, currency = 'USD' }) {
         calculateRealStats(accountId),
         getDailyStats(accountId)
       ]);
-      setStats(statsData);
-      setDailyStats(dailyData);
+      setStatsState({ stats: statsData, dailyStats: dailyData });
     } catch (error) {
       console.error('Error loading stats:', error);
     } finally {
       setLoading(false);
     }
   }
+
+  const { stats, dailyStats } = statsState;
 
   if (loading) {
     return (
@@ -49,12 +55,6 @@ export default function TradingStats({ accountId, market, currency = 'USD' }) {
       </div>
     );
   }
-
-  const getCurrencySymbol = (curr) => {
-    if (curr === 'USD') return '$';
-    if (curr === 'EUR') return '€';
-    return curr;
-  };
 
   const symbol = getCurrencySymbol(currency);
 

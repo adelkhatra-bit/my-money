@@ -70,8 +70,12 @@ export const findSupportResistance = (candles, lookback = 50) => {
   if (candles.length < lookback) return { supports: [], resistances: [] };
 
   const recent = candles.slice(-lookback);
-  const highs = recent.map(c => c.high);
-  const lows = recent.map(c => c.low);
+  const highs = [];
+  const lows = [];
+  for (const c of recent) {
+    highs.push(c.high);
+    lows.push(c.low);
+  }
 
   const resistances = [];
   const supports = [];
@@ -109,13 +113,20 @@ export const detectOrderBlocks = (candles, minSize = 1.5) => {
   const bearishOB = [];
   const recent = candles.slice(-50);
 
+  // Pre-compute body sizes once to avoid repeated slice+reduce inside the loop
+  const bodySizes = recent.map(c => Math.abs(c.close - c.open));
+
   for (let i = 1; i < recent.length - 1; i++) {
-    const prev = recent[i - 1];
     const curr = recent[i];
     const next = recent[i + 1];
 
-    const bodySize = Math.abs(curr.close - curr.open);
-    const avgBody = recent.slice(Math.max(0, i - 10), i).reduce((sum, c) => sum + Math.abs(c.close - c.open), 0) / 10;
+    const bodySize = bodySizes[i];
+    const windowStart = Math.max(0, i - 10);
+    let bodySum = 0;
+    for (let j = windowStart; j < i; j++) {
+      bodySum += bodySizes[j];
+    }
+    const avgBody = bodySum / 10;
 
     if (bodySize > avgBody * minSize) {
       if (curr.close > curr.open && next.close > curr.high) {
